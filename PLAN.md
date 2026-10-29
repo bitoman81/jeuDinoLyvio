@@ -191,7 +191,7 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 3 - Joystick virtuel sur téléphone
 - [x] Étape 4 - Plus de mots et d'énigmes classiques
 - [x] Étape 5 - Énigmes de type jeu (labyrinthe, taquin, mémoire, points, sudoku, ombres ; puzzle à pièces et symétrie à faire)
-- [ ] Étape 6 - Sac, objets utiles et boutique du nid
+- [x] Étape 6 - Sac, objets utiles et boutique du nid (clé dorée et morceaux de carte avec l'étape 7)
 - [ ] Étape 7 - Plus de niveaux, niveaux bonus et monde final
 - [ ] Étape 8 - Statistiques pour les parents : tableau par famille et courbe du niveau (enregistrement quotidien déjà en place)
 - [ ] Étape 9 - Version Nintendo Switch avec Atmosphère (prototype sur la console d'abord)

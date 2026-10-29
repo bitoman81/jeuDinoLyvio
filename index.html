@@ -94,6 +94,27 @@ h1 span{color:var(--sun)}
 .berry{background:var(--berry)}
 .pearl{background:#f6f3ff;box-shadow:inset -4px -4px 0 #cfc6e6}
 .hud-r{display:flex;gap:8px}
+.hud-pow{display:flex;gap:4px}
+.hud-pow:empty{display:none}
+.pow{width:26px;height:26px}
+.tre{width:16px;height:16px;border-radius:50%;background:#ffd23a;border:2px solid var(--ink);display:inline-block;vertical-align:-2px;box-shadow:inset -3px -3px 0 #e0a526}
+.block h3{font:400 21px var(--display);margin:4px 0 0}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.shop .it{background:#fff;border:4px solid var(--ink);border-radius:18px;box-shadow:0 4px 0 var(--ink);padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px;font:400 18px var(--display);text-align:center;min-width:0}
+.shop .it small{font:700 14px var(--body);color:#4b5d50;line-height:1.2}
+.shop .it .price{font:400 18px var(--display);margin-top:auto}
+.shop .it canvas{width:120px;height:84px;max-width:100%}
+.shop .it .pow{width:40px;height:40px}
+.shop .it[aria-pressed="true"]{background:var(--sun)}
+.shop .it:disabled{opacity:.5;cursor:not-allowed}
+.shop .it:not(:disabled):active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.fossils{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.fos{display:flex;flex-direction:column;align-items:center;gap:2px;font:700 12px var(--body);text-align:center;line-height:1.15}
+.fos svg{width:44px;height:44px}
+.fos.off svg{opacity:.25}
+.pz-help{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.help{background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:4px 12px;font:700 15px var(--body);box-shadow:0 3px 0 var(--ink);display:inline-flex;align-items:center;gap:5px}
+.help:disabled{opacity:.4;cursor:not-allowed}
 .saved{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:2px 12px;font:700 14px var(--body);pointer-events:none;opacity:0;transition:opacity .4s}
 .saved.show{opacity:.9}
 .continue{background:var(--sun);border:4px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:12px 18px;display:flex;align-items:center;gap:14px;text-align:left;font:400 30px var(--display)}
@@ -277,6 +298,7 @@ body,button{touch-action:manipulation}
     <div class="hud-l">
       <div id="hudEggs" class="eggs" aria-label="Œufs trouvés"></div>
       <div class="fruit"><span id="hudIcon" class="berry"></span><b id="hudFruit">0</b></div>
+      <div id="hudPow" class="hud-pow"></div>
     </div>
     <div class="hud-r">
       <button id="btnSound" class="round" aria-label="Son"></button>
@@ -322,6 +344,18 @@ body,button{touch-action:manipulation}
         <p class="sub" id="nestText"></p>
         <div id="nest" class="nest"></div>
       </section>
+      <section class="block">
+        <h2>Ton sac</h2>
+        <p class="sub" id="bagText"></p>
+        <h3>Les pouvoirs</h3>
+        <p class="sub">Un pouvoir acheté sert pendant tout le prochain endroit.</p>
+        <div class="shop" id="shopPowers"></div>
+        <h3 id="skinTitle"></h3>
+        <div class="shop" id="shopSkins"></div>
+        <h3>Mes fossiles</h3>
+        <p class="sub" id="fossilText"></p>
+        <div class="fossils" id="fossilList"></div>
+      </section>
       <section class="block touch-only">
         <h2>Sur téléphone</h2>
         <p class="sub">Pour le tricératops, le ptérodactyle et le plésiosaure. Le T-Rex joue toujours avec le joystick.</p>
@@ -349,6 +383,10 @@ body,button{touch-action:manipulation}
       </div>
       <div id="pzVisual" class="pz-visual"></div>
       <div id="pzChoices" class="pz-choices"></div>
+      <div id="pzHelp" class="pz-help" hidden>
+        <button id="helpHint" class="help" type="button"></button>
+        <button id="helpCut" class="help" type="button"></button>
+      </div>
       <button id="pzBack" class="ghost">Retour au jeu</button>
     </div>
   </div>
@@ -445,6 +483,26 @@ const SPECIES = {
     pal: { dark: '#2f5d6b', body: '#4f8a9c', belly: '#cfe3e0' } },
 };
 const ORDER = ['rex', 'trike', 'ptero', 'plesio'];
+// Couleurs à acheter dans la boutique du nid (les autres teintes de l'animal restent celles d'origine).
+const SKINS = {
+  rex: [{ id: 'foret', name: 'Vert forêt', price: 15, pal: { dark: '#2f5a2a', body: '#4f8f3c', belly: '#cfe3a8' } }, { id: 'ocean', name: 'Bleu océan', price: 25, pal: { dark: '#24456b', body: '#3f72a8', belly: '#c8dcef' } }, { id: 'lave', name: 'Rouge lave', price: 40, pal: { dark: '#6b2a24', body: '#b0483c', belly: '#f0c8a8' } }],
+  trike: [{ id: 'menthe', name: 'Menthe', price: 15, pal: { dark: '#2f6b5a', body: '#4fa88f', belly: '#cfeee3' } }, { id: 'prune', name: 'Prune', price: 25, pal: { dark: '#4a2f5a', body: '#7a4f8f', belly: '#e3cfe9', frill: '#e0a526', frillDark: '#8a5a10' } }, { id: 'or', name: 'Doré', price: 40, pal: { dark: '#7a5a1a', body: '#c9a23a', belly: '#f4e3a8', frill: '#e5483b', frillDark: '#7a1a10' } }],
+  ptero: [{ id: 'ciel', name: 'Bleu ciel', price: 15, pal: { dark: '#2f4f6b', body: '#5a8fc0', belly: '#d6e8f6', wing: '#7fb0de', crest: '#ffb238' } }, { id: 'nuit', name: 'Nuit', price: 25, pal: { dark: '#1f2240', body: '#3a3f7a', belly: '#c8c8ec', wing: '#5a5fa8', crest: '#ffd23a' } }, { id: 'flamant', name: 'Flamant rose', price: 40, pal: { dark: '#8a3a5a', body: '#e07aa0', belly: '#fbe0ea', wing: '#f29ab8', crest: '#b23a7a' } }],
+  plesio: [{ id: 'corail', name: 'Corail', price: 15, pal: { dark: '#8a4a3a', body: '#e0806a', belly: '#fbe0d6' } }, { id: 'algue', name: 'Algue', price: 25, pal: { dark: '#2f5a2a', body: '#5a9a4a', belly: '#d6efc8' } }, { id: 'perle', name: 'Nacre', price: 40, pal: { dark: '#6a6a8a', body: '#b8b8d8', belly: '#f6f3ff' } }],
+};
+const POWERS = {
+  magnet: { name: 'Aimant', price: 12, text: 'attire les fruits et les perles proches' },
+  shield: { name: 'Bouclier', price: 12, text: 'protège des cailloux volants et des méduses' },
+};
+const HELP_HINT = 5, HELP_CUT = 10;
+// Applique la couleur choisie à chaque animal.
+function applySkins() {
+  ORDER.forEach(w => {
+    const sp = SPECIES[w]; sp.base = sp.base || sp.pal;
+    const sk = SKINS[w].find(x => x.id === prog.bag.skin[w]);
+    sp.pal = sk ? { ...sp.base, ...sk.pal } : sp.base;
+  });
+}
 
 /* ---------- Niveaux ---------- */
 const WORLDS = {
@@ -590,6 +648,8 @@ const IC = {
   sound: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
   mute: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
   home: '<svg viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5V21h-6v-6H9v6H3z" fill="currentColor"/></svg>',
+  magnet: '<svg viewBox="0 0 24 24" class="pow" role="img" aria-label="Aimant"><path d="M5 3h4v9a3 3 0 0 0 6 0V3h4v9a7 7 0 0 1-14 0z" fill="#e5483b" stroke="#1d2b22" stroke-width="1.5"/><path d="M5 3h4v3H5zM15 3h4v3h-4z" fill="#d9d9d9" stroke="#1d2b22" stroke-width="1.5"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" class="pow" role="img" aria-label="Bouclier"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#8cd2ff" stroke="#1d2b22" stroke-width="1.5"/></svg>',
   lock: '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="5" y="10" width="14" height="11" rx="2" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>',
 };
 
@@ -637,10 +697,11 @@ function cleanRun(r) {
     broken: Array.isArray(r.broken) ? r.broken.filter(b => Array.isArray(b) && isInt(b[0]) && isInt(b[1])) : [],
     fruit: Math.max(0, num(r.fruit) || 0), x: num(r.x), y: num(r.y), cam: num(r.cam),
     stars: [0, 1, 2].map(k => Array.isArray(r.stars) && isInt(r.stars[k]) ? clamp(r.stars[k], 0, 3) : 0),
+    magnet: r.magnet === true, shield: r.shield === true,
   };
 }
 function cleanProg(s) {
-  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', touch: 'stick', worlds: {}, skills: {}, stats: {}, run: null, savedAt: 0 };
+  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', touch: 'stick', worlds: {}, skills: {}, stats: {}, bag: null, run: null, savedAt: 0 };
   if (s && typeof s === 'object') {
     if (s.eggs && !s.worlds) s.worlds = { rex: { unlocked: s.unlocked || 1, eggs: s.eggs } };
     ['world', 'diff', 'voice', 'savedAt'].forEach(k => { if (s[k] !== undefined) p[k] = s[k]; });
@@ -672,10 +733,18 @@ function cleanProg(s) {
   });
   if (typeof p.voice !== 'string') p.voice = '';
   if (!isInt(p.savedAt)) p.savedAt = 0;
+  // Le sac : trésors, fossiles trouvés, couleurs achetées et choisies, pouvoirs en réserve.
+  const b = s && s.bag && typeof s.bag === 'object' ? s.bag : {};
+  p.bag = { n: isInt(b.n) && b.n >= 0 ? b.n : 0, fossils: {}, owned: {}, skin: {}, power: {} };
+  if (b.fossils && typeof b.fossils === 'object') Object.keys(b.fossils).forEach(k => { const [w, i] = k.split('-'); if (b.fossils[k] === true && WORLDS[w] && WORLDS[w][+i]) p.bag.fossils[k] = true; });
+  if (b.owned && typeof b.owned === 'object') Object.keys(b.owned).forEach(k => { const [w, id] = k.split(':'); if (b.owned[k] === true && SKINS[w] && SKINS[w].some(x => x.id === id)) p.bag.owned[k] = true; });
+  ORDER.forEach(w => { const id = b.skin && b.skin[w]; p.bag.skin[w] = id && p.bag.owned[`${w}:${id}`] ? id : 'base'; });
+  Object.keys(POWERS).forEach(k => { const v = b.power && b.power[k]; p.bag.power[k] = isInt(v) ? clamp(v, 0, 99) : 0; });
   return p;
 }
 let prog;
 try { prog = cleanProg(JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(KEY_V1))); } catch (e) { prog = cleanProg(null); }
+applySkins();
 function save() { prog.savedAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
 
 /* ---------- Son ---------- */
@@ -945,9 +1014,18 @@ function moveBox(p, dx, dy, onTile) {
   return res;
 }
 function collectItems(p, pad) {
+  // Aimant : les objets proches viennent tout seuls.
+  if (L.magnet) L.items.forEach(f => {
+    if (f.taken) return;
+    const dx = p.x + p.w / 2 - f.x, dy = p.y + p.h / 2 - f.y, d = Math.hypot(dx, dy);
+    if (d < 140 && d > 1) { f.x += dx / d * 5; f.y += dy / d * 5; }
+  });
   L.items.forEach(f => {
     if (f.taken || !hit(p, { x: f.x - pad, y: f.y - pad, w: pad * 2, h: pad * 2 })) return;
-    f.taken = true; fruitCount++; $('hudFruit').textContent = fruitCount; SFX.fruit(); autosave();
+    f.taken = true; fruitCount++; prog.bag.n++; $('hudFruit').textContent = fruitCount;
+    if (f.fossil) { prog.bag.fossils[`${L.world}-${L.i}`] = true; L.gotFossil = true; SFX.yay(); say('Un fossile ! Il va dans ton album.'); }
+    else SFX.fruit();
+    autosave(f.fossil);
     for (let i = 0; i < 8; i++) parts.push({ x: f.x, y: f.y, vx: Math.cos(i) * 3, vy: Math.sin(i) * 3 - 1, life: 26, col: '#ffd23a', r: 4 });
   });
 }
@@ -977,8 +1055,19 @@ function drawParts() {
     ctx.fillStyle = q.col; circle(ctx, q.x, q.y, q.r);
   });
 }
+// Fossile caché : une ammonite qui brille, une par endroit.
+function drawFossil(f) {
+  const x = f.x, y = f.y + Math.sin(time * 3 + f.ph) * 4;
+  ctx.fillStyle = `rgba(255,240,180,${.35 + .2 * Math.sin(time * 4)})`; circle(ctx, x, y, 21);
+  ctx.fillStyle = '#d9c9a3'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.lineWidth = 2; ctx.beginPath();
+  for (let a = 0; a < Math.PI * 5; a += .2) { const r = 11 * (1 - a / (Math.PI * 5.3)); ctx[a ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r); }
+  ctx.stroke();
+}
 function drawFruit(f) {
   if (f.taken) return;
+  if (f.fossil) { drawFossil(f); return; }
   const y = f.y + Math.sin(time * 3 + f.ph) * 4;
   ctx.fillStyle = '#b23a7a'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(f.x, y, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -987,12 +1076,19 @@ function drawFruit(f) {
 }
 function drawPearl(f) {
   if (f.taken) return;
+  if (f.fossil) { drawFossil(f); return; }
   const y = f.y + Math.sin(time * 2 + f.ph) * 3;
   ctx.fillStyle = 'rgba(255,255,255,.25)'; circle(ctx, f.x, y, 15);
   ctx.fillStyle = '#f6f3ff'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.arc(f.x, y, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#cfc6e6'; circle(ctx, f.x + 3, y + 3, 4);
   ctx.fillStyle = '#fff'; circle(ctx, f.x - 3, y - 3, 2.5);
+}
+// Bulle du bouclier autour de l'animal
+function drawShield(x, y, r) {
+  ctx.fillStyle = 'rgba(140,210,255,.15)'; circle(ctx, x, y, r);
+  ctx.strokeStyle = `rgba(140,210,255,${.6 + .3 * Math.sin(time * 5)})`; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
 }
 // Pierre magique ronde (vue de dessus et sous l'eau)
 function drawOrb(x, y) {
@@ -1455,7 +1551,7 @@ MODES.shmup = {
         if (Math.random() < .5) L.items.push({ x: r.x, y: r.y, taken: false, ph: 0 });
         break;
       }
-      if (!r.dead && p.hurt <= 0 && hit(p, { x: r.x - r.r * .8, y: r.y - r.r * .8, w: r.r * 1.6, h: r.r * 1.6 })) { p.hurt = 50; p.kx = -3; r.vx -= 1.5; SFX.bonk(); }
+      if (!r.dead && !L.shield && p.hurt <= 0 && hit(p, { x: r.x - r.r * .8, y: r.y - r.r * .8, w: r.r * 1.6, h: r.r * 1.6 })) { p.hurt = 50; p.kx = -3; r.vx -= 1.5; SFX.bonk(); }
     });
     L.shots = L.shots.filter(s => !s.hit && s.x < camX + viewW + 30);
     L.rocks = L.rocks.filter(r => !r.dead && r.x > camX - 80);
@@ -1488,6 +1584,7 @@ MODES.shmup = {
     L.gates.forEach(g => this.crystal(g));
     const p = player;
     if (!(p.hurt > 0 && p.hurt % 8 < 4)) drawDino(ctx, world(), p.x + p.w / 2 - 4, p.y + p.h / 2 + 18, 1, time, true, true, 1.15);
+    if (L.shield) drawShield(p.x + p.w / 2, p.y + p.h / 2, 36);
     drawParts();
     ctx.restore();
     if (d.clouds) this.clouds(1.3, .45, oy, 7);
@@ -1588,7 +1685,7 @@ MODES.swim = {
     if (Math.abs(p.vx) > .3) p.face = Math.sign(p.vx);
     L.jellies.forEach(j => {
       j.y = j.y0 + Math.sin(time * j.sp + j.ph) * j.amp;
-      if (p.hurt <= 0 && hit(p, { x: j.x - 14, y: j.y - 14, w: 28, h: 30 })) {
+      if (!L.shield && p.hurt <= 0 && hit(p, { x: j.x - 14, y: j.y - 14, w: 28, h: 30 })) {
         const dx = p.x + p.w / 2 - j.x, dy = p.y + p.h / 2 - j.y, dd = Math.hypot(dx, dy) || 1;
         p.vx = dx / dd * 6; p.vy = dy / dd * 6; p.hurt = 50; SFX.bonk();
       }
@@ -1640,6 +1737,7 @@ MODES.swim = {
     L.gates.forEach(g2 => this.gate(g2));
     const p = player;
     if (!(p.hurt > 0 && p.hurt % 8 < 4)) drawDino(ctx, world(), p.x + p.w / 2 + 6 * p.face, p.y + p.h / 2 + 13, p.face, time, true, true, 1.1);
+    if (L.shield) drawShield(p.x + p.w / 2, p.y + p.h / 2, 38);
     drawParts();
     ctx.restore();
   },
@@ -1779,7 +1877,7 @@ function record(k, errs) {
   r[0]++; if (!errs) r[1]++; r[2] += errs; r[3] = prog.skills[k].lvl;
 }
 function solved(extra = '') {
-  pzLocked = true; SFX.yay(); confetti();
+  pzLocked = true; SFX.yay(); confetti(); $('pzHelp').hidden = true;
   pzStars = pzErrs === 0 ? 3 : pzErrs === 1 ? 2 : 1;
   const up = learn(pzSkill, pzErrs);
   record(pzSkill, pzErrs);
@@ -1794,9 +1892,35 @@ function oops(btn, errs, hintFn, msg) {
   say(msg || pick(['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !']));
   if (hintFn) hintFn(errs);
 }
+/* Aide payée avec les trésors du sac : un indice, ou enlever une mauvaise réponse.
+   Une énigme aidée donne 2 étoiles au plus et ne fait pas monter le niveau. */
+let pzHelp = null;
+function renderHelp() {
+  const c = pzHelp; $('pzHelp').hidden = !c || pzLocked;
+  if (!c) return;
+  const n = prog.bag.n, wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b));
+  $('helpHint').innerHTML = `Indice <span class="tre"></span> ${HELP_HINT}`;
+  $('helpHint').disabled = n < HELP_HINT || c.hinted;
+  $('helpHint').setAttribute('aria-label', `Indice, ${HELP_HINT} trésors`);
+  $('helpCut').innerHTML = `Enlever une réponse <span class="tre"></span> ${HELP_CUT}`;
+  $('helpCut').disabled = n < HELP_CUT || wrong.length < 2 || c.hinted;
+  $('helpCut').setAttribute('aria-label', `Enlever une réponse, ${HELP_CUT} trésors`);
+}
+$('helpHint').onclick = () => {
+  const c = pzHelp; if (!c || pzLocked || c.hinted || prog.bag.n < HELP_HINT) return;
+  prog.bag.n -= HELP_HINT; c.hinted = true; pzErrs = Math.max(pzErrs, 1);
+  c.good.forEach(g => g.classList.add('hint')); SFX.key(); say('Regarde la réponse qui brille !'); save(); renderHelp();
+};
+$('helpCut').onclick = () => {
+  const c = pzHelp; if (!c || pzLocked || prog.bag.n < HELP_CUT) return;
+  const wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b)); if (wrong.length < 2) return;
+  prog.bag.n -= HELP_CUT; pzErrs = Math.max(pzErrs, 1);
+  const b = pick(wrong); b.disabled = true; b.classList.add('gone'); SFX.pop(); save(); renderHelp();
+};
 function choicePuzzle(o) {
   pz.title.textContent = o.title; pz.visual.innerHTML = o.visual; pz.choices.innerHTML = '';
-  let errs = 0; const good = [];
+  let errs = 0; const good = [], btns = [];
+  pzHelp = { good, btns, hinted: false };
   o.choices.forEach(ch => {
     const b = document.createElement('button');
     b.className = 'choice'; b.innerHTML = ch.html;
@@ -1805,10 +1929,11 @@ function choicePuzzle(o) {
     b.onclick = () => {
       if (pzLocked || b.disabled) return;
       if (ch.ok) { b.classList.add('good'); solved(o.win); }
-      else { errs++; oops(b, errs, n => { if (n >= 2) good.forEach(g => g.classList.add('hint')); }); }
+      else { errs++; oops(b, errs, n => { if (n >= 2) good.forEach(g => g.classList.add('hint')); }); renderHelp(); }
     };
-    pz.choices.appendChild(b);
+    pz.choices.appendChild(b); btns.push(b);
   });
+  renderHelp();
   currentSay = o.say; say(o.say);
 }
 const PUZZLES = {
@@ -2243,7 +2368,7 @@ function varyType(type) {
   return pick(fresh.length ? fresh : pool);
 }
 function openPuzzle(g) {
-  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzKey = null; pzId++; clearKeys();
+  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true; clearKeys();
   $('puzzle').hidden = false;
   let type = g.type;
   if (type === 'order' && lv('mots') <= 2) type = 'first';
@@ -2424,7 +2549,7 @@ function importCode(code) {
     const bytes = Uint8Array.from(atob(c.slice(CODE_PREFIX.length)), ch => ch.charCodeAt(0));
     const s = JSON.parse(new TextDecoder().decode(bytes));
     if (!s || typeof s !== 'object' || !s.worlds) return false;
-    prog = cleanProg({ ...s, voice: prog.voice, sound: prog.sound, touch: prog.touch }); save();
+    prog = cleanProg({ ...s, voice: prog.voice, sound: prog.sound, touch: prog.touch }); applySkins(); save();
     return true;
   } catch (e) { return false; }
 }
@@ -2478,6 +2603,7 @@ function levelDone() {
   $('doneText').textContent = lastLevel
     ? `Tu as retrouvé tous les œufs ! Tu as aussi ramassé ${fruitCount} ${sp.item}.`
     : `Tu as retrouvé les 3 œufs de ${levels[i].name.toLowerCase()} et ramassé ${fruitCount} ${sp.item}.`;
+  $('doneText').textContent += ` Ton sac : ${prog.bag.n} trésor${prog.bag.n > 1 ? 's' : ''}.` + (L.gotFossil ? ' Et un fossile pour ton album !' : '');
   $('doneNext').hidden = lastLevel;
   const h = $('hatch'); h.innerHTML = '';
   for (let k = 0; k < 3; k++) {
@@ -2516,6 +2642,7 @@ function renderMenu() {
   $('touchStick').setAttribute('aria-pressed', prog.touch !== 'tap');
   $('touchTap').setAttribute('aria-pressed', prog.touch === 'tap');
   renderContinue();
+  renderShop();
   const sp = SPECIES[prog.world], levels = WORLDS[prog.world], w = prog.worlds[prog.world];
   $('worldTitle').textContent = `L'aventure du ${sp.name}`;
   const lv = $('levels'); lv.innerHTML = '';
@@ -2537,6 +2664,49 @@ function renderMenu() {
     n.appendChild(s);
   }
   setSoundIcons();
+}
+const FOSSIL_SVG = (() => {
+  let d = ''; for (let a = 0; a < Math.PI * 5; a += .25) { const r = 15 * (1 - a / (Math.PI * 5.3)); d += `${a ? 'L' : 'M'}${(22 + Math.cos(a) * r).toFixed(1)} ${(22 + Math.sin(a) * r).toFixed(1)}`; }
+  return `<svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18" fill="#d9c9a3" stroke="#1d2b22" stroke-width="3"/><path d="${d}" fill="none" stroke="#1d2b22" stroke-width="2"/></svg>`;
+})();
+function shopItem(html, label, pressed, disabled, onclick) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'it'; b.innerHTML = html;
+  b.setAttribute('aria-label', label); if (pressed !== null) b.setAttribute('aria-pressed', pressed); b.disabled = disabled; b.onclick = onclick;
+  return b;
+}
+function buy(price, fn, msg) { if (prog.bag.n < price) return; audio(); prog.bag.n -= price; fn(); SFX.yay(); say(msg); save(); renderMenu(); }
+function renderShop() {
+  const n = prog.bag.n, w = prog.world, sp = SPECIES[w], tre = '<span class="tre"></span>';
+  $('bagText').textContent = `Tu as ${n} trésor${n > 1 ? 's' : ''}. Chaque fruit et chaque perle que tu ramasses va dans ton sac.`;
+  const pw = $('shopPowers'); pw.innerHTML = '';
+  Object.entries(POWERS).forEach(([k, po]) => {
+    const have = prog.bag.power[k];
+    pw.appendChild(shopItem(`${IC[k]}${po.name}<small>${po.text}</small><small>Tu en as ${have}</small><span class="price">${tre} ${po.price}</span>`,
+      `Acheter : ${po.name}, ${po.price} trésors. Tu en as ${have}.`, null, n < po.price,
+      () => buy(po.price, () => { prog.bag.power[k]++; }, `${po.name} ! Il servira au prochain endroit.`)));
+  });
+  $('skinTitle').textContent = `Les couleurs du ${sp.name}`;
+  const sk = $('shopSkins'); sk.innerHTML = '';
+  [{ id: 'base', name: "Couleur d'origine", price: 0, pal: {} }, ...SKINS[w]].forEach(x => {
+    const owned = x.id === 'base' || prog.bag.owned[`${w}:${x.id}`], on = prog.bag.skin[w] === x.id;
+    const it = shopItem(`${x.name}<span class="price">${on ? 'Choisi' : owned ? 'Mettre' : `${tre} ${x.price}`}</span>`,
+      on ? `${x.name}, choisi` : owned ? `Mettre : ${x.name}` : `Acheter : ${x.name}, ${x.price} trésors`, on, !owned && n < x.price,
+      () => {
+        if (owned) { audio(); prog.bag.skin[w] = x.id; applySkins(); save(); say(x.name); renderMenu(); return; }
+        buy(x.price, () => { prog.bag.owned[`${w}:${x.id}`] = true; prog.bag.skin[w] = x.id; applySkins(); }, `Nouvelle couleur : ${x.name} !`);
+      });
+    it.prepend(babyCanvas({ ...sp, pal: { ...sp.base, ...x.pal } }, 120, 84));
+    sk.appendChild(it);
+  });
+  const fl = $('fossilList'); fl.innerHTML = '';
+  let found = 0, total = 0;
+  ORDER.forEach(k => WORLDS[k].forEach((d, i) => {
+    const got = !!prog.bag.fossils[`${k}-${i}`]; total++; if (got) found++;
+    const el = document.createElement('div'); el.className = 'fos' + (got ? '' : ' off');
+    el.innerHTML = `${FOSSIL_SVG}<span>${got ? d.name : '?'}</span>`; el.setAttribute('aria-label', got ? `Fossile trouvé : ${d.name}` : 'Fossile pas encore trouvé');
+    fl.appendChild(el);
+  }));
+  $('fossilText').textContent = `${found} fossile${found > 1 ? 's' : ''} sur ${total}. Chaque endroit en cache un : il brille !`;
 }
 function renderContinue() {
   const r = prog.run, btn = $('continueBtn');
@@ -2584,6 +2754,7 @@ function snapshotRun() {
     broken: L.broken.slice(), fruit: fruitCount,
     x: Math.round(pos.x), y: Math.round(pos.y), cam: L.mode === 'shmup' ? Math.round(camX) : null,
     stars: L.gates.map(g => g.stars || 0),
+    magnet: !!L.magnet, shield: !!L.shield,
   };
 }
 function autosave(show = false) {
@@ -2617,9 +2788,18 @@ function startLevel(worldKey, i, run = null) {
   MODES[sp.mode].build(d);
   L.baseItems = L.items.length;
   if (run) restoreRun(run);
+  // Un fossile par endroit, tant qu'il n'a pas été trouvé.
+  const fi = Math.floor(L.baseItems * .6);
+  if (!prog.bag.fossils[`${worldKey}-${i}`] && L.items[fi] && !L.items[fi].taken) L.items[fi].fossil = true;
+  // Pouvoirs : pris dans le sac au début d'un nouvel endroit. Le bouclier ne sert qu'en vol et sous l'eau.
+  if (run) { L.magnet = run.magnet; L.shield = run.shield; }
+  else Object.keys(POWERS).forEach(k => {
+    if (prog.bag.power[k] > 0 && (k !== 'shield' || sp.mode === 'shmup' || sp.mode === 'swim')) { prog.bag.power[k]--; L[k] = true; }
+  });
   L.oy = MODES[sp.mode].oy();
   $('menu').hidden = true; $('done').hidden = true; $('puzzle').hidden = true;
   $('hud').hidden = false; $('hudFruit').textContent = fruitCount; renderHudEggs();
+  $('hudPow').innerHTML = (L.magnet ? IC.magnet : '') + (L.shield ? IC.shield : '');
   $('hudIcon').className = sp.item === 'perles' ? 'pearl' : 'berry';
   const hint = $('keysHint'); hint.innerHTML = HINTS[sp.mode]; hint.className = 'keys ' + sp.mode; hint.hidden = false;
   $('act').textContent = sp.act; $('act').setAttribute('aria-label', sp.actLabel);

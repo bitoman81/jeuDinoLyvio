@@ -35,6 +35,16 @@ Chaque compétence (compter, additions, soustractions, multiplications, comparer
 
 Dans l'espace parents, on voit le niveau de chaque compétence et on peut le changer.
 
+## Le sac et la boutique
+
+Les fruits et les perles ramassés vont dans le sac (les « trésors ») et servent à :
+
+- **pendant une énigme** : un indice (5 trésors) ou enlever une mauvaise réponse (10). Une énigme aidée rapporte 2 étoiles au plus ;
+- **les pouvoirs** (12 trésors) : l'aimant attire les objets proches, le bouclier protège des cailloux volants et des méduses. Un pouvoir sert pendant tout le prochain endroit ;
+- **les couleurs** : 3 couleurs à acheter pour chaque dinosaure.
+
+Chaque endroit cache aussi un **fossile** qui brille ; on les collectionne dans un album.
+
 ## Espace parents
 
 Depuis le menu, on ajoute ses propres calculs (`5x5`, `12+8`, `18:3`...), ses propres mots (lus comme une dictée) et on choisit les tables de multiplication. Ils sont tirés au sort dans le niveau Expert.
