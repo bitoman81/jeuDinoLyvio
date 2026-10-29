@@ -114,6 +114,21 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 - Un **monde final** qui réunit les 4 animaux, débloqué avec les 4 morceaux de carte.
 - Les niveaux restent décrits dans `WORLDS` : une nouvelle entrée suffit pour ajouter un niveau, sans toucher au code des modes de jeu.
 
+## Étape 8 - Statistiques pour les parents
+
+Dans l'espace parents, pour suivre les progrès de l'enfant.
+
+- **Tableau par famille d'énigmes** (une ligne par compétence : compter, additions, lettres, heure…) :
+  - niveau actuel, de 1 à 10 ;
+  - nombre d'énigmes faites ;
+  - part des réussites du premier coup ;
+  - nombre moyen d'erreurs ;
+  - dernière fois jouée ;
+  - tendance sur les 7 derniers jours : monte, stable ou descend.
+- **Courbe d'évolution du niveau** : une ligne par compétence, le niveau de 1 à 10 en hauteur et les jours en largeur. On peut afficher toutes les compétences ou une seule, sur 7 jours, 30 jours ou depuis le début. La courbe est dessinée par le jeu lui-même, sans bibliothèque.
+- **Données enregistrées** : un résumé par jour et par compétence (énigmes faites, réussites du premier coup, erreurs, niveau en fin de journée), pour rester léger dans la mémoire du navigateur. Ce résumé fait partie du code de sauvegarde.
+- **Faire l'enregistrement le plus tôt possible**, même avant l'écran des statistiques, pour avoir déjà de l'historique à afficher.
+
 ## Organisation technique
 
 - Le jeu tient en un seul fichier, `index.html`, d'environ 119 Ko. Avec tout ce contenu, il passera à environ 300 Ko. Deux solutions :
@@ -136,3 +151,4 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 - [ ] Étape 5 - Énigmes de type jeu (labyrinthe, puzzles, mémoire...)
 - [ ] Étape 6 - Sac, objets utiles et boutique du nid
 - [ ] Étape 7 - Plus de niveaux, niveaux bonus et monde final
+- [ ] Étape 8 - Statistiques pour les parents : tableau par famille et courbe du niveau
