@@ -19,6 +19,8 @@ Chaque animal a sa propre façon de jouer et cherche les œufs de sa famille, ga
 
 Compter, additionner, soustraire, multiplier, comparer, suites de couleurs et de nombres, pair ou impair, compter les pièces d'euro, lire l'heure, trouver l'intrus, lire un mot, première lettre, lettre manquante, pendu, lettres à remettre dans l'ordre. Toutes les consignes sont lues à voix haute.
 
+Et des jeux de réflexion : labyrinthe, taquin, mémoire, points à relier, sudoku des formes, ombres.
+
 Chaque pierre tire au sort parmi des énigmes voisines, sans jamais donner deux fois de suite la même. 119 mots, rangés par thème ; un mot ne revient pas avant que les autres soient passés.
 
 Trois niveaux de départ : **Petit**, **Grand** et **Expert** (multiplications et énigmes des parents).

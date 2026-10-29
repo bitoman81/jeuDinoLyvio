@@ -140,6 +140,29 @@ h1 span{color:var(--sun)}
 .coin.c10{width:38px;height:38px}
 .shape{width:60px;height:60px}
 .choice .wd{font-size:28px;letter-spacing:.04em}
+.maze{width:clamp(150px,46vh,300px);height:clamp(150px,46vh,300px)}
+.choice.arrow{font-family:var(--body);font-weight:700}
+.slide{display:grid;gap:6px;--t:clamp(46px,13vh,72px)}
+.slide button{width:var(--t);height:var(--t);border-radius:14px;border:4px solid var(--ink);box-shadow:0 4px 0 var(--ink);font:400 calc(var(--t) * .5) var(--display);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);padding:0}
+.slide button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.mcard{--m:clamp(48px,14vh,72px);width:var(--m);height:var(--m);border-radius:14px;border:4px solid var(--ink);box-shadow:0 4px 0 var(--ink);background:var(--leaf) radial-gradient(circle,rgba(255,255,255,.3) 2px,transparent 3px) 0 0/12px 12px;padding:4px;display:grid;place-items:center}
+.mcard svg{width:100%;height:100%;visibility:hidden}
+.mcard.up{background:#fff}
+.mcard.up svg{visibility:visible}
+.mcard.done{border-color:var(--leaf-deep);box-shadow:0 4px 0 var(--leaf-deep);background:#e3f4df}
+.dots{width:clamp(160px,50vh,280px);height:clamp(160px,50vh,280px)}
+.dots g{cursor:pointer}
+.sdk{--c:clamp(34px,9.5vh,60px);display:grid;grid-template-columns:repeat(4,var(--c));gap:2px;background:var(--ink);border:4px solid var(--ink);border-radius:12px;overflow:hidden}
+.sdk button{width:var(--c);height:var(--c);background:#fff;border:0;padding:4px;display:grid;place-items:center}
+.sdk button.br{margin-right:3px}
+.sdk button.bb{margin-bottom:3px}
+.sdk button.given{background:#efe6cf;cursor:default}
+.sdk button.sel{background:#ffe1a3;box-shadow:inset 0 0 0 3px var(--sun)}
+.sdk button.bad{animation:shake .4s}
+.sdk .shape{width:80%;height:80%}
+.choice.key .shape{width:40px;height:40px}
+.shadow{width:72px;height:72px;filter:brightness(0);opacity:.85}
+.shadow.flip{transform:scaleX(-1)}
 .star{width:20px;height:20px}
 .star.off{opacity:.25}
 .stars{display:flex;gap:6px;justify-content:center}
@@ -540,6 +563,14 @@ const COLORS = [{ n: 'rouge', f: 'rouge', c: '#e5483b' }, { n: 'bleu', f: 'bleue
 const SHAPES = { rond: ['un rond', 0, '<circle cx="30" cy="30" r="22"/>'], carre: ['un carré', 0, '<rect x="9" y="9" width="42" height="42" rx="4"/>'], triangle: ['un triangle', 0, '<path d="M30 7L54 51H6Z"/>'], etoile: ['une étoile', 1, '<path d="M30 5l7 15 16 2-12 11 3 16-14-8-14 8 3-16L7 22l16-2z"/>'] };
 const shapeSvg = (sh, col, s = 1) => `<svg viewBox="0 0 60 60" class="shape" style="transform:scale(${s})" aria-hidden="true"><g fill="${col}" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round">${SHAPES[sh][2]}</g></svg>`;
 const shapeName = (sh, c) => `${SHAPES[sh][0]} ${SHAPES[sh][1] ? c.f : c.n}`;
+// Dessins à relier par des points (repère 100 x 100).
+const DOT_SHAPES = {
+  maison: ['une maison', [[22, 88], [22, 46], [50, 16], [78, 46], [78, 88]]],
+  poisson: ['un poisson', [[10, 52], [30, 32], [58, 28], [76, 42], [92, 26], [92, 78], [76, 62], [58, 76], [30, 72]]],
+  etoile: ['une étoile', Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 17 : 40, a = (-90 + i * 36) * Math.PI / 180; return [Math.round(50 + r * Math.cos(a)), Math.round(54 + r * Math.sin(a))]; })],
+  sapin: ['un sapin', [[50, 10], [72, 38], [62, 38], [82, 66], [58, 66], [58, 90], [42, 90], [42, 66], [18, 66], [38, 38], [28, 38]]],
+  coeur: ['un cœur', Array.from({ length: 12 }, (_, i) => { const t = i / 12 * Math.PI * 2; return [Math.round(50 + 2.5 * 16 * Math.sin(t) ** 3), Math.round(46 - 2.5 * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)))]; })],
+};
 // Pièces d'euro, en centimes.
 const COINS = { 200: ['2€', '#d9d9d9', '#f5c518'], 100: ['1€', '#f5c518', '#d9d9d9'], 50: ['50c', '#e8b04a', '#e8b04a'], 20: ['20c', '#e8b04a', '#e8b04a'], 10: ['10c', '#c8873a', '#c8873a'] };
 const coinSvg = v => { const [t, ring, mid] = COINS[v]; return `<svg viewBox="0 0 64 64" class="coin c${v}" data-v="${v}" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="${ring}" stroke="#1d2b22" stroke-width="3"/><circle cx="32" cy="32" r="19" fill="${mid}" stroke="rgba(29,43,34,.35)" stroke-width="2"/><text x="32" y="39" text-anchor="middle" font-size="${t.length > 2 ? 15 : 19}" font-family="Lilita One, sans-serif" fill="#1d2b22">${t}</text></svg>`; };
@@ -585,11 +616,12 @@ const SKILLS = {
   mots: { name: 'Écrire les mots', up: 'pour écrire les mots' },
   lire: { name: 'Lire des mots', up: 'pour lire' },
   heure: { name: "Lire l'heure", up: "pour lire l'heure" },
-  logique: { name: "Trouver l'intrus", up: "pour trouver l'intrus" },
+  logique: { name: 'Logique et jeux', up: 'en logique' },
 };
 const SKILL_START = { petit: 1, grand: 4, expert: 7 }, MAX_LVL = 10;
 const TYPE_SKILL = { count: 'count', add: 'add', sub: 'sub', mult: 'mult', compare: 'compare', sequence: 'suite', first: 'lettres', missing: 'lettres', hangman: 'mots', order: 'mots',
-  numseq: 'suite', parity: 'count', coins: 'add', clock: 'heure', intrus: 'logique', wordpic: 'lire' };
+  numseq: 'suite', parity: 'count', coins: 'add', clock: 'heure', intrus: 'logique', wordpic: 'lire',
+  maze: 'logique', slide: 'logique', memory: 'logique', sudoku: 'logique', ombres: 'logique', dots: 'count' };
 
 /* ---------- Sauvegarde ----------
    v2 ajoute la partie en cours (prog.run) pour reprendre là où on s'est arrêté.
@@ -608,7 +640,7 @@ function cleanRun(r) {
   };
 }
 function cleanProg(s) {
-  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', touch: 'stick', worlds: {}, skills: {}, run: null, savedAt: 0 };
+  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', touch: 'stick', worlds: {}, skills: {}, stats: {}, run: null, savedAt: 0 };
   if (s && typeof s === 'object') {
     if (s.eggs && !s.worlds) s.worlds = { rex: { unlocked: s.unlocked || 1, eggs: s.eggs } };
     ['world', 'diff', 'voice', 'savedAt'].forEach(k => { if (s[k] !== undefined) p[k] = s[k]; });
@@ -617,6 +649,12 @@ function cleanProg(s) {
     if (s.worlds && typeof s.worlds === 'object') p.worlds = s.worlds;
     if (s.skills && typeof s.skills === 'object') p.skills = s.skills;
     p.run = cleanRun(s.run);
+    // Statistiques : 400 jours au plus, compétences connues seulement.
+    if (s.stats && typeof s.stats === 'object') Object.keys(s.stats).filter(d => /^\d{4}-\d\d-\d\d$/.test(d)).sort().slice(-400).forEach(d => {
+      const day = {};
+      Object.keys(SKILLS).forEach(k => { const r = s.stats[d] && s.stats[d][k]; if (Array.isArray(r) && r.length === 4 && r.every(v => isInt(v) && v >= 0)) day[k] = [r[0], Math.min(r[1], r[0]), r[2], clamp(r[3], 1, MAX_LVL)]; });
+      if (Object.keys(day).length) p.stats[d] = day;
+    });
   }
   ORDER.forEach(k => {
     const n = WORLDS[k].length, w = p.worlds[k] || {};
@@ -1689,7 +1727,10 @@ const TIER = {
 };
 const tier = (key, k) => TIER[key][k - 1];
 const nChoices = k => k <= 3 ? 3 : 4;
-let pzErrs = 0, pzSkill = null, pzStars = 0;
+let pzErrs = 0, pzSkill = null, pzStars = 0, pzKey = null, pzId = 0;
+// Énigmes de jeu : les étoiles viennent du nombre de coups (ou des erreurs), calculé par l'énigme.
+function gameDone(errs, win) { pzErrs = errs; solved(win); }
+window.addEventListener('keydown', e => { if (state === 'puzzle' && pzKey && !pzLocked && pzKey(e.code)) e.preventDefault(); });
 // Un sac de mots par palier : un mot ne revient pas avant que tous les autres soient sortis.
 // Niveaux 1 à 3 : mots courts ; 4 à 6 : jusqu'à 6 lettres ; 7 et plus : tous les mots.
 const wordBags = {};
@@ -1729,10 +1770,19 @@ function learn(k, errs) {
   if (++s.bad >= 2) { s.bad = 0; if (s.lvl > 1) s.lvl--; }
   return '';
 }
+/* Statistiques pour les parents : un résumé par jour et par compétence,
+   [énigmes réussies, dont du premier coup, erreurs, niveau en fin de journée]. */
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function record(k, errs) {
+  if (!k) return;
+  const day = prog.stats[today()] || (prog.stats[today()] = {}), r = day[k] || (day[k] = [0, 0, 0, 0]);
+  r[0]++; if (!errs) r[1]++; r[2] += errs; r[3] = prog.skills[k].lvl;
+}
 function solved(extra = '') {
   pzLocked = true; SFX.yay(); confetti();
   pzStars = pzErrs === 0 ? 3 : pzErrs === 1 ? 2 : 1;
   const up = learn(pzSkill, pzErrs);
+  record(pzSkill, pzErrs);
   const st = document.createElement('div'); st.className = 'pz-stars'; st.innerHTML = starsHtml(pzStars);
   st.setAttribute('role', 'img'); st.setAttribute('aria-label', `${pzStars} étoile${pzStars > 1 ? 's' : ''} sur 3`);
   pz.choices.appendChild(st);
@@ -1982,6 +2032,186 @@ const PUZZLES = {
       win: `C'est écrit ${w.toLowerCase()} !`,
     });
   },
+  // Labyrinthe : guider le bébé dino jusqu'à l'œuf. Étoiles selon le nombre de pas.
+  maze() {
+    const k = lv('logique'), n = [5, 5, 6, 6, 7, 7, 8, 8, 9, 9][k - 1], D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    // Labyrinthe creusé au hasard : un seul chemin entre deux cases. open[c][i] : passage vers le haut, la droite, le bas, la gauche.
+    const open = Array.from({ length: n * n }, () => [false, false, false, false]), seen = new Set([0]), stack = [0];
+    while (stack.length) {
+      const c = stack[stack.length - 1], x = c % n, y = (c / n) | 0;
+      const nb = D.map((d, i) => [i, x + d[0], y + d[1]]).filter(([, a, b]) => a >= 0 && b >= 0 && a < n && b < n && !seen.has(b * n + a));
+      if (!nb.length) { stack.pop(); continue; }
+      const [i, a, b] = pick(nb), c2 = b * n + a;
+      open[c][i] = open[c2][(i + 2) % 4] = true; seen.add(c2); stack.push(c2);
+    }
+    const goal = n * n - 1, dist = new Map([[0, 0]]), q = [0];
+    while (q.length) { const c = q.shift(); D.forEach((d, i) => { const c2 = c + d[0] + d[1] * n; if (open[c][i] && !dist.has(c2)) { dist.set(c2, dist.get(c) + 1); q.push(c2); } }); }
+    const best = dist.get(goal);
+    let pos = 0, moves = 0;
+    const draw = () => {
+      let walls = `M${n * 10} 0V${n * 10}H0`, cells = '';
+      for (let c = 0; c < n * n; c++) {
+        const x = (c % n) * 10, y = ((c / n) | 0) * 10;
+        if (!open[c][0]) walls += `M${x} ${y}h10`;
+        if (!open[c][3]) walls += `M${x} ${y}v10`;
+        cells += `<rect x="${x}" y="${y}" width="10" height="10" fill="transparent" data-c="${c}"/>`;
+      }
+      const px = (pos % n) * 10 + 5, py = ((pos / n) | 0) * 10 + 5, gx = (goal % n) * 10 + 5, gy = ((goal / n) | 0) * 10 + 5;
+      pz.visual.innerHTML = `<svg viewBox="-1 -1 ${n * 10 + 2} ${n * 10 + 2}" class="maze" role="img" aria-label="Labyrinthe"><rect x="0" y="0" width="${n * 10}" height="${n * 10}" fill="#fff"/>${cells}<path d="${walls}" stroke="#1d2b22" stroke-width="1.4" stroke-linecap="round" fill="none" pointer-events="none"/><ellipse cx="${gx}" cy="${gy}" rx="2.6" ry="3.3" fill="#fff4dc" stroke="#1d2b22" stroke-width=".8" pointer-events="none"/><g pointer-events="none"><circle cx="${px}" cy="${py}" r="3.4" fill="#5cb85c" stroke="#1d2b22" stroke-width=".8"/><circle cx="${px + 1.2}" cy="${py - .8}" r=".7" fill="#1d2b22"/></g></svg>`;
+      pz.visual.querySelector('svg').onclick = e => { const c = +e.target.dataset.c; const i = D.findIndex(d => pos % n + d[0] === c % n && ((pos / n) | 0) + d[1] === ((c / n) | 0)); if (i >= 0) go(i); };
+    };
+    const go = i => {
+      if (pzLocked) return;
+      if (!open[pos][i]) { SFX.bonk(); return; }
+      pos += D[i][0] + D[i][1] * n; moves++; SFX.key(); draw();
+      if (pos === goal) gameDone(moves <= best + 2 ? 0 : moves <= best * 2 ? 1 : 2, "Tu as trouvé l'œuf !");
+    };
+    pz.title.textContent = 'Le labyrinthe'; pz.choices.innerHTML = '';
+    draw();
+    [['←', 3, 'Gauche'], ['↑', 0, 'Haut'], ['↓', 2, 'Bas'], ['→', 1, 'Droite']].forEach(([t, i, lab]) => {
+      const b = document.createElement('button'); b.className = 'choice key arrow'; b.textContent = t; b.setAttribute('aria-label', lab);
+      b.onclick = () => go(i); pz.choices.appendChild(b);
+    });
+    pzKey = code => { const i = { ArrowUp: 0, KeyW: 0, KeyZ: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3, KeyQ: 3 }[code]; if (i === undefined) return false; go(i); return true; };
+    currentSay = "Aide le bébé dino à rejoindre l'œuf. Utilise les flèches, ou touche la case à côté de lui."; say(currentSay);
+  },
+  // Taquin : faire glisser les nombres pour les ranger. 2 x 2 au début, puis 3 x 3 de plus en plus mélangé.
+  slide() {
+    const k = lv('logique'), n = k <= 2 ? 2 : 3, S = n === 2 ? 6 : 6 + k * 3, last = n * n - 1;
+    const nbrs = e => [e - n, e + n, e % n ? e - 1 : -1, (e + 1) % n ? e + 1 : -1].filter(c => c >= 0 && c <= last);
+    const done = () => b.every((v, i) => v === (i === last ? 0 : i + 1));
+    let b, moves = 0;
+    do {
+      b = [...Array(last).keys()].map(i => i + 1).concat(0);
+      let prev = -1;
+      for (let s = 0; s < S; s++) { const e = b.indexOf(0), c = pick(nbrs(e).filter(x => x !== prev)); [b[e], b[c]] = [b[c], b[e]]; prev = e; }
+    } while (done());
+    const cols = ['#e5483b', '#2f7fe0', '#e0a526', '#3fa34d', '#b23a7a', '#ff8a2a', '#5a4c9a', '#1f8a8a'];
+    const draw = () => {
+      pz.visual.innerHTML = `<div class="slide" style="grid-template-columns:repeat(${n},var(--t))">${b.map((v, i) => v ? `<button type="button" data-i="${i}" style="background:${cols[v - 1]}">${v}</button>` : `<span class="empty"></span>`).join('')}</div>`;
+      pz.visual.querySelectorAll('.slide button').forEach(el => { el.onclick = () => tap(+el.dataset.i); });
+    };
+    const tap = i => {
+      if (pzLocked) return;
+      const e = b.indexOf(0);
+      if (!nbrs(e).includes(i)) { SFX.no(); return; }
+      [b[e], b[i]] = [b[i], b[e]]; moves++; SFX.key(); draw();
+      if (done()) gameDone(moves <= S + 2 ? 0 : moves <= S * 2 + 4 ? 1 : 2, 'Tout est bien rangé !');
+    };
+    pz.title.textContent = "Range les nombres dans l'ordre"; pz.choices.innerHTML = '';
+    draw();
+    currentSay = `Touche un nombre à côté de la case vide pour le faire glisser. Range-les de 1 à ${last}.`; say(currentSay);
+  },
+  // Mémoire : retrouver les paires d'images.
+  memory() {
+    const k = lv('logique'), pairs = k <= 2 ? 3 : k <= 5 ? 4 : k <= 8 ? 6 : 8, id = pzId;
+    const faces = shuffle(Object.keys(ICON)).slice(0, pairs), cards = shuffle([...faces, ...faces]);
+    let up = [], found = 0, misses = 0, busy = false;
+    pz.title.textContent = 'Le jeu de mémoire'; pz.visual.innerHTML = ''; pz.choices.innerHTML = '';
+    const els = cards.map((w, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mcard'; b.setAttribute('aria-label', `Carte ${i + 1}`);
+      b.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">${ICON[w]}</svg>`;
+      b.onclick = () => flip(i); pz.choices.appendChild(b); return b;
+    });
+    const flip = i => {
+      const b = els[i];
+      if (pzLocked || busy || b.classList.contains('up')) return;
+      b.classList.add('up'); b.setAttribute('aria-label', cards[i].toLowerCase()); SFX.key(); up.push(i);
+      if (up.length < 2) return;
+      const [a, c] = up; up = [];
+      if (cards[a] === cards[c]) {
+        els[a].classList.add('done'); els[c].classList.add('done');
+        if (++found === pairs) gameDone(misses <= pairs ? 0 : misses <= pairs * 2 ? 1 : 2, 'Tu as trouvé toutes les paires !');
+        else say(cards[a].toLowerCase());
+        return;
+      }
+      misses++; busy = true;
+      setTimeout(() => { if (id !== pzId) return; [a, c].forEach(j => { els[j].classList.remove('up'); els[j].setAttribute('aria-label', `Carte ${j + 1}`); }); busy = false; }, 900);
+    };
+    currentSay = 'Retourne deux cartes. Si elles sont pareilles, elles restent. Trouve toutes les paires !'; say(currentSay);
+  },
+  // Relier les points dans l'ordre, puis de 2 en 2 et de 5 en 5.
+  dots() {
+    const k = lv('count'), max = k <= 2 ? 5 : k <= 4 ? 9 : k <= 6 ? 10 : 12, step = k <= 6 ? 1 : k <= 8 ? 2 : 5;
+    const [name, pts] = pick(Object.values(DOT_SHAPES).filter(([, p]) => p.length <= max));
+    const nums = pts.map((_, i) => step * (i + 1));
+    let next = 0, misses = 0;
+    const draw = () => {
+      const done = next === pts.length, line = pts.slice(0, next).map(p => p.join(',')).join(' ');
+      const shape = done ? `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="#ffd23a" stroke="#1d2b22" stroke-width="2" stroke-linejoin="round"/>` : `<polyline points="${line}" fill="none" stroke="#1d2b22" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const dots = pts.map(([x, y], i) => `<g data-i="${i}"><circle cx="${x}" cy="${y}" r="8" fill="transparent"/><circle cx="${x}" cy="${y}" r="4" fill="${i < next ? '#1d2b22' : i === next && misses >= 2 ? '#ffb238' : '#2f7fe0'}" stroke="#1d2b22" stroke-width="1"/><text x="${x}" y="${y - 5}" text-anchor="middle" font-size="7" font-family="Lilita One, sans-serif" fill="#1d2b22">${nums[i]}</text></g>`).join('');
+      pz.visual.innerHTML = `<svg viewBox="0 0 100 100" class="dots" role="img" aria-label="Points à relier">${shape}${dots}</svg>`;
+      pz.visual.querySelectorAll('g[data-i]').forEach(g => { g.onclick = () => tap(+g.dataset.i); });
+    };
+    const tap = i => {
+      if (pzLocked || i < next) return;
+      if (i !== next) { pzErrs++; misses++; SFX.no(); say(`Cherche le ${nums[next]}.`); draw(); return; }
+      next++; misses = 0; SFX.key(); draw();
+      if (next === pts.length) gameDone(pzErrs, `C'est ${name} !`);
+    };
+    pz.title.textContent = "Relie les points dans l'ordre"; pz.choices.innerHTML = '';
+    draw();
+    currentSay = step === 1 ? "Touche les points dans l'ordre : 1, 2, 3…" : `Touche les points en comptant de ${step} en ${step} : ${step}, ${step * 2}, ${step * 3}…`; say(currentSay);
+  },
+  // Sudoku 4 x 4 avec des formes : chaque ligne, colonne et carré a les 4 formes une seule fois.
+  sudoku() {
+    const k = lv('logique'), holes = k <= 4 ? 3 : k <= 6 ? 4 : k <= 8 ? 6 : 8;
+    const base = [[0, 1, 2, 3], [2, 3, 0, 1], [1, 0, 3, 2], [3, 2, 1, 0]];
+    const ord = () => { const [a, b] = shuffle([[0, 1], [2, 3]]); return [...shuffle(a), ...shuffle(b)]; };
+    const rows = ord(), cols = ord(), sym = shuffle([0, 1, 2, 3]);
+    const sol = rows.flatMap(r => cols.map(c => sym[base[r][c]]));
+    const grid = sol.slice();
+    // On creuse des trous en gardant une seule solution possible.
+    const count = (g, lim = 2) => {
+      const i = g.indexOf(-1); if (i < 0) return 1;
+      let n = 0;
+      for (let v = 0; v < 4 && n < lim; v++) {
+        const r = (i / 4) | 0, c = i % 4, br = r - r % 2, bc = c - c % 2;
+        if (g.some((x, j) => x === v && ((j / 4 | 0) === r || j % 4 === c || ((j / 4 | 0) - (j / 4 | 0) % 2 === br && j % 4 - j % 4 % 2 === bc)))) continue;
+        g[i] = v; n += count(g, lim - n); g[i] = -1;
+      }
+      return n;
+    };
+    for (const i of shuffle([...Array(16).keys()])) {
+      if (grid.filter(v => v < 0).length >= holes) break;
+      const keep = grid[i]; grid[i] = -1;
+      if (count(grid.slice()) !== 1) grid[i] = keep;
+    }
+    const given = grid.map(v => v >= 0), SYM = [['rond', COLORS[0]], ['carre', COLORS[1]], ['triangle', COLORS[2]], ['etoile', COLORS[3]]];
+    let sel = grid.indexOf(-1);
+    const draw = () => {
+      pz.visual.innerHTML = `<div class="sdk">${grid.map((v, i) => `<button type="button" data-i="${i}" class="${given[i] ? 'given' : ''}${i === sel ? ' sel' : ''}${i % 4 === 1 ? ' br' : ''}${(i / 4 | 0) === 1 ? ' bb' : ''}" aria-label="${v >= 0 ? shapeName(...SYM[v]) : 'case vide'}"${given[i] ? ' disabled' : ''}>${v >= 0 ? shapeSvg(SYM[v][0], SYM[v][1].c) : ''}</button>`).join('')}</div>`;
+      pz.visual.querySelectorAll('.sdk button:not(.given)').forEach(el => { el.onclick = () => { if (grid[+el.dataset.i] < 0) { sel = +el.dataset.i; draw(); } }; });
+    };
+    const place = v => {
+      if (pzLocked || sel < 0) return;
+      if (sol[sel] !== v) {
+        pzErrs++; SFX.no(); say(pick(['Cette forme est déjà dans la ligne, la colonne ou le carré. Essaie une autre !', 'Regarde bien la ligne et la colonne.']));
+        const el = pz.visual.querySelector(`[data-i="${sel}"]`); el.classList.remove('bad'); void el.offsetWidth; el.classList.add('bad');
+        return;
+      }
+      grid[sel] = v; SFX.key();
+      sel = grid.indexOf(-1); draw();
+      if (sel < 0) gameDone(pzErrs, 'La grille est pleine !');
+    };
+    pz.title.textContent = 'Le sudoku des formes'; pz.choices.innerHTML = '';
+    draw();
+    SYM.forEach(([sh, c], v) => {
+      const b = document.createElement('button'); b.className = 'choice key'; b.innerHTML = shapeSvg(sh, c.c); b.setAttribute('aria-label', shapeName(sh, c));
+      b.onclick = () => place(v); pz.choices.appendChild(b);
+    });
+    currentSay = "Touche une case vide, puis la bonne forme. Chaque ligne, chaque colonne et chaque carré a les 4 formes, une seule fois."; say(currentSay);
+  },
+  // Ombres : quelle ombre va avec l'image ? Plus loin, certaines ombres sont retournées.
+  ombres() {
+    const k = lv('logique'), all = Object.keys(ICON), w = pick(all), n = nChoices(k);
+    choicePuzzle({
+      title: 'Quelle est son ombre ?', say: "Trouve l'ombre de l'image.",
+      visual: `<svg viewBox="0 0 100 100" class="pic" aria-hidden="true">${ICON[w]}</svg>`,
+      choices: shuffle([w, ...shuffle(all.filter(x => x !== w)).slice(0, n - 1)]).map(x => ({ html: `<svg viewBox="0 0 100 100" class="shadow${k >= 7 && Math.random() < .5 ? ' flip' : ''}" aria-hidden="true">${ICON[x]}</svg>`, ok: x === w, label: 'ombre ' + x.toLowerCase() })),
+      win: "C'est la bonne ombre !",
+    });
+  },
 };
 
 // Énigme écrite par les parents : un calcul ou un mot de leur liste.
@@ -1997,15 +2227,15 @@ function customPuzzle() {
 }
 // Chaque pierre a son type d'énigme ; on tire parmi les énigmes voisines pour varier.
 const FAMILY = {
-  count: ['count', 'count', 'parity', 'coins'],
+  count: ['count', 'count', 'parity', 'coins', 'dots'],
   add: ['add', 'add', 'coins', 'numseq'],
-  compare: ['compare', 'intrus', 'clock'],
-  sequence: ['sequence', 'numseq', 'intrus'],
+  compare: ['compare', 'compare', 'intrus', 'clock', 'memory', 'ombres'],
+  sequence: ['sequence', 'numseq', 'intrus', 'maze', 'slide', 'sudoku'],
   first: ['first', 'wordpic'],
   missing: ['missing', 'wordpic'],
   order: ['order', 'wordpic'],
 };
-const READY = { parity: () => lv('count') >= 5, coins: () => lv('add') >= 2 };
+const READY = { parity: () => lv('count') >= 5, coins: () => lv('add') >= 2, dots: () => lv('count') >= 2, slide: () => lv('logique') >= 3, sudoku: () => lv('logique') >= 5 };
 let lastType = null;
 function varyType(type) {
   const pool = (FAMILY[type] || [type]).filter(t => !READY[t] || READY[t]());
@@ -2013,7 +2243,7 @@ function varyType(type) {
   return pick(fresh.length ? fresh : pool);
 }
 function openPuzzle(g) {
-  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; clearKeys();
+  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzKey = null; pzId++; clearKeys();
   $('puzzle').hidden = false;
   let type = g.type;
   if (type === 'order' && lv('mots') <= 2) type = 'first';
