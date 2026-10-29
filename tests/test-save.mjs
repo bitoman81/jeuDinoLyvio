@@ -46,7 +46,7 @@ await wipe(`localStorage.clear(); localStorage.setItem('dino-explorateur-v1', JS
 await load();
 let p = await ev(`JSON.parse(JSON.stringify(prog))`);
 check('v1 reprise : monde, niveau, son', p.world === 'trike' && p.diff === 'grand' && p.sound === false, p);
-check('v1 reprise : œufs du T-Rex', p.worlds.rex.unlocked === 2 && JSON.stringify(p.worlds.rex.eggs) === '[3,1,0,0]', p.worlds.rex);
+check('v1 reprise : œufs du T-Rex', p.worlds.rex.unlocked === 2 && JSON.stringify(p.worlds.rex.eggs) === '[3,1,0,0,0,0,0]', p.worlds.rex);
 check('v1 reprise : pas de partie en cours', p.run === null && p.version === 2);
 check('v1 laissée intacte', await ev(`!!localStorage.getItem('dino-explorateur-v1')`));
 await ev(`save(); true`);

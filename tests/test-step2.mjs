@@ -46,7 +46,7 @@ await wipe(`localStorage.clear(); localStorage.setItem('dino-explorateur-v2', JS
 await load();
 let p = await ev(`JSON.parse(JSON.stringify(prog))`);
 check('sans compétences : départ Grand = 4', Object.values(p.skills).every(s => s.lvl === 4 && s.ok === 0 && s.bad === 0), p.skills);
-check('étoiles initialisées', JSON.stringify(p.worlds.rex.stars) === '[0,0,0,0]', p.worlds.rex);
+check('étoiles initialisées', JSON.stringify(p.worlds.rex.stars) === '[0,0,0,0,0,0,0]', p.worlds.rex);
 
 // 2. Règles de progression
 const lr = await ev(`(() => {
