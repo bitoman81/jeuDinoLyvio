@@ -129,6 +129,48 @@ Dans l'espace parents, pour suivre les progrès de l'enfant.
 - **Données enregistrées** : un résumé par jour et par compétence (énigmes faites, réussites du premier coup, erreurs, niveau en fin de journée), pour rester léger dans la mémoire du navigateur. Ce résumé fait partie du code de sauvegarde.
 - **Faire l'enregistrement le plus tôt possible**, même avant l'écran des statistiques, pour avoir déjà de l'historique à afficher.
 
+## Étape 9 - Version Nintendo Switch (Atmosphère)
+
+**But final : jouer sur une Switch avec Atmosphère**, comme une appli homebrew lancée depuis le menu homebrew (hbmenu).
+
+### Les deux façons de faire
+
+| | A. Navigateur intégré de la Switch | B. nx.js |
+|---|---|---|
+| Principe | Le jeu est rangé dans un fichier `.nro`. Atmosphère l'ouvre dans le navigateur intégré de la Switch, hors ligne (modèle : le projet nx-spa) | Moteur JavaScript fait pour la Switch : dessin sur canvas, manettes, écran tactile, son |
+| Ce qu'on garde du jeu | Presque tout : le jeu est une page web | Le dessin du jeu (canvas). Les menus, énigmes et espace parents (en HTML) sont à refaire en canvas |
+| Manettes | Pas documenté : à tester sur la console | Prévu par nx.js (boutons, tactile, mouvements) |
+| Travail | Faible à moyen | Gros (réécriture de l'interface) |
+
+**Recommandation : commencer par A**, et passer à B seulement si le test sur la console montre que les manettes ou le son ne marchent pas dans le navigateur.
+
+### Ce qu'on sait déjà (route A)
+- Il faut Atmosphère 0.8.5 ou plus récent (redirection des pages HTML homebrew vers `sdmc:/atmosphere/hbl_html`) et le système 7.0.0 ou plus récent. Avec le système 21.0.0 ou plus, il faut compiler avec libnx 4.10.0 ou plus.
+- Il faut lancer le menu homebrew **en mode application**, en gardant R appuyé en lançant un jeu. Depuis l'album, le navigateur ne s'ouvre pas de façon fiable.
+- Le moteur JavaScript du navigateur est ancien. Il refuse `const` en mode strict, donc il faudra une version du jeu traduite en ES5 par un outil de compilation (Babel par exemple).
+- Le navigateur de la Switch est basé sur WebKit et se présente comme `Nintendo Switch; WebApplet`. Le jeu peut donc savoir qu'il tourne sur la Switch.
+- La page peut parler au programme natif par `window.nx` (messages JSON). Ça servira pour la sauvegarde sur la carte SD si la mémoire du navigateur ne tient pas.
+
+### Ce qu'il faut tester sur la console (prototype d'abord)
+Une petite page de test, empaquetée comme nx-spa, qui vérifie :
+1. les Joy-Con et la manette Pro : touches du clavier, API Gamepad, ou seulement un curseur au stick ;
+2. l'écran tactile en mode portable ;
+3. la lecture à voix haute (`speechSynthesis`) : probablement absente, il faudra alors des fichiers son enregistrés à l'avance pour les consignes ;
+4. les sons du jeu (Web Audio) ;
+5. si `localStorage` est gardé entre deux lancements, sinon sauvegarde sur la carte SD par `window.nx` ;
+6. la fluidité du canvas (60 images par seconde ?).
+
+### À préparer dans le jeu dès maintenant (utile aussi sur ordinateur)
+- **Tout jouer à la manette ou au clavier**, sans souris ni doigt : se déplacer dans les menus, les énigmes et l'espace parents avec la croix, valider avec A, revenir avec B. Les manettes branchées sur un ordinateur passent par l'API Gamepad.
+- **Une seule couche pour la sauvegarde**, pour pouvoir changer d'endroit (navigateur ou carte SD) sans toucher au reste.
+- **La voix** : si la lecture à voix haute manque, utiliser des fichiers son préparés à l'avance.
+- **Le build** : un script qui produit la version Switch (ES5, fichiers dans `romfs:/webapp`) et le `.nro`.
+
+### Si la route A ne suffit pas
+Route B avec nx.js, ou Brewser (un moteur web pour Switch construit sur nx.js). Les menus seraient alors redessinés sur le canvas.
+
+Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/TooTallNate/nx.js), documentation libnx du navigateur (switchbrew.github.io/libnx), wiki Switchbrew.
+
 ## Organisation technique
 
 - Le jeu tient en un seul fichier, `index.html`, d'environ 119 Ko. Avec tout ce contenu, il passera à environ 300 Ko. Deux solutions :
@@ -152,3 +194,4 @@ Dans l'espace parents, pour suivre les progrès de l'enfant.
 - [ ] Étape 6 - Sac, objets utiles et boutique du nid
 - [ ] Étape 7 - Plus de niveaux, niveaux bonus et monde final
 - [ ] Étape 8 - Statistiques pour les parents : tableau par famille et courbe du niveau (enregistrement quotidien déjà en place)
+- [ ] Étape 9 - Version Nintendo Switch avec Atmosphère (prototype sur la console d'abord)
