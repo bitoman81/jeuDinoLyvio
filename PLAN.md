@@ -91,6 +91,8 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 - **Utiliser pendant une énigme** :
   - 5 fruits : afficher un indice (surligner la bonne réponse, comme après 2 erreurs aujourd'hui) ;
   - 10 fruits : retirer une mauvaise réponse.
+  - mots cachés et lettres à remettre dans l'ordre : 5 trésors pour recevoir une lettre, 10 pour faire briller les lettres une à une ;
+  - **éviter la frustration** : dans ces énigmes de mots, le jeu offre gratuitement une lettre toutes les 2 erreurs.
 - **Utiliser pendant le jeu** :
   - un bouclier contre les méduses et les cailloux ;
   - un aimant qui attire les fruits proches ;

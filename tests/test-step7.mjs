@@ -1,4 +1,4 @@
-// Étape 7 : nouveaux endroits, clé dorée, endroits secrets, carte au trésor et île secrète.
+// Étape 7 : nouveaux endroits, clé dorée, endroits secrets, carte au trésor et île secrète. Aide pour les mots.
 import { spawn } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -131,6 +131,34 @@ check('courant : le plésiosaure est poussé', cur.dir === -1 && cur.dy < -5, cu
 await ev(`startLevel('ptero', 3); cooldown = 99999; time = 2; true`);
 const wind = await ev(`(() => { player.y = 200; const y0 = player.y; for (let i = 0; i < 20; i++) { time += 1 / 60; MODES.shmup.step(); } return player.y - y0; })()`);
 check('vent : le ptérodactyle bouge tout seul', Math.abs(wind) > 5, wind);
+
+// 7. Aide pour les mots : lettres à acheter, et une lettre offerte toutes les 2 erreurs
+await ev(`showMenu(); prog.bag.n = 30; prog.skills.mots.lvl = 5; startLevel('rex', 0); cooldown = 99999; varyType = t => t; true`);
+await ev(`openPuzzle({ type: 'hangman', k: 0, x: 0, w: 1, eggY: 0 }); PUZZLES.hangman('LAPIN'); true`);
+let wh = await ev(`({ shown: !$('pzHelp').hidden, cut: $('helpCut').textContent, hint: $('helpHint').textContent, cutOn: !$('helpCut').disabled, hintOn: !$('helpHint').disabled })`);
+check('mot caché : aide proposée (donner une lettre, montrer les lettres)', wh.shown && wh.cut.includes('Donner une lettre') && wh.hint.includes('Montrer les lettres') && wh.cutOn && wh.hintOn, wh);
+await ev(`$('helpCut').click(); true`);
+wh = await ev(`({ n: prog.bag.n, found: [...document.querySelectorAll('#pzVisual .word span')].filter(s => s.textContent).length, errs: pzErrs })`);
+check('donner une lettre : 5 trésors, une lettre écrite', wh.n === 25 && wh.found === 1 && wh.errs === 1, wh);
+const wrong = await ev(`[...pz.choices.querySelectorAll('button.choice')].filter(b => !b.disabled && !'LAPIN'.includes(b.textContent)).map(b => b.textContent)`);
+await ev(`(() => { const bs = [...pz.choices.querySelectorAll('button.choice')]; bs.find(b => b.textContent === '${wrong[0]}').click(); return true; })()`);
+let f1 = await ev(`[...document.querySelectorAll('#pzVisual .word span')].filter(s => s.textContent).length`);
+await ev(`(() => { const bs = [...pz.choices.querySelectorAll('button.choice')]; bs.find(b => b.textContent === '${wrong[1]}').click(); return true; })()`);
+let f2 = await ev(`[...document.querySelectorAll('#pzVisual .word span')].filter(s => s.textContent).length`);
+check('2 erreurs : une lettre offerte gratuitement', f1 === 1 && f2 === 2 && await ev(`prog.bag.n === 25`), [f1, f2]);
+await ev(`$('helpHint').click(); true`);
+wh = await ev(`({ n: prog.bag.n, glow: [...pz.choices.querySelectorAll('button.choice.hint')].map(b => b.textContent) })`);
+check('montrer les lettres : 10 trésors, la lettre suivante brille', wh.n === 15 && wh.glow.length === 1 && 'LAPIN'.includes(wh.glow[0]), wh);
+await ev(`pz.choices.querySelector('button.choice.hint').click(); true`);
+check('après une bonne lettre, la suivante brille', await ev(`pz.choices.querySelectorAll('button.choice.hint').length === 1`));
+for (let k = 0; k < 4; k++) await ev(`(() => { const b = pz.choices.querySelector('button.choice.hint'); if (b) b.click(); return true; })()`);
+check('le mot se termine, 1 étoile', await ev(`pzLocked && pzStars === 1 && $('pzHelp').hidden`));
+await sleep(1800);
+await ev(`openPuzzle({ type: 'order', k: 1, x: 0, w: 1, eggY: 0 }); PUZZLES.order('LAPIN'); true`);
+check('lettres dans l’ordre : aide proposée aussi', await ev(`!$('pzHelp').hidden && $('helpCut').textContent.includes('Donner une lettre')`));
+await ev(`(() => { const b = [...pz.choices.querySelectorAll('button.choice')].find(x => x.textContent !== 'L'); b.click(); b.click(); return true; })()`);
+check('2 erreurs : la première lettre est posée pour lui', await ev(`document.querySelector('#pzVisual .word span').textContent === 'L'`));
+await ev(`$('pzBack').click(); true`);
 
 check('aucune erreur JavaScript', errors.length === 0, errors);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');

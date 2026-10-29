@@ -2123,30 +2123,40 @@ function oops(btn, errs, hintFn, msg) {
   if (hintFn) hintFn(errs);
 }
 /* Aide payée avec les trésors du sac : enlever une mauvaise réponse (2 étoiles au plus),
-   ou montrer la bonne réponse (1 étoile, l'énigme compte comme difficile). */
+   ou montrer la bonne réponse (1 étoile, l'énigme compte comme difficile).
+   Pour les mots (pzHelp.give) : donner une lettre, ou faire briller les lettres une à une. */
 let pzHelp = null;
 function renderHelp() {
   const c = pzHelp; $('pzHelp').hidden = !c || pzLocked;
   if (!c) return;
-  const n = prog.bag.n, wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b));
-  $('helpHint').innerHTML = `Montrer la réponse <span class="tre"></span> ${HELP_HINT}`;
+  const n = prog.bag.n, word = !!c.give, wrong = word ? [] : c.btns.filter(b => !b.disabled && !c.good.includes(b));
+  const hint = word ? 'Montrer les lettres' : 'Montrer la réponse', cut = word ? 'Donner une lettre' : 'Enlever une réponse';
+  $('helpHint').innerHTML = `${hint} <span class="tre"></span> ${HELP_HINT}`;
   $('helpHint').disabled = n < HELP_HINT || c.hinted;
-  $('helpHint').setAttribute('aria-label', `Montrer la réponse, ${HELP_HINT} trésors`);
-  $('helpCut').innerHTML = `Enlever une réponse <span class="tre"></span> ${HELP_CUT}`;
-  $('helpCut').disabled = n < HELP_CUT || wrong.length < 2 || c.hinted;
-  $('helpCut').setAttribute('aria-label', `Enlever une réponse, ${HELP_CUT} trésors`);
+  $('helpHint').setAttribute('aria-label', `${hint}, ${HELP_HINT} trésors`);
+  $('helpCut').innerHTML = `${cut} <span class="tre"></span> ${HELP_CUT}`;
+  $('helpCut').disabled = n < HELP_CUT || c.hinted || (word ? c.left() < 2 : wrong.length < 2);
+  $('helpCut').setAttribute('aria-label', `${cut}, ${HELP_CUT} trésors`);
 }
 $('helpHint').onclick = () => {
   const c = pzHelp; if (!c || pzLocked || c.hinted || prog.bag.n < HELP_HINT) return;
   prog.bag.n -= HELP_HINT; c.hinted = true; pzErrs = Math.max(pzErrs, 2);
-  c.good.forEach(g => g.classList.add('hint')); SFX.key(); say('Regarde la réponse qui brille !'); save(); renderHelp();
+  if (c.give) { c.glow(); say('Appuie sur la lettre qui brille !'); }
+  else { c.good.forEach(g => g.classList.add('hint')); say('Regarde la réponse qui brille !'); }
+  SFX.key(); save(); renderHelp();
 };
 $('helpCut').onclick = () => {
   const c = pzHelp; if (!c || pzLocked || prog.bag.n < HELP_CUT) return;
+  if (c.give) {
+    if (c.left() < 2) return;
+    prog.bag.n -= HELP_CUT; pzErrs = Math.max(pzErrs, 1); c.give(); save(); renderHelp(); return;
+  }
   const wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b)); if (wrong.length < 2) return;
   prog.bag.n -= HELP_CUT; pzErrs = Math.max(pzErrs, 1);
   const b = pick(wrong); b.disabled = true; b.classList.add('gone'); SFX.pop(); save(); renderHelp();
 };
+// Mots : toutes les 2 erreurs depuis la dernière bonne lettre, le jeu offre une lettre.
+const FREE_LETTER = 2;
 function choicePuzzle(o) {
   pz.title.textContent = o.title; pz.visual.innerHTML = o.visual; pz.choices.innerHTML = '';
   let errs = 0; const good = [], btns = [];
@@ -2266,24 +2276,34 @@ const PUZZLES = {
     pz.title.textContent = 'Le mot caché'; pz.choices.innerHTML = '';
     const draw = () => { pz.visual.innerHTML = pic(w) + `<div class="word">${letters.map((ch, i) => `<span>${found[i] ? ch : ''}</span>`).join('')}</div>`; };
     draw();
-    let errs = 0; const btns = {};
+    let errs = 0, miss = 0; const btns = {};
+    const next = () => letters.find((ch, i) => !found[i]);
+    const glow = () => { Object.values(btns).forEach(x => x.classList.remove('hint')); const l = next(); if (l) btns[l].classList.add('hint'); };
+    // Une bonne lettre, trouvée ou offerte
+    const take = (l, given) => {
+      const b = btns[l]; miss = 0;
+      letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
+      b.classList.remove('hint'); b.classList.add('good'); b.disabled = true; SFX.key(); draw();
+      if (found.every(Boolean)) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
+      say(given ? `Je te donne la lettre ${letterName(l)}.` : letterName(l));
+      if (pzHelp.hinted) glow();
+      renderHelp();
+    };
+    pzHelp = { hinted: false, give: () => take(next(), true), glow, left: () => new Set(letters.filter((ch, i) => !found[i])).size };
     pool.forEach(l => {
       const b = document.createElement('button'); b.className = 'choice key'; b.textContent = l; btns[l] = b;
       b.onclick = () => {
         if (pzLocked || b.disabled) return;
-        if (letters.includes(l)) {
-          letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
-          b.classList.add('good'); b.disabled = true; SFX.key(); draw();
-          if (found.every(Boolean)) solved(`Tu as écrit ${w.toLowerCase()} !`); else say(letterName(l));
-        } else {
-          errs++;
-          oops(b, errs, n => {
-            if (n >= 3) { const next = letters.find((ch, i) => !found[i]); if (next) btns[next].classList.add('hint'); say(`Le mot est ${w.toLowerCase()}. Cherche la lettre ${letterName(next)}.`); }
-          }, errs >= 3 ? ' ' : null);
+        if (letters.includes(l)) take(l);
+        else {
+          errs++; miss++;
+          oops(b, errs, null, miss >= FREE_LETTER ? ' ' : null);
+          if (miss >= FREE_LETTER) take(next(), true);
         }
       };
       pz.choices.appendChild(b);
     });
+    renderHelp();
     currentSay = ICON[w] ? "Trouve les lettres du mot caché. Regarde bien l'image !" : `Écris le mot ${w.toLowerCase()}.`; say(currentSay);
   },
   order(w = pickWord()) {
@@ -2293,23 +2313,32 @@ const PUZZLES = {
     const slots = letters.map(() => '');
     const draw = () => { pz.visual.innerHTML = pic(w) + `<div class="word">${slots.map(s => `<span>${s}</span>`).join('')}</div>`; };
     draw();
-    let pos = 0, errs = 0; const btns = [];
+    let pos = 0, miss = 0; const btns = [];
+    const nextBtn = () => btns.find(x => !x.classList.contains('gone') && x.textContent === letters[pos]);
+    const glow = () => { btns.forEach(x => x.classList.remove('hint')); const nb = nextBtn(); if (nb) nb.classList.add('hint'); };
+    // Une bonne lettre posée, trouvée ou offerte
+    const take = (b, given) => {
+      slots[pos] = letters[pos]; pos++; miss = 0; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
+      if (pos === letters.length) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
+      if (given) say(`Je te donne la lettre ${letterName(letters[pos - 1])}.`);
+      if (pzHelp.hinted) glow();
+      renderHelp();
+    };
+    pzHelp = { hinted: false, give: () => take(nextBtn(), true), glow, left: () => letters.length - pos };
     mixed.forEach(l => {
       const b = document.createElement('button'); b.className = 'choice key'; b.textContent = l; btns.push(b);
       b.onclick = () => {
         if (pzLocked || b.classList.contains('gone')) return;
-        if (l === letters[pos]) {
-          slots[pos] = l; pos++; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
-          if (pos === letters.length) solved(`Tu as écrit ${w.toLowerCase()} !`);
-        } else {
-          errs++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
+        if (l === letters[pos]) take(b);
+        else {
+          miss++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
           setTimeout(() => b.classList.remove('bad'), 450);
-          say('Essaie une autre lettre.');
-          if (errs >= 2) { const nb = btns.find(x => !x.classList.contains('gone') && x.textContent === letters[pos]); if (nb) nb.classList.add('hint'); }
+          if (miss >= FREE_LETTER) take(nextBtn(), true); else say('Essaie une autre lettre.');
         }
       };
       pz.choices.appendChild(b);
     });
+    renderHelp();
     currentSay = `Remets les lettres dans l'ordre pour écrire le mot ${w.toLowerCase()}.`; say(currentSay);
   },
   // Suite de nombres : le pas grandit avec le niveau, et peut descendre.
