@@ -138,6 +138,8 @@ Dans l'espace parents, pour suivre les progrès de l'enfant.
 - **Données enregistrées** : un résumé par jour et par compétence (énigmes faites, réussites du premier coup, erreurs, niveau en fin de journée), pour rester léger dans la mémoire du navigateur. Ce résumé fait partie du code de sauvegarde.
 - **Faire l'enregistrement le plus tôt possible**, même avant l'écran des statistiques, pour avoir déjà de l'historique à afficher.
 
+**Fait :** dans l'espace parents, un tableau (niveau, énigmes faites, part du premier coup, erreurs par énigme, dernière fois, tendance sur 7 jours) et une courbe dessinée par le jeu : toutes les compétences ou une seule, sur 7 jours, 30 jours ou depuis le début. Un jour sans énigme garde le niveau de la veille. Le tableau défile dans son cadre sur téléphone.
+
 ## Étape 9 - Version Nintendo Switch (Atmosphère)
 
 **But final : jouer sur une Switch avec Atmosphère**, comme une appli homebrew lancée depuis le menu homebrew (hbmenu).
@@ -208,5 +210,5 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 5 - Énigmes de type jeu (labyrinthe, taquin, mémoire, points, sudoku, ombres ; puzzle à pièces et symétrie à faire)
 - [x] Étape 6 - Sac, objets utiles et boutique du nid (clé dorée et morceaux de carte avec l'étape 7)
 - [x] Étape 7 - Plus de niveaux, endroits secrets et île secrète (interrupteurs à faire)
-- [ ] Étape 8 - Statistiques pour les parents : tableau par famille et courbe du niveau (enregistrement quotidien déjà en place)
+- [x] Étape 8 - Statistiques pour les parents : tableau par compétence et courbe du niveau
 - [ ] Étape 9 - Version Nintendo Switch avec Atmosphère (prototype sur la console d'abord)

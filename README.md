@@ -39,6 +39,8 @@ Chaque compétence (compter, additions, soustractions, multiplications, comparer
 
 Dans l'espace parents, on voit le niveau de chaque compétence et on peut le changer.
 
+L'espace parents montre aussi les progrès : pour chaque compétence, les énigmes faites, la part réussie du premier coup, les erreurs et la tendance de la semaine, avec une courbe du niveau sur 7 jours, 30 jours ou depuis le début.
+
 ## Le sac et la boutique
 
 Les fruits et les perles ramassés vont dans le sac (les « trésors ») et servent à :
