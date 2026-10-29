@@ -133,6 +133,12 @@ Dans l'espace parents, pour suivre les progrès de l'enfant.
 
 **But final : jouer sur une Switch avec Atmosphère**, comme une appli homebrew lancée depuis le menu homebrew (hbmenu).
 
+**Deux versions, faites à partir du même jeu :**
+- **la version PC**, celle d'aujourd'hui sur GitHub Pages : souris, clavier, manette branchée, grand écran (elle marche aussi sur téléphone et tablette) ;
+- **la version Switch**, faite **à la fin**, une fois les étapes 7 et 8 terminées : Joy-Con, écran de la console, fichier `.nro`.
+
+On garde un seul code. Un script de build produit la version Switch à partir de la version PC, et le jeu adapte son affichage et ses commandes selon l'endroit où il tourne.
+
 ### Les deux façons de faire
 
 | | A. Navigateur intégré de la Switch | B. nx.js |

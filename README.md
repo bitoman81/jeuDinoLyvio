@@ -39,7 +39,7 @@ Dans l'espace parents, on voit le niveau de chaque compétence et on peut le cha
 
 Les fruits et les perles ramassés vont dans le sac (les « trésors ») et servent à :
 
-- **pendant une énigme** : un indice (5 trésors) ou enlever une mauvaise réponse (10). Une énigme aidée rapporte 2 étoiles au plus ;
+- **pendant une énigme** : enlever une mauvaise réponse (5 trésors, 2 étoiles au plus) ou montrer la bonne réponse (10 trésors, 1 étoile) ;
 - **les pouvoirs** (12 trésors) : l'aimant attire les objets proches, le bouclier protège des cailloux volants et des méduses. Un pouvoir sert pendant tout le prochain endroit ;
 - **les couleurs** : 3 couleurs à acheter pour chaque dinosaure.
 

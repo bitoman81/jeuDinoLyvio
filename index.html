@@ -384,8 +384,8 @@ body,button{touch-action:manipulation}
       <div id="pzVisual" class="pz-visual"></div>
       <div id="pzChoices" class="pz-choices"></div>
       <div id="pzHelp" class="pz-help" hidden>
-        <button id="helpHint" class="help" type="button"></button>
         <button id="helpCut" class="help" type="button"></button>
+        <button id="helpHint" class="help" type="button"></button>
       </div>
       <button id="pzBack" class="ghost">Retour au jeu</button>
     </div>
@@ -494,7 +494,7 @@ const POWERS = {
   magnet: { name: 'Aimant', price: 12, text: 'attire les fruits et les perles proches' },
   shield: { name: 'Bouclier', price: 12, text: 'protège des cailloux volants et des méduses' },
 };
-const HELP_HINT = 5, HELP_CUT = 10;
+const HELP_CUT = 5, HELP_HINT = 10;
 // Applique la couleur choisie à chaque animal.
 function applySkins() {
   ORDER.forEach(w => {
@@ -1892,23 +1892,23 @@ function oops(btn, errs, hintFn, msg) {
   say(msg || pick(['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !']));
   if (hintFn) hintFn(errs);
 }
-/* Aide payée avec les trésors du sac : un indice, ou enlever une mauvaise réponse.
-   Une énigme aidée donne 2 étoiles au plus et ne fait pas monter le niveau. */
+/* Aide payée avec les trésors du sac : enlever une mauvaise réponse (2 étoiles au plus),
+   ou montrer la bonne réponse (1 étoile, l'énigme compte comme difficile). */
 let pzHelp = null;
 function renderHelp() {
   const c = pzHelp; $('pzHelp').hidden = !c || pzLocked;
   if (!c) return;
   const n = prog.bag.n, wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b));
-  $('helpHint').innerHTML = `Indice <span class="tre"></span> ${HELP_HINT}`;
+  $('helpHint').innerHTML = `Montrer la réponse <span class="tre"></span> ${HELP_HINT}`;
   $('helpHint').disabled = n < HELP_HINT || c.hinted;
-  $('helpHint').setAttribute('aria-label', `Indice, ${HELP_HINT} trésors`);
+  $('helpHint').setAttribute('aria-label', `Montrer la réponse, ${HELP_HINT} trésors`);
   $('helpCut').innerHTML = `Enlever une réponse <span class="tre"></span> ${HELP_CUT}`;
   $('helpCut').disabled = n < HELP_CUT || wrong.length < 2 || c.hinted;
   $('helpCut').setAttribute('aria-label', `Enlever une réponse, ${HELP_CUT} trésors`);
 }
 $('helpHint').onclick = () => {
   const c = pzHelp; if (!c || pzLocked || c.hinted || prog.bag.n < HELP_HINT) return;
-  prog.bag.n -= HELP_HINT; c.hinted = true; pzErrs = Math.max(pzErrs, 1);
+  prog.bag.n -= HELP_HINT; c.hinted = true; pzErrs = Math.max(pzErrs, 2);
   c.good.forEach(g => g.classList.add('hint')); SFX.key(); say('Regarde la réponse qui brille !'); save(); renderHelp();
 };
 $('helpCut').onclick = () => {
