@@ -62,6 +62,7 @@ h1 span{color:var(--sun)}
 .lvl b{font:400 34px var(--display);line-height:1;color:var(--leaf)}
 .lvl .nm{font-weight:700;font-size:18px;line-height:1.15}
 .lvl .eg{display:flex;gap:4px;margin-top:auto}
+.lvl .st{display:flex;gap:2px}
 .lvl[disabled]{background:#e7e2d4;color:#55544c;cursor:not-allowed;box-shadow:0 5px 0 #55544c;border-color:#55544c}
 .lvl[disabled] b{color:#55544c}
 .lvl:not([disabled]):active,.pick button:active,.seg button:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
@@ -119,6 +120,13 @@ h1 span{color:var(--sun)}
 .pz-visual{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;min-height:60px;font:400 clamp(30px,6vw,48px) var(--display)}
 .pic{width:clamp(84px,20vh,140px);height:clamp(84px,20vh,140px)}
 .mini{width:clamp(30px,6vh,44px);height:clamp(30px,6vh,44px)}
+.mini.off{opacity:.25}
+.star{width:20px;height:20px}
+.star.off{opacity:.25}
+.stars{display:flex;gap:6px;justify-content:center}
+.stars.big .star{width:44px;height:44px;animation:pop .6s}
+.pz-stars{flex-basis:100%;display:flex;gap:6px;justify-content:center;animation:pop .5s}
+.pz-stars .star{width:48px;height:48px}
 .group{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:260px}
 .word{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .word span{min-width:46px;height:60px;border-bottom:5px solid var(--ink);display:grid;place-items:center;font:400 44px var(--display)}
@@ -167,6 +175,13 @@ h1 span{color:var(--sun)}
 .tables{display:flex;flex-wrap:wrap;gap:8px}
 .tables button{width:52px;height:52px;border-radius:14px;border:3px solid var(--ink);background:#fff;font:400 22px var(--display);box-shadow:0 3px 0 var(--ink)}
 .tables button[aria-pressed="true"]{background:var(--sun)}
+.skills{display:flex;flex-direction:column;gap:8px}
+.skill{display:grid;grid-template-columns:minmax(0,1fr) minmax(48px,140px) 2.2ch 44px 44px;gap:10px;align-items:center;font-weight:700}
+.skill .bar{height:14px;border:3px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden}
+.skill .bar i{display:block;height:100%;background:var(--leaf)}
+.skill b{font:400 22px var(--display);text-align:center;font-variant-numeric:tabular-nums}
+.skill button{width:44px;height:44px;border-radius:12px;border:3px solid var(--ink);background:#fff;font:400 24px var(--display);box-shadow:0 3px 0 var(--ink);padding:0}
+.skill button:disabled{opacity:.35;cursor:default}
 .say-big{width:110px;height:110px;border-radius:50%;background:var(--sun);border:4px solid var(--ink);box-shadow:0 6px 0 var(--ink);display:grid;place-items:center}
 .say-big svg{width:56px;height:56px}
 .grp{display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;border:3px dashed #a0692e;border-radius:14px;max-width:150px;justify-content:center}
@@ -250,6 +265,7 @@ body,button{touch-action:manipulation}
       </section>
       <section class="block">
         <h2>Choisis ton niveau</h2>
+        <p class="sub">C'est le point de départ. Ensuite, le jeu s'adapte : quand tu réussis du premier coup, ça devient un peu plus dur.</p>
         <div class="seg">
           <button id="diffPetit">Petit<span>compter jusqu'à 5, mots de 3 et 4 lettres</span></button>
           <button id="diffGrand">Grand<span>compter jusqu'à 10, mots de 5 et 6 lettres</span></button>
@@ -292,6 +308,7 @@ body,button{touch-action:manipulation}
   <div id="done" class="screen dim" hidden>
     <div class="card">
       <h2 class="big">Bravo !</h2>
+      <div id="doneStars" class="stars big" role="img"></div>
       <p id="doneText"></p>
       <div id="hatch" class="hatch"></div>
       <div class="row">
@@ -336,6 +353,9 @@ body,button{touch-action:manipulation}
       <h3>Tables de multiplication</h3>
       <p>Les tables utilisées dans le niveau Expert.</p>
       <div class="tables" id="tableList"></div>
+      <h3>Niveau de chaque compétence</h3>
+      <p>Le jeu ajuste ces niveaux tout seul, de 1 à 10 : 3 réussites du premier coup de suite font monter d'un cran, 2 énigmes difficiles de suite font descendre d'un cran. Vous pouvez aussi les régler ici.</p>
+      <div class="skills" id="skillList"></div>
       <h3>Code de sauvegarde</h3>
       <p>La progression est enregistrée sur cet appareil. Pour la retrouver sur un autre appareil, copiez ce code puis collez-le dans l'espace parents de l'autre appareil. Vos calculs et vos mots ne sont pas dans le code.</p>
       <div class="field">
@@ -461,6 +481,8 @@ const pic = w => {
     : `<button type="button" class="say-big" data-say="1" aria-label="Écouter le mot">${IC.sound}</button>`;
 };
 const EGG_SVG = (cls = 'egg-i') => `<svg viewBox="0 0 40 50" class="${cls}" aria-hidden="true"><ellipse cx="20" cy="27" rx="16" ry="21" fill="#fff4dc" stroke="#1d2b22" stroke-width="3"/><circle cx="13" cy="22" r="3.5" fill="#8fd18f"/><circle cx="25" cy="34" r="4.5" fill="#8fd18f"/><circle cx="26" cy="15" r="2.5" fill="#8fd18f"/></svg>`;
+const STAR_SVG = on => `<svg viewBox="0 0 24 24" class="star${on ? '' : ' off'}" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z" fill="#ffd23a" stroke="#1d2b22" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const starsHtml = n => [0, 1, 2].map(i => STAR_SVG(i < n)).join('');
 const BONE_SVG = '<svg viewBox="0 0 60 32" class="mini" aria-hidden="true"><g stroke="#1d2b22" stroke-width="6"><rect x="12" y="11" width="36" height="10"/><circle cx="11" cy="9" r="6"/><circle cx="11" cy="23" r="6"/><circle cx="49" cy="9" r="6"/><circle cx="49" cy="23" r="6"/></g><g fill="#fff4dc"><rect x="12" y="11" width="36" height="10"/><circle cx="11" cy="9" r="6"/><circle cx="11" cy="23" r="6"/><circle cx="49" cy="9" r="6"/><circle cx="49" cy="23" r="6"/></g></svg>';
 const LEAF_SVG = '<svg viewBox="0 0 40 40" class="mini" aria-hidden="true"><path d="M6 34Q4 8 34 6Q36 32 6 34Z" fill="#3f9a4f" stroke="#1d2b22" stroke-width="3"/><path d="M9 31L29 11" stroke="#d4efb0" stroke-width="2.5"/></svg>';
 const COLORS = [{ n: 'rouge', c: '#e5483b' }, { n: 'bleu', c: '#2f7fe0' }, { n: 'jaune', c: '#f5c518' }, { n: 'vert', c: '#3fa34d' }];
@@ -481,6 +503,21 @@ const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
+/* ---------- Compétences ----------
+   Chaque compétence a son niveau, de 1 à 10. Le niveau choisi dans le menu donne le point de départ. */
+const SKILLS = {
+  count: { name: 'Compter', up: 'pour compter' },
+  add: { name: 'Additions', up: 'en additions' },
+  sub: { name: 'Soustractions', up: 'en soustractions' },
+  mult: { name: 'Multiplications', up: 'en multiplications' },
+  compare: { name: 'Comparer', up: 'pour comparer' },
+  suite: { name: 'Suites de couleurs', up: 'avec les suites de couleurs' },
+  lettres: { name: 'Lettres', up: 'avec les lettres' },
+  mots: { name: 'Écrire les mots', up: 'pour écrire les mots' },
+};
+const SKILL_START = { petit: 1, grand: 4, expert: 7 }, MAX_LVL = 10;
+const TYPE_SKILL = { count: 'count', add: 'add', sub: 'sub', mult: 'mult', compare: 'compare', sequence: 'suite', first: 'lettres', missing: 'lettres', hangman: 'mots', order: 'mots' };
+
 /* ---------- Sauvegarde ----------
    v2 ajoute la partie en cours (prog.run) pour reprendre là où on s'est arrêté.
    On lit la v1 si la v2 n'existe pas encore, sans l'effacer. */
@@ -494,23 +531,33 @@ function cleanRun(r) {
     world: r.world, i: r.i, gates: nums(r.gates).filter(k => k >= 0 && k < 3), taken: nums(r.taken),
     broken: Array.isArray(r.broken) ? r.broken.filter(b => Array.isArray(b) && isInt(b[0]) && isInt(b[1])) : [],
     fruit: Math.max(0, num(r.fruit) || 0), x: num(r.x), y: num(r.y), cam: num(r.cam),
+    stars: [0, 1, 2].map(k => Array.isArray(r.stars) && isInt(r.stars[k]) ? clamp(r.stars[k], 0, 3) : 0),
   };
 }
 function cleanProg(s) {
-  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', worlds: {}, run: null, savedAt: 0 };
+  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', worlds: {}, skills: {}, run: null, savedAt: 0 };
   if (s && typeof s === 'object') {
     if (s.eggs && !s.worlds) s.worlds = { rex: { unlocked: s.unlocked || 1, eggs: s.eggs } };
     ['world', 'diff', 'voice', 'savedAt'].forEach(k => { if (s[k] !== undefined) p[k] = s[k]; });
     if (typeof s.sound === 'boolean') p.sound = s.sound;
     if (s.worlds && typeof s.worlds === 'object') p.worlds = s.worlds;
+    if (s.skills && typeof s.skills === 'object') p.skills = s.skills;
     p.run = cleanRun(s.run);
   }
   ORDER.forEach(k => {
     const n = WORLDS[k].length, w = p.worlds[k] || {};
-    p.worlds[k] = { unlocked: clamp(w.unlocked || 1, 1, n), eggs: Array.from({ length: n }, (_, i) => clamp((w.eggs && w.eggs[i]) || 0, 0, 3)) };
+    p.worlds[k] = {
+      unlocked: clamp(w.unlocked || 1, 1, n),
+      eggs: Array.from({ length: n }, (_, i) => clamp((w.eggs && w.eggs[i]) || 0, 0, 3)),
+      stars: Array.from({ length: n }, (_, i) => clamp(+(w.stars && w.stars[i]) || 0, 0, 3)),
+    };
   });
   if (!SPECIES[p.world]) p.world = 'rex';
   if (!['petit', 'grand', 'expert'].includes(p.diff)) p.diff = 'petit';
+  Object.keys(SKILLS).forEach(k => {
+    const sk = p.skills[k] || {};
+    p.skills[k] = { lvl: isInt(sk.lvl) ? clamp(sk.lvl, 1, MAX_LVL) : SKILL_START[p.diff], ok: isInt(sk.ok) ? clamp(sk.ok, 0, 2) : 0, bad: isInt(sk.bad) ? clamp(sk.bad, 0, 1) : 0 };
+  });
   if (typeof p.voice !== 'string') p.voice = '';
   if (!isInt(p.savedAt)) p.savedAt = 0;
   return p;
@@ -1496,18 +1543,29 @@ function renderHudEggs(popIndex = -1) {
 const pz = { card: $('pzCard'), title: $('pzTitle'), visual: $('pzVisual'), choices: $('pzChoices') };
 let currentGate = null, currentSay = '', pzLocked = false, recentWords = [];
 const BRAVO = ['Bravo !', 'Super !', 'Génial !', 'Bien joué !', 'Formidable !'];
-const isPetit = () => prog.diff === 'petit';
 const isExpert = () => prog.diff === 'expert';
-function pickWord() {
-  const list = (isPetit() ? WORDS_PETIT : WORDS_GRAND).filter(w => !recentWords.includes(w));
+const lv = k => prog.skills[k].lvl;
+// Paliers par niveau de compétence (index 0 = niveau 1). Petit démarre au niveau 1, Grand au 4, Expert au 7.
+const TIER = {
+  countMax: [5, 6, 8, 10, 12, 14, 16, 18, 20, 20],
+  add: [[1, 3, 1, 2], [1, 4, 1, 3], [2, 5, 1, 3], [2, 6, 1, 4], [3, 8, 2, 5], [4, 10, 2, 7], [6, 15, 3, 10], [8, 20, 5, 12], [10, 30, 5, 20], [15, 50, 10, 30]],
+  subMax: [5, 6, 8, 10, 12, 15, 20, 30, 50, 100],
+  multMax: [3, 4, 5, 6, 7, 8, 10, 10, 10, 10],
+  cmpMax: [5, 6, 8, 10, 12, 15, 20, 30, 50, 100],
+};
+const tier = (key, k) => TIER[key][k - 1];
+const nChoices = k => k <= 3 ? 3 : 4;
+let pzErrs = 0, pzSkill = null, pzStars = 0;
+function pickWord(k = lv('mots')) {
+  const list = (k <= 3 ? WORDS_PETIT : WORDS_GRAND).filter(w => !recentWords.includes(w));
   const w = pick(list); recentWords.push(w); if (recentWords.length > 3) recentWords.shift();
   return w;
 }
 function otherLetters(not, n) { return shuffle('ABCDEFGILMNOPRSTUV'.split('').filter(l => !not.includes(l))).slice(0, n); }
-function numberChoices(ans, min, max) {
+function numberChoices(ans, min, max, n = 3) {
   const set = new Set([ans]);
-  for (const n of shuffle([ans - 1, ans + 1, ans - 2, ans + 2].filter(n => n >= min && n <= max))) { if (set.size >= 3) break; set.add(n); }
-  while (set.size < 3) set.add(rand(min, max));
+  for (const v of shuffle([ans - 1, ans + 1, ans - 2, ans + 2, ans - 3, ans + 3].filter(v => v >= min && v <= max))) { if (set.size >= n) break; set.add(v); }
+  while (set.size < n) set.add(rand(min, max));
   return shuffle([...set]);
 }
 function confetti() {
@@ -1519,12 +1577,33 @@ function confetti() {
     pz.card.appendChild(c); setTimeout(() => c.remove(), 1700);
   }
 }
+/* Difficulté évolutive : 3 réussites du premier coup de suite font monter la compétence d'un cran,
+   2 énigmes de suite avec au moins 2 erreurs la font descendre d'un cran (sans le dire). */
+function learn(k, errs) {
+  if (!k) return '';
+  const s = prog.skills[k];
+  if (errs === 0) {
+    s.bad = 0;
+    if (++s.ok >= 3) { s.ok = 0; if (s.lvl < MAX_LVL) { s.lvl++; return `Tu progresses ${SKILLS[k].up} !`; } }
+    return '';
+  }
+  s.ok = 0;
+  if (errs < 2) { s.bad = 0; return ''; }
+  if (++s.bad >= 2) { s.bad = 0; if (s.lvl > 1) s.lvl--; }
+  return '';
+}
 function solved(extra = '') {
-  pzLocked = true; SFX.yay(); say((extra ? extra + ' ' : '') + pick(BRAVO)); confetti();
-  setTimeout(() => closePuzzle(true), 1500);
+  pzLocked = true; SFX.yay(); confetti();
+  pzStars = pzErrs === 0 ? 3 : pzErrs === 1 ? 2 : 1;
+  const up = learn(pzSkill, pzErrs);
+  const st = document.createElement('div'); st.className = 'pz-stars'; st.innerHTML = starsHtml(pzStars);
+  st.setAttribute('role', 'img'); st.setAttribute('aria-label', `${pzStars} étoile${pzStars > 1 ? 's' : ''} sur 3`);
+  pz.choices.appendChild(st);
+  say((extra ? extra + ' ' : '') + pick(BRAVO) + (up ? ' ' + up : ''));
+  setTimeout(() => closePuzzle(true), up ? 2800 : 1600);
 }
 function oops(btn, errs, hintFn, msg) {
-  SFX.no(); btn.classList.add('bad'); btn.disabled = true;
+  pzErrs++; SFX.no(); btn.classList.add('bad'); btn.disabled = true;
   say(msg || pick(['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !']));
   if (hintFn) hintFn(errs);
 }
@@ -1547,61 +1626,74 @@ function choicePuzzle(o) {
 }
 const PUZZLES = {
   mult() {
-    const tables = custom.tables.length ? custom.tables : [2, 3, 4, 5, 10];
-    const a = pick(tables), b = rand(1, 10), ans = a * b;
+    const k = lv('mult'), tables = custom.tables.length ? custom.tables : [2, 3, 4, 5, 10];
+    const a = pick(tables), b = rand(1, tier('multMax', k)), ans = a * b, n = nChoices(k);
     const [x, y] = Math.random() < .5 ? [a, b] : [b, a];
     const set = new Set([ans]);
-    for (const n of shuffle([a * (b + 1), a * (b - 1), (a + 1) * b, ans + 1, ans + 2, ans - 1])) { if (set.size >= 3) break; if (n > 0) set.add(n); }
+    for (const v of shuffle([a * (b + 1), a * (b - 1), (a + 1) * b, ans + 1, ans + 2, ans - 1])) { if (set.size >= n) break; if (v > 0) set.add(v); }
+    for (let v = ans + 3; set.size < n; v++) set.add(v);
     // Petits produits : on montre x paquets de y œufs pour aider à compter.
-    const visual = ans <= 24 ? `<div class="group" style="max-width:520px">${Array.from({ length: x }, () => `<span class="grp">${Array(y).fill(EGG_SVG('mini')).join('')}</span>`).join('')}</div>` : '';
+    const visual = ans <= 24 && k <= 6 ? `<div class="group" style="max-width:520px">${Array.from({ length: x }, () => `<span class="grp">${Array(y).fill(EGG_SVG('mini')).join('')}</span>`).join('')}</div>` : '';
     choicePuzzle({
       title: `${x} × ${y} = ?`, say: `Combien font ${x} fois ${y} ?`, visual,
-      choices: shuffle([...set]).map(k => ({ html: k, ok: k === ans })), win: `${x} fois ${y} égale ${ans} !`,
+      choices: shuffle([...set]).map(v => ({ html: v, ok: v === ans })), win: `${x} fois ${y} égale ${ans} !`,
     });
   },
   sub() {
-    const a = rand(8, 20), b = rand(2, a - 2), s = a - b;
+    const k = lv('sub'), max = tier('subMax', k), a = rand(Math.max(3, Math.ceil(max / 2)), max), b = rand(1, a - 1), s = a - b;
+    // Aux premiers niveaux, on voit les œufs qui partent.
+    const visual = k <= 4 ? `<div class="group" style="max-width:320px">${Array.from({ length: a }, (_, i) => EGG_SVG('mini' + (i >= s ? ' off' : ''))).join('')}</div>` : '';
     choicePuzzle({
-      title: `${a} − ${b} = ?`, say: `Combien font ${a} moins ${b} ?`, visual: '',
-      choices: numberChoices(s, 0, 20).map(k => ({ html: k, ok: k === s })), win: `${a} moins ${b} égale ${s} !`,
+      title: `${a} − ${b} = ?`, say: `Combien font ${a} moins ${b} ?`, visual,
+      choices: numberChoices(s, 0, a, nChoices(k)).map(v => ({ html: v, ok: v === s })), win: `${a} moins ${b} égale ${s} !`,
     });
   },
   count() {
-    const n = isPetit() ? rand(1, 5) : rand(4, 10);
+    const k = lv('count'), max = tier('countMax', k), n = rand(Math.max(1, max - 6), max);
     choicePuzzle({
       title: "Combien d'œufs ?", say: "Compte les œufs. Combien y en a-t-il ?",
       visual: `<div class="group" style="max-width:320px">${Array(n).fill(EGG_SVG('mini')).join('')}</div>`,
-      choices: numberChoices(n, 1, isPetit() ? 6 : 12).map(k => ({ html: k, ok: k === n })), win: `Il y a ${n} œufs !`,
+      choices: numberChoices(n, 1, max + 2, nChoices(k)).map(v => ({ html: v, ok: v === n })), win: `Il y a ${n} œufs !`,
     });
   },
   add() {
-    const a = isPetit() ? rand(1, 3) : isExpert() ? rand(6, 15) : rand(2, 6);
-    const b = isPetit() ? rand(1, 2) : isExpert() ? rand(3, 10) : rand(1, 4), s = a + b;
+    const k = lv('add'), [a0, a1, b0, b1] = tier('add', k), a = rand(a0, a1), b = rand(b0, b1), s = a + b;
     choicePuzzle({
       title: `${a} + ${b} = ?`, say: `Combien font ${a} plus ${b} ?`,
-      visual: isExpert() ? '' : `<div class="group">${Array(a).fill(BONE_SVG).join('')}</div><span>+</span><div class="group">${Array(b).fill(BONE_SVG).join('')}</div>`,
-      choices: numberChoices(s, 1, isPetit() ? 7 : isExpert() ? 30 : 12).map(k => ({ html: k, ok: k === s })), win: `${a} plus ${b} égale ${s} !`,
+      visual: k <= 5 ? `<div class="group">${Array(a).fill(BONE_SVG).join('')}</div><span>+</span><div class="group">${Array(b).fill(BONE_SVG).join('')}</div>` : '',
+      choices: numberChoices(s, Math.max(1, s - 6), s + 6, nChoices(k)).map(v => ({ html: v, ok: v === s })), win: `${a} plus ${b} égale ${s} !`,
     });
   },
   compare() {
-    const max = isPetit() ? 5 : 10, a = rand(1, max);
-    let b; do { b = rand(1, max); } while (Math.abs(a - b) < (isPetit() ? 2 : 1));
-    const plus = Math.random() < .6, ans = plus ? Math.max(a, b) : Math.min(a, b);
-    const g = n => `<div class="group" style="max-width:${isPetit() ? 150 : 200}px">${Array(n).fill(LEAF_SVG).join('')}</div>`;
+    const k = lv('compare'), max = tier('cmpMax', k), a = rand(1, max);
+    let b; do { b = rand(1, max); } while (Math.abs(a - b) < (k <= 2 ? 2 : 1));
+    const plus = Math.random() < .6, ans = plus ? Math.max(a, b) : Math.min(a, b), other = ans === a ? b : a;
+    // Petits nombres : des tas de feuilles. Plus loin : les nombres écrits.
+    if (max <= 12) {
+      const g = n => `<div class="group" style="max-width:${k <= 2 ? 150 : 200}px">${Array(n).fill(LEAF_SVG).join('')}</div>`;
+      choicePuzzle({
+        title: plus ? 'Où y a-t-il le plus de feuilles ?' : 'Où y a-t-il le moins de feuilles ?',
+        say: plus ? "Touche le tas où il y a le plus de feuilles." : "Touche le tas où il y a le moins de feuilles.",
+        visual: '',
+        choices: [a, b].map(n => ({ html: g(n), ok: n === ans, label: n + ' feuilles' })),
+      });
+      return;
+    }
     choicePuzzle({
-      title: plus ? 'Où y a-t-il le plus de feuilles ?' : 'Où y a-t-il le moins de feuilles ?',
-      say: plus ? "Touche le tas où il y a le plus de feuilles." : "Touche le tas où il y a le moins de feuilles.",
+      title: plus ? 'Quel nombre est le plus grand ?' : 'Quel nombre est le plus petit ?',
+      say: plus ? 'Touche le nombre le plus grand.' : 'Touche le nombre le plus petit.',
       visual: '',
-      choices: [a, b].map(n => ({ html: g(n), ok: n === ans, label: n + ' feuilles' })),
+      choices: [a, b].map(n => ({ html: n, ok: n === ans })),
+      win: `${ans} est plus ${plus ? 'grand' : 'petit'} que ${other} !`,
     });
   },
   sequence() {
-    const cols = shuffle(COLORS);
-    const pat = isPetit() ? [cols[0], cols[1]] : pick([[cols[0], cols[1], cols[2]], [cols[0], cols[0], cols[1]]]);
-    const len = isPetit() ? 5 : pat.length * 2;
+    const k = lv('suite'), [A, B, C, D] = shuffle(COLORS);
+    const pats = k <= 2 ? [[A, B]] : k <= 5 ? [[A, B, C], [A, A, B]] : k <= 7 ? [[A, B, C], [A, A, B], [A, B, B]] : [[A, B, C, D], [A, A, B, B], [A, B, B, C]];
+    const pat = pick(pats), len = k <= 2 ? 5 : pat.length * 2 + (k === 6 || k === 7 ? 1 : 0);
     const seq = Array.from({ length: len }, (_, i) => pat[i % pat.length]);
     const ans = pat[len % pat.length];
-    const opts = shuffle([ans, ...shuffle(COLORS.filter(c => c !== ans)).slice(0, 2)]);
+    const opts = shuffle([ans, ...shuffle(COLORS.filter(c => c !== ans)).slice(0, (k <= 5 ? 3 : 4) - 1)]);
     choicePuzzle({
       title: 'Quelle couleur vient après ?', say: 'Regarde les couleurs. Quelle couleur vient après ?',
       visual: seq.map(c => `<span class="dot" style="background:${c.c}"></span>`).join('') + '<span class="dot q">?</span>',
@@ -1609,38 +1701,38 @@ const PUZZLES = {
       win: `C'est ${ans.n} !`,
     });
   },
-  first(w = pickWord()) {
-    const l = w[0];
+  first(w = pickWord(lv('lettres'))) {
+    const k = lv('lettres'), l = w[0], n = k <= 4 ? 3 : k <= 7 ? 4 : 5;
     choicePuzzle({
       title: 'Par quelle lettre ça commence ?', say: `Par quelle lettre commence le mot ${w.toLowerCase()} ?`,
       visual: pic(w),
-      choices: shuffle([l, ...otherLetters(w, 2)]).map(k => ({ html: k, ok: k === l })), win: `${w.toLowerCase()} commence par ${letterName(l)} !`,
+      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `${w.toLowerCase()} commence par ${letterName(l)} !`,
     });
   },
-  missing(w = pickWord()) {
-    const idx = rand(0, w.length - 1), l = w[idx];
+  missing(w = pickWord(lv('lettres'))) {
+    const k = lv('lettres'), idx = rand(0, w.length - 1), l = w[idx], n = k <= 4 ? 3 : k <= 7 ? 4 : 5;
     choicePuzzle({
       title: 'Quelle lettre manque ?', say: `Quelle lettre manque dans le mot ${w.toLowerCase()} ?`,
       visual: pic(w) + `<div class="word">${[...w].map((ch, i) => i === idx ? '<span class="gap">?</span>' : `<span>${ch}</span>`).join('')}</div>`,
-      choices: shuffle([l, ...otherLetters(w, 2)]).map(k => ({ html: k, ok: k === l })), win: `Le mot ${w.toLowerCase()} !`,
+      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `Le mot ${w.toLowerCase()} !`,
     });
   },
   hangman(w = pickWord()) {
-    const letters = [...w], found = letters.map(() => false);
+    const k = lv('mots'), letters = [...w], found = letters.map(() => false);
     const uniq = [...new Set(letters)];
-    const pool = shuffle([...uniq, ...otherLetters(w, Math.max(2, (isPetit() ? 8 : 10) - uniq.length))]);
+    const pool = shuffle([...uniq, ...otherLetters(w, Math.max(2, (k <= 3 ? 8 : k <= 6 ? 10 : 12) - uniq.length))]);
     pz.title.textContent = 'Le mot caché'; pz.choices.innerHTML = '';
     const draw = () => { pz.visual.innerHTML = pic(w) + `<div class="word">${letters.map((ch, i) => `<span>${found[i] ? ch : ''}</span>`).join('')}</div>`; };
     draw();
     let errs = 0; const btns = {};
-    pool.forEach(k => {
-      const b = document.createElement('button'); b.className = 'choice key'; b.textContent = k; btns[k] = b;
+    pool.forEach(l => {
+      const b = document.createElement('button'); b.className = 'choice key'; b.textContent = l; btns[l] = b;
       b.onclick = () => {
         if (pzLocked || b.disabled) return;
-        if (letters.includes(k)) {
-          letters.forEach((ch, i) => { if (ch === k) found[i] = true; });
+        if (letters.includes(l)) {
+          letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
           b.classList.add('good'); b.disabled = true; SFX.key(); draw();
-          if (found.every(Boolean)) solved(`Tu as écrit ${w.toLowerCase()} !`); else say(letterName(k));
+          if (found.every(Boolean)) solved(`Tu as écrit ${w.toLowerCase()} !`); else say(letterName(l));
         } else {
           errs++;
           oops(b, errs, n => {
@@ -1660,15 +1752,15 @@ const PUZZLES = {
     const draw = () => { pz.visual.innerHTML = pic(w) + `<div class="word">${slots.map(s => `<span>${s}</span>`).join('')}</div>`; };
     draw();
     let pos = 0, errs = 0; const btns = [];
-    mixed.forEach(k => {
-      const b = document.createElement('button'); b.className = 'choice key'; b.textContent = k; btns.push(b);
+    mixed.forEach(l => {
+      const b = document.createElement('button'); b.className = 'choice key'; b.textContent = l; btns.push(b);
       b.onclick = () => {
         if (pzLocked || b.classList.contains('gone')) return;
-        if (k === letters[pos]) {
-          slots[pos] = k; pos++; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
+        if (l === letters[pos]) {
+          slots[pos] = l; pos++; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
           if (pos === letters.length) solved(`Tu as écrit ${w.toLowerCase()} !`);
         } else {
-          errs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
+          errs++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
           setTimeout(() => b.classList.remove('bad'), 450);
           say('Essaie une autre lettre.');
           if (errs >= 2) { const nb = btns.find(x => !x.classList.contains('gone') && x.textContent === letters[pos]); if (nb) nb.classList.add('hint'); }
@@ -1691,21 +1783,22 @@ function customPuzzle() {
   } else PUZZLES[pick(['hangman', 'missing', 'order'])](pick(custom.words));
 }
 function openPuzzle(g) {
-  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; clearKeys();
+  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; clearKeys();
   $('puzzle').hidden = false;
   let type = g.type;
-  if (type === 'order' && isPetit()) type = 'first';
+  if (type === 'order' && lv('mots') <= 2) type = 'first';
   if (isExpert()) {
     if ((custom.calcs.length || custom.words.length) && Math.random() < .6) { customPuzzle(); return; }
     type = { count: 'mult', compare: 'sub', first: 'missing' }[type] || type;
   }
+  pzSkill = TYPE_SKILL[type];
   PUZZLES[type]();
 }
 function closePuzzle(win) {
   $('puzzle').hidden = true;
   const g = currentGate; currentGate = null;
   if (win && g) {
-    g.open = true; g.anim = 0; eggsRun++;
+    g.open = true; g.anim = 0; g.stars = pzStars; eggsRun++;
     const w = prog.worlds[L.world]; w.eggs[L.i] = Math.max(w.eggs[L.i], eggsRun); autosave(true);
     renderHudEggs(eggsRun - 1);
     const gx = g.x + g.w / 2;
@@ -1804,6 +1897,7 @@ function renderParents() {
   const ro = storeMode === 'db' && !canWrite;
   $('pStatus').textContent = statusText();
   $('saveCode').value = exportCode();
+  renderSkills();
   ['calcIn', 'wordIn'].forEach(id => { $(id).disabled = ro; });
   chips('calcList', custom.calcs.map(k => parseCalc(k).disp + ' = ' + parseCalc(k).ans), i => custom.calcs.splice(i, 1), ro, 'Aucun calcul pour le moment. Ajoutez par exemple 5x5.');
   chips('wordList', custom.words, i => custom.words.splice(i, 1), ro, 'Aucun mot pour le moment. Ajoutez par exemple les mots de la semaine.');
@@ -1818,6 +1912,20 @@ function renderParents() {
     };
     tl.appendChild(b);
   }
+}
+function renderSkills() {
+  const el = $('skillList'); el.innerHTML = '';
+  Object.entries(SKILLS).forEach(([k, sk]) => {
+    const v = prog.skills[k].lvl, row = document.createElement('div'); row.className = 'skill';
+    row.innerHTML = `<span class="nm">${sk.name}</span><span class="bar" aria-hidden="true"><i style="width:${v * 10}%"></i></span><b aria-label="Niveau ${v} sur 10">${v}</b>`;
+    [['−', -1, 'Baisser'], ['+', 1, 'Monter']].forEach(([t, d, verb]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.setAttribute('aria-label', `${verb} le niveau : ${sk.name}`);
+      b.disabled = d < 0 ? v <= 1 : v >= MAX_LVL;
+      b.onclick = () => { const s2 = prog.skills[k]; s2.lvl = clamp(s2.lvl + d, 1, MAX_LVL); s2.ok = s2.bad = 0; save(); renderParents(); };
+      row.appendChild(b);
+    });
+    el.appendChild(row);
+  });
 }
 $('calcForm').onsubmit = e => {
   e.preventDefault();
@@ -1901,7 +2009,10 @@ function babyCanvas(sp, w, h) {
 function levelDone() {
   state = 'done'; clearKeys(); SFX.yay();
   const levels = WORLDS[L.world], w = prog.worlds[L.world], i = L.i, sp = world();
-  w.eggs[i] = 3; w.unlocked = Math.min(levels.length, Math.max(w.unlocked, i + 2)); prog.run = null; save();
+  // Étoiles de l'endroit : la moyenne des 3 pierres (une pierre reprise d'une ancienne sauvegarde compte 2).
+  const stars = clamp(Math.round(L.gates.reduce((a, g) => a + (g.stars || 2), 0) / L.gates.length), 1, 3);
+  w.eggs[i] = 3; w.stars[i] = Math.max(w.stars[i], stars); w.unlocked = Math.min(levels.length, Math.max(w.unlocked, i + 2)); prog.run = null; save();
+  $('doneStars').innerHTML = starsHtml(stars); $('doneStars').setAttribute('aria-label', `${stars} étoile${stars > 1 ? 's' : ''} sur 3`);
   const lastLevel = i === levels.length - 1;
   $('doneText').textContent = lastLevel
     ? `Tu as retrouvé tous les œufs ! Tu as aussi ramassé ${fruitCount} ${sp.item}.`
@@ -1949,8 +2060,8 @@ function renderMenu() {
   levels.forEach((d, i) => {
     const b = document.createElement('button'); b.className = 'lvl';
     const locked = i >= w.unlocked; b.disabled = locked;
-    b.innerHTML = `<b>${i + 1}</b><span class="nm">${d.name}</span><span class="eg">${locked ? IC.lock : [0, 1, 2].map(k => EGG_SVG('egg-i' + (k < w.eggs[i] ? '' : ' off'))).join('')}</span>`;
-    b.setAttribute('aria-label', locked ? `${d.name}, pas encore ouvert` : `${d.name}, ${w.eggs[i]} œufs sur 3`);
+    b.innerHTML = `<b>${i + 1}</b><span class="nm">${d.name}</span><span class="eg">${locked ? IC.lock : [0, 1, 2].map(k => EGG_SVG('egg-i' + (k < w.eggs[i] ? '' : ' off'))).join('')}</span>${!locked && w.stars[i] ? `<span class="st">${starsHtml(w.stars[i])}</span>` : ''}`;
+    b.setAttribute('aria-label', locked ? `${d.name}, pas encore ouvert` : `${d.name}, ${w.eggs[i]} œufs sur 3` + (w.stars[i] ? `, ${w.stars[i]} étoiles sur 3` : ''));
     b.onclick = () => { audio(); startLevel(prog.world, i); };
     lv.appendChild(b);
   });
@@ -1974,9 +2085,15 @@ function renderContinue() {
   btn.setAttribute('aria-label', `Continuer la partie : ${sp.name}, ${d.name}, ${r.gates.length} œufs sur 3`);
 }
 $('continueBtn').onclick = () => { const r = prog.run; if (!r) return; audio(); prog.world = r.world; startLevel(r.world, r.i, r); };
-$('diffPetit').onclick = () => { audio(); prog.diff = 'petit'; save(); say('Petit'); renderMenu(); };
-$('diffGrand').onclick = () => { audio(); prog.diff = 'grand'; save(); say('Grand'); renderMenu(); };
-$('diffExpert').onclick = () => { audio(); prog.diff = 'expert'; save(); say('Expert'); renderMenu(); };
+// Changer de niveau dans le menu remet toutes les compétences à son point de départ.
+function setDiff(d, label) {
+  audio();
+  if (prog.diff !== d) { prog.diff = d; Object.values(prog.skills).forEach(sk => { sk.lvl = SKILL_START[d]; sk.ok = sk.bad = 0; }); save(); }
+  say(label); renderMenu();
+}
+$('diffPetit').onclick = () => setDiff('petit', 'Petit');
+$('diffGrand').onclick = () => setDiff('grand', 'Grand');
+$('diffExpert').onclick = () => setDiff('expert', 'Expert');
 $('menuSound').onclick = () => { audio(); toggleSound(); };
 $('btnSound').onclick = () => { audio(); toggleSound(); $('btnSound').blur(); };
 $('btnHome').innerHTML = IC.home;
@@ -2002,6 +2119,7 @@ function snapshotRun() {
     taken: L.items.slice(0, L.baseItems).flatMap((f, k) => f.taken ? [k] : []),
     broken: L.broken.slice(), fruit: fruitCount,
     x: Math.round(pos.x), y: Math.round(pos.y), cam: L.mode === 'shmup' ? Math.round(camX) : null,
+    stars: L.gates.map(g => g.stars || 0),
   };
 }
 function autosave(show = false) {
@@ -2012,7 +2130,7 @@ function autosave(show = false) {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(); });
 window.addEventListener('pagehide', () => autosave());
 function restoreRun(r) {
-  L.gates.forEach(g => { if (r.gates.includes(g.k)) { g.open = true; g.anim = 1; } });
+  L.gates.forEach(g => { if (r.gates.includes(g.k)) { g.open = true; g.anim = 1; g.stars = r.stars[g.k]; } });
   eggsRun = L.gates.filter(g => g.open).length;
   r.taken.forEach(k => { if (k < L.baseItems) L.items[k].taken = true; });
   fruitCount = r.fruit;
