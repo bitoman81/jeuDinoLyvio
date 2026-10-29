@@ -121,7 +121,7 @@ await ev(`save(); true`); await load();
 check('couleur gardée après rechargement', await ev(`SPECIES.rex.pal.body === '#4f8f3c'`));
 
 // 6. Album et nettoyage
-check('album : 13 fossiles', await ev(`document.querySelectorAll('#fossilList .fos').length === 13`));
+check('album : 32 fossiles (un par endroit)', await ev(`document.querySelectorAll('#fossilList .fos').length === 32`));
 const cl = await ev(`(() => { const p = cleanProg({ bag: { n: -4, fossils: { 'rex-0': true, 'rex-99': true, 'x-1': true }, owned: { 'rex:foret': true, 'rex:faux': true }, skin: { rex: 'faux', trike: 'menthe' }, power: { magnet: 500, shield: 'a' } } }); return p.bag; })()`);
 check('sac nettoyé à la lecture', cl.n === 0 && JSON.stringify(cl.fossils) === '{"rex-0":true}' && JSON.stringify(cl.owned) === '{"rex:foret":true}' && cl.skin.rex === 'base' && cl.skin.trike === 'base' && cl.power.magnet === 99 && cl.power.shield === 0, cl);
 check('code de sauvegarde : le sac passe', await ev(`importCode(exportCode()) && prog.bag.skin.rex === 'foret' && SPECIES.rex.pal.body === '#4f8f3c'`));

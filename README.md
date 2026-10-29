@@ -15,6 +15,10 @@ Chaque animal a sa propre façon de jouer et cherche les œufs de sa famille, ga
 | Ptérodactyle | Vol, il lance des graines sur les cailloux volants |
 | Plésiosaure | Sous l'eau, avec des perles et des méduses |
 
+Chaque animal a 6 endroits, avec de nouvelles difficultés au fil du chemin : rondins qui tombent, glace qui glisse, vent, orage, courants marins.
+
+Au 4e endroit de chaque animal se cache une **clé dorée**. Elle ouvre un **endroit secret** plein de trésors. Chaque endroit secret terminé donne un morceau de la **carte au trésor** ; avec les 4 morceaux, l'**île secrète** s'ouvre : les 4 animaux la traversent l'un après l'autre.
+
 ## Les énigmes
 
 Compter, additionner, soustraire, multiplier, comparer, suites de couleurs et de nombres, pair ou impair, compter les pièces d'euro, lire l'heure, trouver l'intrus, lire un mot, première lettre, lettre manquante, pendu, lettres à remettre dans l'ordre. Toutes les consignes sont lues à voix haute.

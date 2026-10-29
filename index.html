@@ -65,6 +65,14 @@ h1 span{color:var(--sun)}
 .lvl .st{display:flex;gap:2px}
 .lvl[disabled]{background:#e7e2d4;color:#55544c;cursor:not-allowed;box-shadow:0 5px 0 #55544c;border-color:#55544c}
 .lvl[disabled] b{color:#55544c}
+.lvl.bonus{background:#fff4c8;border-color:#a0692e;box-shadow:0 5px 0 #a0692e}
+.lvl.bonus[disabled]{background:#ece4cc}
+.lvl .key-i{width:44px;height:33px}
+.lvl.bonus[disabled] .key-i{opacity:.4}
+.pick .map-i{width:150px;height:110px;max-width:100%}
+.pick button.locked{background:#ece4cc}
+.pick button.locked .map-i{opacity:.85}
+.hatch .map .map-i{width:96px;height:73px;animation:pop .6s}
 .lvl:not([disabled]):active,.pick button:active,.seg button:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
 .egg-i{width:22px;height:28px}
 .egg-i.off{opacity:.25}
@@ -525,12 +533,30 @@ const WORLDS = {
       ground: [[0, 14], [16, 24], [33, 46], [49, 62], [66, 78]], plats: [[5, 5, 3], [9, 3, 2], [38, 5, 3], [53, 5, 2], [56, 3, 2], [63, 6, 2]],
       fruits: [[9, 2], [10, 2], [27, 4], [28, 4], [38, 4], [39, 4], [40, 4], [36, 2], [56, 2], [57, 2], [63, 5], [70, 7]],
       stones: [12, 43, 59], mush: [36], movers: [{ x: 27, row: 6, w: 3, amp: 3, speed: 1.2 }] },
-    { name: 'Le volcan', intro: "Le volcan. Dernier effort, la maman t'attend !", volcano: true,
+    { name: 'Le volcan', intro: "Le volcan. La maman t'attend au bout du chemin !", volcano: true, key: true,
       sky: ['#f6b37a', '#fde3c4'], dirt: '#5b3b2a', dirtDark: '#432a1d', grass: '#7aa33a', grassDark: '#557a22', far: '#c98a6a', mid: '#8f7a52', near: '#4f5a2e',
       puzzles: ['missing', 'order', 'hangman'], len: 84, start: 2, nest: 80,
       ground: [[0, 12], [14, 22], [31, 40], [43, 52], [60, 70], [73, 84]], plats: [[5, 5, 3], [34, 5, 2], [37, 3, 2], [46, 5, 3], [64, 5, 3]],
       fruits: [[16, 2], [17, 2], [5, 4], [6, 4], [26, 5], [34, 4], [37, 2], [38, 2], [46, 4], [47, 4], [55, 5], [64, 4], [65, 4], [78, 7]],
       stones: [10, 49, 67], mush: [16], movers: [{ x: 24.5, row: 6, w: 3, amp: 2.5, speed: 1.3 }, { x: 54.5, row: 6, w: 3, amp: 2, speed: 1.6 }] },
+    { name: 'Le marais', intro: "Le marais. Les rondins tombent dans l'eau : ne reste pas dessus trop longtemps !",
+      sky: ['#b9d6b0', '#e8f0d8'], dirt: '#6b5a3a', dirtDark: '#4f422a', grass: '#7a9a3a', grassDark: '#55702a', far: '#a3b896', mid: '#7a9670', near: '#4a6a44',
+      puzzles: ['count', 'order', 'add'], len: 80, start: 2, nest: 76,
+      ground: [[0, 13], [16, 25], [32, 41], [44, 54], [62, 72], [75, 80]], plats: [[5, 5, 3], [47, 5, 3]],
+      fruits: [[5, 4], [6, 4], [7, 4], [20, 2], [27, 6], [28, 6], [38, 7], [47, 4], [48, 4], [49, 4], [56, 6], [59, 5], [60, 5], [69, 7], [73, 6]],
+      stones: [10, 36, 66], mush: [20], movers: [], falls: [[27, 7, 2], [56, 7, 2], [59, 6, 2]] },
+    { name: 'La nuit', intro: "La nuit. Les lucioles t'éclairent. Saute sur la bûche et sur les rondins !", night: true,
+      sky: ['#1c2350', '#46407a'], dirt: '#4a3a3a', dirtDark: '#33282a', grass: '#3f7a5a', grassDark: '#2a5a40', far: '#3a3f6a', mid: '#2f3a5a', near: '#1f2a40',
+      puzzles: ['compare', 'hangman', 'missing'], len: 88, start: 2, nest: 84,
+      ground: [[0, 12], [15, 23], [30, 38], [41, 50], [58, 66], [69, 78], [81, 88]], plats: [[5, 5, 3], [33, 5, 3], [61, 5, 2]],
+      fruits: [[5, 4], [6, 4], [7, 4], [19, 2], [21, 7], [26, 5], [27, 5], [33, 4], [34, 4], [35, 4], [47, 7], [52, 6], [55, 5], [61, 4], [62, 4], [72, 7], [80, 6]],
+      stones: [9, 45, 74], mush: [19], movers: [{ x: 25, row: 6, w: 3, amp: 1.5, speed: 1.4 }], falls: [[52, 7, 2], [55, 6, 2]] },
+    { name: 'La grotte secrète', bonus: true, cave: true, intro: "La grotte secrète ! Elle est pleine de trésors. Ramasse tout ce que tu peux !",
+      sky: ['#2a2238', '#4a3a52'], dirt: '#5a4a5a', dirtDark: '#3f3242', grass: '#8a7aa8', grassDark: '#5f5080', far: '#3a3048', mid: '#4a3d5a', near: '#5a4a6a',
+      puzzles: ['sequence', 'add', 'hangman'], len: 70, start: 2, nest: 66,
+      ground: [[0, 20], [23, 45], [48, 70]], plats: [[5, 5, 3], [14, 5, 3], [27, 6, 3], [31, 4, 2], [38, 5, 3], [52, 5, 3], [60, 5, 2]],
+      fruits: [[3, 7], [5, 4], [6, 4], [7, 4], [14, 4], [15, 4], [16, 4], [18, 7], [21, 6], [25, 2], [26, 3], [27, 5], [28, 5], [29, 5], [31, 3], [32, 3], [38, 4], [39, 4], [40, 4], [42, 7], [43, 7], [46, 6], [52, 4], [53, 4], [54, 4], [60, 4], [61, 4], [64, 7]],
+      stones: [11, 35, 56], mush: [25], movers: [] },
   ],
   trike: [
     { name: 'La prairie', intro: "La prairie. Promène-toi dans l'herbe. Fonce dans les petits cailloux pour les casser !",
@@ -542,6 +568,18 @@ const WORLDS = {
     { name: 'La forêt profonde', intro: "La forêt profonde. Trouve le chemin entre les arbres !",
       seed: 37, len: 80, density: .22, rivers: [20, 42, 64], small: 6, fruits: 18, gates: [12, 31, 54], nest: 76,
       grass: '#6fae55', grass2: '#5e9a48', edge: '#1f4a2a', puzzles: ['compare', 'hangman', 'order'] },
+    { name: 'Le désert', intro: "Le désert. Il fait chaud ! Fais le tour des cactus.", cactus: true, key: true,
+      seed: 41, len: 80, density: .14, rivers: [38], small: 8, fruits: 18, gates: [14, 30, 56], nest: 76,
+      grass: '#ead39a', grass2: '#dcc07c', edge: '#a8814a', puzzles: ['count', 'add', 'compare'] },
+    { name: 'La neige', intro: "La neige. La rivière est gelée : ça glisse !", frozen: true, snowy: true,
+      seed: 53, len: 84, density: .16, rivers: [22, 46, 66], small: 6, fruits: 18, gates: [13, 34, 57], nest: 80,
+      grass: '#eef4f8', grass2: '#d6e2ec', edge: '#7f97ad', tree: ['#2f5a4a', '#3f7a5f', '#e8f2f8'], puzzles: ['sequence', 'missing', 'add'] },
+    { name: 'Le canyon', intro: "Le canyon. Beaucoup de rochers ! Fonce pour casser les petits cailloux.",
+      seed: 67, len: 90, density: .26, rivers: [28, 60], small: 10, fruits: 20, gates: [14, 44, 74], nest: 86,
+      grass: '#d9a070', grass2: '#c98a5a', edge: '#7a4a2a', tree: ['#5a7a3a', '#6f9a45', '#8fbf5a'], puzzles: ['compare', 'order', 'hangman'] },
+    { name: 'Le jardin secret', bonus: true, intro: "Le jardin secret ! Il y a des fruits partout.",
+      seed: 77, len: 60, density: .06, rivers: [30], small: 3, fruits: 40, gates: [12, 26, 44], nest: 56,
+      grass: '#9ad87a', grass2: '#86c766', edge: '#3a7a3a', puzzles: ['first', 'count', 'sequence'] },
   ],
   ptero: [
     { name: 'Au-dessus des arbres', intro: "Au-dessus des arbres. Vole, et lance des graines sur les cailloux volants !",
@@ -550,6 +588,14 @@ const WORLDS = {
       seed: 9, len: 6000, speed: 2.1, rocks: .85, sky: ['#aebff0', '#f3f0ff'], far: '#b7b9d6', ground: '#ffffff', clouds: true, puzzles: ['add', 'missing', 'compare'] },
     { name: 'Le ciel du volcan', intro: "Le ciel du volcan. Vole jusqu'au nid sur la falaise !", volcano: true,
       seed: 14, len: 7000, speed: 2.4, rocks: 1, sky: ['#f6a46f', '#fde0bf'], far: '#c98a6a', ground: '#4f3a2e', puzzles: ['hangman', 'add', 'order'] },
+    { name: 'Le coucher de soleil', intro: "Le coucher de soleil. Le vent souffle, tiens bon !", key: true, sunset: true,
+      seed: 19, len: 7000, speed: 2.2, rocks: .9, wind: 1.2, sky: ['#f08a5a', '#fcd9a0'], far: '#b0708a', ground: '#5a3a4a', puzzles: ['count', 'missing', 'sequence'] },
+    { name: "L'orage", intro: "L'orage. Il pleut et le vent pousse fort. Courage !", storm: true,
+      seed: 27, len: 7500, speed: 2.3, rocks: .95, wind: 1.8, sky: ['#5a6478', '#a8b0c0'], far: '#6a7088', ground: '#3a4a5a', clouds: true, puzzles: ['add', 'compare', 'hangman'] },
+    { name: 'Les montagnes enneigées', intro: "Les montagnes enneigées. Vole jusqu'au nid, tout en haut !",
+      seed: 33, len: 8000, speed: 2.5, rocks: 1.05, wind: 1, sky: ['#9fc8ec', '#eef6fc'], far: '#d8e4f0', ground: '#f4f8fc', puzzles: ['order', 'add', 'missing'] },
+    { name: "L'arc-en-ciel", bonus: true, rainbow: true, intro: "L'arc-en-ciel secret ! Plein de fruits et presque pas de cailloux.",
+      seed: 44, len: 5000, speed: 1.8, rocks: .8, rockRate: .2, sky: ['#9fdcf8', '#f4fbff'], far: '#b8d8c8', ground: '#5aa85a', puzzles: ['first', 'count', 'compare'] },
   ],
   plesio: [
     { name: 'Le lagon', intro: "Le lagon. Nage partout et ramasse les perles. Attention aux méduses !",
@@ -558,8 +604,46 @@ const WORLDS = {
       seed: 8, len: 70, pillars: .18, jelly: 5, gates: [15, 35, 55], nest: 65, water: ['#3fa7c9', '#155277'], rock: '#4f5f74', sand: '#d8c38f', puzzles: ['compare', 'missing', 'add'] },
     { name: 'La grotte sous-marine', intro: "La grotte sous-marine. Il fait sombre, reste près des perles !", cave: true,
       seed: 21, len: 78, pillars: .22, jelly: 7, gates: [14, 34, 56], nest: 73, water: ['#2a6f95', '#0b2a45'], rock: '#3e4658', sand: '#b9a77a', puzzles: ['order', 'hangman', 'count'] },
+    { name: 'Le récif de corail', intro: "Le récif de corail. Les courants te poussent : suis les bulles !", key: true,
+      seed: 31, len: 72, pillars: .14, jelly: 4, gates: [14, 34, 54], nest: 67, water: ['#4fd0d8', '#1a7a9a'], rock: '#c8705a', sand: '#f0dca8',
+      currents: [[20, 26, 0, -1], [40, 46, 0, 1], [58, 62, 1, 0]], puzzles: ['count', 'add', 'missing'] },
+    { name: "L'épave", intro: "L'épave. Un vieux bateau dort au fond de la mer. Attention aux courants !", wreck: 38,
+      seed: 45, len: 80, pillars: .18, jelly: 6, gates: [14, 30, 58], nest: 75, water: ['#3a8fb0', '#123e5c'], rock: '#4f5a6a', sand: '#cdb88a',
+      currents: [[20, 25, 0, 1], [44, 50, -1, 0], [64, 70, 0, -1]], puzzles: ['compare', 'hangman', 'order'] },
+    { name: 'Les grands fonds', intro: "Les grands fonds. Il fait noir, mais les perles brillent !", deep: true,
+      seed: 59, len: 86, pillars: .22, jelly: 8, gates: [14, 40, 64], nest: 81, water: ['#1f4f78', '#06142a'], rock: '#2f3648', sand: '#8a8070',
+      currents: [[24, 30, 0, -1], [50, 56, 0, 1], [70, 76, 1, 0]], puzzles: ['sequence', 'add', 'hangman'] },
+    { name: 'La baie aux perles', bonus: true, intro: "La baie aux perles ! Il y en a partout.", pearls: 2,
+      seed: 66, len: 60, pillars: .06, jelly: 2, gates: [12, 28, 44], nest: 55, water: ['#6cd4f0', '#2a8ab8'], rock: '#6f7f96', sand: '#f0e0b0', puzzles: ['first', 'count', 'compare'] },
+  ],
+  // Le monde final : les 4 animaux à la suite, sur l'île de la carte au trésor.
+  final: [
+    { sp: 'rex', name: "La plage de l'île", intro: "L'île secrète ! Le T-Rex commence l'aventure sur la plage.",
+      sky: ['#7fd6f0', '#e6fbff'], dirt: '#c9a46a', dirtDark: '#a8844f', grass: '#5cc06a', grassDark: '#3a9a4a', far: '#8fcfc0', mid: '#5fb08a', near: '#2f8a5a',
+      puzzles: ['count', 'add', 'first'], len: 84, start: 2, nest: 80,
+      ground: [[0, 14], [17, 26], [33, 42], [45, 54], [62, 70], [73, 84]], plats: [[5, 5, 3], [48, 5, 3]],
+      fruits: [[5, 4], [6, 4], [7, 4], [21, 2], [23, 7], [29, 5], [30, 5], [40, 7], [48, 4], [49, 4], [50, 4], [56, 6], [59, 5], [60, 5], [68, 7], [77, 7]],
+      stones: [10, 38, 66], mush: [21], movers: [{ x: 28, row: 6, w: 3, amp: 1.5, speed: 1.3 }], falls: [[56, 7, 2], [59, 6, 2]] },
+    { sp: 'trike', name: "La jungle de l'île", intro: "Le tricératops traverse la jungle de l'île. Fonce !",
+      seed: 88, len: 80, density: .18, rivers: [24, 52], small: 7, fruits: 20, gates: [14, 38, 64], nest: 76,
+      grass: '#7ac85a', grass2: '#62b048', edge: '#1f5a2a', tree: ['#1f6a3a', '#2f8a4a', '#4fb05a'], puzzles: ['compare', 'missing', 'sequence'] },
+    { sp: 'ptero', name: "Le ciel de l'île", intro: "Le ptérodactyle survole l'île. Le volcan fume au loin !", volcano: true,
+      seed: 99, len: 7000, speed: 2.2, rocks: .9, wind: .8, sky: ['#7fc8f4', '#fdf0d8'], far: '#8fae9a', ground: '#2f8a5a', puzzles: ['add', 'order', 'count'] },
+    { sp: 'plesio', name: "Le lagon de l'île", intro: "Le plésiosaure nage jusqu'au trésor. Toutes les familles t'attendent !",
+      seed: 101, len: 76, pillars: .16, jelly: 5, gates: [14, 34, 56], nest: 71, water: ['#5ad8e6', '#1a6a9a'], rock: '#7a6f8a', sand: '#f4e4b0',
+      currents: [[22, 28, 0, -1], [44, 50, 1, 0]], puzzles: ['hangman', 'compare', 'add'] },
   ],
 };
+// Les endroits secrets (bonus) s'ouvrent avec la clé dorée ; les autres, l'un après l'autre.
+const regularCount = wk => WORLDS[wk].filter(d => !d.bonus).length;
+const levelSp = (wk, i) => SPECIES[WORLDS[wk][i].sp || wk];
+const allMaps = () => ORDER.every(k => prog.bag.maps[k]);
+function canPlay(wk, i) {
+  const d = WORLDS[wk][i];
+  if (!d) return false;
+  if (wk === 'final' && !allMaps()) return false;
+  return d.bonus ? !!prog.bag.keys[wk] : i < prog.worlds[wk].unlocked;
+}
 
 /* ---------- Images des énigmes ---------- */
 const ICON = {
@@ -650,6 +734,7 @@ const IC = {
   home: '<svg viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5V21h-6v-6H9v6H3z" fill="currentColor"/></svg>',
   magnet: '<svg viewBox="0 0 24 24" class="pow" role="img" aria-label="Aimant"><path d="M5 3h4v9a3 3 0 0 0 6 0V3h4v9a7 7 0 0 1-14 0z" fill="#e5483b" stroke="#1d2b22" stroke-width="1.5"/><path d="M5 3h4v3H5zM15 3h4v3h-4z" fill="#d9d9d9" stroke="#1d2b22" stroke-width="1.5"/></svg>',
   shield: '<svg viewBox="0 0 24 24" class="pow" role="img" aria-label="Bouclier"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#8cd2ff" stroke="#1d2b22" stroke-width="1.5"/></svg>',
+  key: '<svg viewBox="0 0 32 24" class="key-i" aria-hidden="true"><circle cx="9" cy="12" r="6.5" fill="#ffd23a" stroke="#1d2b22" stroke-width="2"/><circle cx="9" cy="12" r="2.2" fill="#a0692e"/><path d="M15 10h14v4h-2v4h-3v-4h-2v3h-3v-3h-4z" fill="#ffd23a" stroke="#1d2b22" stroke-width="2" stroke-linejoin="round"/></svg>',
   lock: '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="5" y="10" width="14" height="11" rx="2" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>',
 };
 
@@ -661,6 +746,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const srand = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const wrap = (v, n) => ((v % n) + n) % n;
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 /* ---------- Compétences ----------
@@ -689,7 +775,7 @@ const TYPE_SKILL = { count: 'count', add: 'add', sub: 'sub', mult: 'mult', compa
 const KEY = 'dino-explorateur-v2', KEY_V1 = 'dino-explorateur-v1', SAVE_VERSION = 2;
 const isInt = v => Number.isInteger(v);
 function cleanRun(r) {
-  if (!r || !SPECIES[r.world] || !isInt(r.i) || !WORLDS[r.world][r.i]) return null;
+  if (!r || !WORLDS[r.world] || !isInt(r.i) || !WORLDS[r.world][r.i]) return null;
   const nums = a => Array.isArray(a) ? a.filter(isInt) : [];
   const num = v => typeof v === 'number' && isFinite(v) ? v : null;
   return {
@@ -717,15 +803,18 @@ function cleanProg(s) {
       if (Object.keys(day).length) p.stats[d] = day;
     });
   }
-  ORDER.forEach(k => {
+  Object.keys(WORLDS).forEach(k => {
     const n = WORLDS[k].length, w = p.worlds[k] || {};
+    const eggs = Array.from({ length: n }, (_, i) => clamp((w.eggs && w.eggs[i]) || 0, 0, 3));
+    // Un endroit terminé ouvre le suivant, même s'il a été ajouté après la sauvegarde.
+    const done = eggs.reduce((a, e, i) => e === 3 && !WORLDS[k][i].bonus ? i + 2 : a, 1);
     p.worlds[k] = {
-      unlocked: clamp(w.unlocked || 1, 1, n),
-      eggs: Array.from({ length: n }, (_, i) => clamp((w.eggs && w.eggs[i]) || 0, 0, 3)),
+      unlocked: clamp(Math.max(w.unlocked || 1, done), 1, regularCount(k)),
+      eggs,
       stars: Array.from({ length: n }, (_, i) => clamp(+(w.stars && w.stars[i]) || 0, 0, 3)),
     };
   });
-  if (!SPECIES[p.world]) p.world = 'rex';
+  if (!WORLDS[p.world]) p.world = 'rex';
   if (!['petit', 'grand', 'expert'].includes(p.diff)) p.diff = 'petit';
   Object.keys(SKILLS).forEach(k => {
     const sk = p.skills[k] || {};
@@ -735,7 +824,9 @@ function cleanProg(s) {
   if (!isInt(p.savedAt)) p.savedAt = 0;
   // Le sac : trésors, fossiles trouvés, couleurs achetées et choisies, pouvoirs en réserve.
   const b = s && s.bag && typeof s.bag === 'object' ? s.bag : {};
-  p.bag = { n: isInt(b.n) && b.n >= 0 ? b.n : 0, fossils: {}, owned: {}, skin: {}, power: {} };
+  p.bag = { n: isInt(b.n) && b.n >= 0 ? b.n : 0, fossils: {}, owned: {}, skin: {}, power: {}, keys: {}, maps: {} };
+  // Clé dorée et morceau de carte : un de chaque par animal.
+  ORDER.forEach(w => ['keys', 'maps'].forEach(k => { if (b[k] && b[k][w] === true) p.bag[k][w] = true; }));
   if (b.fossils && typeof b.fossils === 'object') Object.keys(b.fossils).forEach(k => { const [w, i] = k.split('-'); if (b.fossils[k] === true && WORLDS[w] && WORLDS[w][+i]) p.bag.fossils[k] = true; });
   if (b.owned && typeof b.owned === 'object') Object.keys(b.owned).forEach(k => { const [w, id] = k.split(':'); if (b.owned[k] === true && SKINS[w] && SKINS[w].some(x => x.id === id)) p.bag.owned[k] = true; });
   ORDER.forEach(w => { const id = b.skin && b.skin[w]; p.bag.skin[w] = id && p.bag.owned[`${w}:${id}`] ? id : 'base'; });
@@ -985,7 +1076,7 @@ const setView = () => ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
 
 /* ---------- État ---------- */
 let L = null, player = null, state = 'menu', time = 0, camX = 0, parts = [], cooldown = 0, fruitCount = 0, eggsRun = 0;
-const world = () => SPECIES[L ? L.world : prog.world];
+const world = () => L ? L.sp : SPECIES[prog.world];
 function makeGrid(cols) { const g = []; for (let c = 0; c < cols; c++) g.push(new Uint8Array(ROWS)); return g; }
 function isSolid(c, r) {
   if (c < 0) return true;
@@ -1024,8 +1115,9 @@ function collectItems(p, pad) {
     if (f.taken || !hit(p, { x: f.x - pad, y: f.y - pad, w: pad * 2, h: pad * 2 })) return;
     f.taken = true; fruitCount++; prog.bag.n++; $('hudFruit').textContent = fruitCount;
     if (f.fossil) { prog.bag.fossils[`${L.world}-${L.i}`] = true; L.gotFossil = true; SFX.yay(); say('Un fossile ! Il va dans ton album.'); }
+    else if (f.key) { prog.bag.keys[L.world] = true; L.gotKey = true; SFX.yay(); say("La clé dorée ! Elle ouvre l'endroit secret."); }
     else SFX.fruit();
-    autosave(f.fossil);
+    autosave(f.fossil || f.key);
     for (let i = 0; i < 8; i++) parts.push({ x: f.x, y: f.y, vx: Math.cos(i) * 3, vy: Math.sin(i) * 3 - 1, life: 26, col: '#ffd23a', r: 4 });
   });
 }
@@ -1065,9 +1157,21 @@ function drawFossil(f) {
   for (let a = 0; a < Math.PI * 5; a += .2) { const r = 11 * (1 - a / (Math.PI * 5.3)); ctx[a ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r); }
   ctx.stroke();
 }
+// Clé dorée : elle ouvre l'endroit secret de l'animal.
+function drawKey(f) {
+  const x = f.x, y = f.y + Math.sin(time * 3 + f.ph) * 4;
+  ctx.fillStyle = `rgba(255,220,90,${.35 + .2 * Math.sin(time * 5)})`; circle(ctx, x, y, 24);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-.5 + Math.sin(time * 2) * .15);
+  ctx.fillStyle = '#ffd23a'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(-9, 0, 8, 0, Math.PI * 2); ctx.moveTo(-1, -3); ctx.lineTo(16, -3); ctx.lineTo(16, 7); ctx.lineTo(11, 7); ctx.lineTo(11, 3); ctx.lineTo(7, 3); ctx.lineTo(7, 7); ctx.lineTo(2, 7); ctx.lineTo(2, 3); ctx.lineTo(-1, 3);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#a0692e'; circle(ctx, -9, 0, 3);
+  ctx.restore();
+}
 function drawFruit(f) {
   if (f.taken) return;
   if (f.fossil) { drawFossil(f); return; }
+  if (f.key) { drawKey(f); return; }
   const y = f.y + Math.sin(time * 3 + f.ph) * 4;
   ctx.fillStyle = '#b23a7a'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(f.x, y, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -1077,6 +1181,7 @@ function drawFruit(f) {
 function drawPearl(f) {
   if (f.taken) return;
   if (f.fossil) { drawFossil(f); return; }
+  if (f.key) { drawKey(f); return; }
   const y = f.y + Math.sin(time * 2 + f.ph) * 3;
   ctx.fillStyle = 'rgba(255,255,255,.25)'; circle(ctx, f.x, y, 15);
   ctx.fillStyle = '#f6f3ff'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 2.5;
@@ -1198,6 +1303,8 @@ MODES.platform = {
     L.items = d.fruits.map(([c, r]) => ({ x: c * T + T / 2, y: r * T + T / 2, taken: false, ph: Math.random() * 6 }));
     L.mush = d.mush.map(c => ({ x: c * T + 4, y: GROUND * T - 30, w: T - 8, h: 30, sq: 0 }));
     L.movers = d.movers.map(m => ({ x0: m.x * T, x: m.x * T, y: m.row * T, w: m.w * T, h: 18, amp: m.amp * T, speed: m.speed, dx: 0 }));
+    // Rondins qui tombent : ils tremblent quand on monte dessus, tombent, puis reviennent.
+    L.falls = (d.falls || []).map(([x, r, w]) => ({ x: x * T, y0: r * T, y: r * T, w: w * T, h: 18, dx: 0, t: 0, vy: 0, back: 0 }));
     L.nestX = d.nest * T;
     player = { x: d.start * T + 4, y: GROUND * T - 44, w: 40, h: 44, vx: 0, vy: 0, face: 1, ground: false, on: null, coy: 0, buf: 0 };
     L.safe = { x: player.x, y: player.y };
@@ -1212,6 +1319,11 @@ MODES.platform = {
     if (p.buf > 0 && p.coy > 0) { p.vy = JUMP; p.buf = 0; p.coy = 0; p.ground = false; p.on = null; SFX.jump(); }
     p.vy = Math.min(p.vy + GRAV, 15);
     L.movers.forEach(m => { const nx = m.x0 + Math.sin(time * m.speed) * m.amp; m.dx = nx - m.x; m.x = nx; });
+    L.falls.forEach(f => {
+      if (f.back > 0) { if (--f.back === 0) { f.y = f.y0; f.t = f.vy = 0; } return; }
+      if (f.t > 0) f.t++;
+      if (f.t > 40) { f.vy = Math.min(f.vy + .35, 12); f.y += f.vy; if (f.y > VIEW_H + 120) f.back = 150; }
+    });
 
     const dx = p.vx + (p.on ? p.on.dx : 0);
     p.x += dx;
@@ -1226,6 +1338,12 @@ MODES.platform = {
     nearRects(p).forEach(r => { if (hit(p, r)) { if (p.vy > 0) { p.y = r.y - p.h; p.vy = 0; p.ground = true; } else if (p.vy < 0) { p.y = r.y + r.h; p.vy = 0; } } });
     L.movers.forEach(m => {
       if (p.vy >= 0 && prevBottom <= m.y + 1 && p.y + p.h >= m.y && p.x + p.w > m.x + 4 && p.x < m.x + m.w - 4) { p.y = m.y - p.h; p.vy = 0; p.ground = true; p.on = m; }
+    });
+    L.falls.forEach(f => {
+      if (!f.back && p.vy >= 0 && prevBottom <= f.y + 1 && p.y + p.h >= f.y && p.x + p.w > f.x + 4 && p.x < f.x + f.w - 4) {
+        p.y = f.y - p.h; p.vy = 0; p.ground = true; p.on = f;
+        if (!f.t) { f.t = 1; SFX.crack(); }
+      }
     });
     if (p.ground && !p.on) L.safe = { x: p.x, y: p.y };
     // chute dans l'eau : on revient sans pénalité
@@ -1254,6 +1372,15 @@ MODES.platform = {
       rr(ctx, m.x, m.y, m.w, m.h, 9); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#c99a62'; circle(ctx, m.x + 10, m.y + 9, 5); circle(ctx, m.x + m.w - 10, m.y + 9, 5);
       ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(m.x + m.w / 2, m.y + 1, 16, 5, -.3, 0, Math.PI * 2); ctx.fill();
+    });
+    L.falls.forEach(f => {
+      if (f.back) return;
+      const sx = f.t > 0 && f.t <= 40 ? Math.sin(f.t * 1.7) * 2 : 0;
+      ctx.fillStyle = '#b08a5a'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3;
+      rr(ctx, f.x + sx, f.y, f.w, f.h, 9); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#6e4520'; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.moveTo(f.x + sx + f.w * .35, f.y + 2); ctx.lineTo(f.x + sx + f.w * .42, f.y + 9); ctx.lineTo(f.x + sx + f.w * .36, f.y + 16);
+      ctx.moveTo(f.x + sx + f.w * .7, f.y + 3); ctx.lineTo(f.x + sx + f.w * .64, f.y + 12); ctx.stroke();
     });
     L.mush.forEach(m => {
       ctx.save(); ctx.translate(m.x + m.w / 2, m.y + m.h); ctx.scale(1 + m.sq * .25, 1 - m.sq * .3);
@@ -1361,17 +1488,39 @@ function drawSkyScene(d, base) {
   const g = ctx.createLinearGradient(0, 0, 0, viewH);
   g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
-  ctx.fillStyle = 'rgba(255,220,120,.9)'; circle(ctx, viewW - 90, base - GROUND * T + 70, 34);
+  const top = base - GROUND * T;
+  if (d.night) {
+    ctx.fillStyle = '#fff8d6';
+    for (let i = 0; i < 40; i++) { const tw = .5 + .5 * Math.sin(time * 2 + i); ctx.globalAlpha = .4 + tw * .6; circle(ctx, wrap(srand(i) * 1.3 * viewW - camX * .03, viewW + 20), top + srand(i + 50) * 220, 1.5 + srand(i + 9) * 1.2); }
+    ctx.globalAlpha = 1; ctx.fillStyle = '#f5e6a8'; circle(ctx, viewW - 90, top + 70, 30);
+    ctx.fillStyle = d.sky[0]; circle(ctx, viewW - 78, top + 62, 26);
+  } else if (!d.cave) { ctx.fillStyle = 'rgba(255,220,120,.9)'; circle(ctx, viewW - 90, top + 70, 34); }
   drawMountains(d, base, .12);
   ctx.fillStyle = d.mid;
   const sp2 = 260, s2 = Math.floor(camX * .3 / sp2) - 1;
   for (let i = s2; i < s2 + viewW / sp2 + 3; i++) {
     const x = i * sp2 - camX * .3;
     ctx.beginPath(); ctx.ellipse(x + 130, base + 10, 170, 70 + srand(i + 9) * 40, 0, Math.PI, 0); ctx.fill();
-    if (srand(i + 3) > .72) { drawBrachio(x + 120, base - 40, d.mid); ctx.fillStyle = d.mid; }
+    if (!d.cave && srand(i + 3) > .72) { drawBrachio(x + 120, base - 40, d.mid); ctx.fillStyle = d.mid; }
   }
   const sp3 = 210, s3 = Math.floor(camX * .55 / sp3) - 1;
-  for (let i = s3; i < s3 + viewW / sp3 + 3; i++) drawPalm(i * sp3 - camX * .55 + srand(i + 5) * 80, base + 20, 130 + srand(i + 2) * 70, d.near);
+  if (d.cave) {
+    // Stalactites au plafond et cristaux qui brillent
+    for (let i = s3; i < s3 + viewW / sp3 + 3; i++) {
+      const x = i * sp3 - camX * .55 + srand(i + 5) * 80;
+      ctx.fillStyle = d.near; ctx.beginPath(); ctx.moveTo(x - 30, 0); ctx.lineTo(x, top + 60 + srand(i + 2) * 90); ctx.lineTo(x + 30, 0); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + 50, 0); ctx.lineTo(x + 66, top + 30 + srand(i + 7) * 50); ctx.lineTo(x + 82, 0); ctx.fill();
+      const cx = x + 100, glow = .5 + .5 * Math.sin(time * 2 + i);
+      ctx.fillStyle = `rgba(180,140,255,${.25 + glow * .25})`; circle(ctx, cx, base - 10, 26);
+      ctx.fillStyle = '#b48cff'; ctx.beginPath(); ctx.moveTo(cx - 10, base); ctx.lineTo(cx - 4, base - 34); ctx.lineTo(cx + 2, base); ctx.moveTo(cx, base); ctx.lineTo(cx + 8, base - 24); ctx.lineTo(cx + 14, base); ctx.fill();
+    }
+  } else for (let i = s3; i < s3 + viewW / sp3 + 3; i++) drawPalm(i * sp3 - camX * .55 + srand(i + 5) * 80, base + 20, 130 + srand(i + 2) * 70, d.near);
+  if (d.night) for (let i = 0; i < 14; i++) {
+    // Lucioles
+    const xx = wrap(srand(i + 3) * viewW * 1.4 - camX * .8 + Math.sin(time * .7 + i) * 30, viewW + 40) - 20, y = top + 120 + srand(i + 30) * 220 + Math.sin(time * 1.3 + i * 2) * 20;
+    const a = .5 + .5 * Math.sin(time * 3 + i * 1.7);
+    ctx.fillStyle = `rgba(255,240,120,${a * .35})`; circle(ctx, xx, y, 9); ctx.fillStyle = `rgba(255,250,190,${.4 + a * .6})`; circle(ctx, xx, y, 3);
+  }
 }
 
 /* ---------- Tricératops : vue de dessus ---------- */
@@ -1379,7 +1528,7 @@ MODES.topdown = {
   oy: () => (viewH - VIEW_H) / 2,
   build(d) {
     const R = rng(d.seed), cols = d.len;
-    L.cols = cols; L.grid = makeGrid(cols); L.solid = v => v >= 1 && v <= 4; // 1 arbre, 2 rocher, 3 caillou, 4 eau, 5 pont
+    L.cols = cols; L.grid = makeGrid(cols); L.solid = v => v >= 1 && v <= 4; // 1 arbre, 2 rocher, 3 caillou, 4 eau, 5 pont, 6 glace
     const flat = new Set();
     d.rivers.forEach(c => { for (let k = c - 2; k <= c + 3; k++) flat.add(k); });
     d.gates.forEach(c => { for (let k = c - 2; k <= c + 2; k++) flat.add(k); });
@@ -1391,7 +1540,7 @@ MODES.topdown = {
       if (flat.has(c)) continue;
       for (let rr2 = 1; rr2 <= 8; rr2++) if (Math.abs(rr2 - path[c]) > 1 && R() < d.density) L.grid[c][rr2] = R() < .55 ? 1 : 2;
     }
-    d.rivers.forEach(c => { for (const k of [c, c + 1]) for (let rr2 = 1; rr2 <= 8; rr2++) L.grid[k][rr2] = (rr2 === path[k] || rr2 === path[k] + 1) ? 5 : 4; });
+    d.rivers.forEach(c => { for (const k of [c, c + 1]) for (let rr2 = 1; rr2 <= 8; rr2++) L.grid[k][rr2] = d.frozen ? 6 : (rr2 === path[k] || rr2 === path[k] + 1) ? 5 : 4; });
     let n = 0, tries = 0;
     while (n < d.small && tries++ < 300) { const c = 6 + Math.floor(R() * (cols - 14)); if (flat.has(c) || L.grid[c][path[c]]) continue; L.grid[c][path[c]] = 3; n++; }
     L.items = []; tries = 0;
@@ -1416,12 +1565,17 @@ MODES.topdown = {
     const sp = p.dash > 0 ? 6.8 : 3.6;
     p.moving = ix !== 0 || iy !== 0;
     if (p.moving) { const ta = Math.atan2(iy, ix); const da = ((ta - p.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI; p.ang += da * .25; }
-    moveBox(p, ix * sp, iy * sp, (c, r) => {
+    // Sur la glace, on glisse : l'élan reste et on tourne lentement.
+    const col = L.grid[Math.floor((p.x + p.w / 2) / T)], onIce = col && col[Math.floor((p.y + p.h / 2) / T)] === 6;
+    if (onIce) { p.vx = p.vx * .96 + ix * sp * .05; p.vy = p.vy * .96 + iy * sp * .05; }
+    else { p.vx = ix * sp; p.vy = iy * sp; }
+    const res = moveBox(p, p.vx, p.vy, (c, r) => {
       if (L.grid[c][r] !== 3) return false;
       L.grid[c][r] = 0; L.broken.push([c, r]); SFX.crack();
       for (let i = 0; i < 12; i++) parts.push({ x: c * T + T / 2, y: r * T + T / 2, vx: (Math.random() - .5) * 6, vy: (Math.random() - .5) * 6, g: 0, life: 30, col: pick(['#a39a8a', '#7d7466']), r: 3 + Math.random() * 3 });
       return true;
     });
+    if (res.x) p.vx = 0; if (res.y) p.vy = 0;
     p.y = clamp(p.y, T, VIEW_H - T - p.h);
     collectItems(p, 16); checkGates(p); gateAnim();
     if (p.x + p.w >= L.nestX) levelDone();
@@ -1436,7 +1590,7 @@ MODES.topdown = {
     for (let c = c0; c <= c1; c++) for (let r = 1; r < 9; r++) {
       const s = srand(c * 31 + r * 7), x = c * T, y = r * T;
       if (s > .5) { ctx.fillStyle = d.grass2; circle(ctx, x + 10 + s * 20, y + 14, 4); circle(ctx, x + 16 + s * 20, y + 12, 3); circle(ctx, x + 30 - s * 10, y + 34, 4); }
-      if (s > .93 && !L.grid[c][r]) { ctx.fillStyle = pick2(['#f27bb4', '#ffd23a', '#fff'], c + r); for (let k = 0; k < 5; k++) circle(ctx, x + 24 + Math.cos(k * 1.26) * 4, y + 24 + Math.sin(k * 1.26) * 4, 3); ctx.fillStyle = '#ffb238'; circle(ctx, x + 24, y + 24, 2); }
+      if (s > .93 && !L.grid[c][r] && !d.snowy) { ctx.fillStyle = pick2(['#f27bb4', '#ffd23a', '#fff'], c + r); for (let k = 0; k < 5; k++) circle(ctx, x + 24 + Math.cos(k * 1.26) * 4, y + 24 + Math.sin(k * 1.26) * 4, 3); ctx.fillStyle = '#ffb238'; circle(ctx, x + 24, y + 24, 2); }
     }
     for (let c = c0; c <= c1; c++) for (let r = 0; r < ROWS; r++) {
       const v = L.grid[c][r], x = c * T, y = r * T;
@@ -1452,6 +1606,11 @@ MODES.topdown = {
           if (L.grid[c][r - 1] !== 5) ctx.fillRect(x, y, T + .5, 4);
           if (L.grid[c][r + 1] !== 5) ctx.fillRect(x, y + T - 4, T + .5, 4);
         }
+      }
+      if (v === 6) {
+        ctx.fillStyle = '#bfe4f4'; ctx.fillRect(x, y, T + .5, T + .5);
+        ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        const s = srand(c * 3 + r); ctx.beginPath(); ctx.moveTo(x + 8 + s * 10, y + 30); ctx.lineTo(x + 22 + s * 10, y + 16); ctx.moveTo(x + 26, y + 40); ctx.lineTo(x + 34, y + 32); ctx.stroke();
       }
       if (v === 2 || v === 3) this.rock(x + T / 2, y + T / 2, v === 2 ? 20 : 13, c * 13 + r, v === 3);
     }
@@ -1473,12 +1632,26 @@ MODES.topdown = {
     if (small) { ctx.strokeStyle = '#5a5248'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - 4, y - 6); ctx.lineTo(x + 1, y); ctx.lineTo(x - 2, y + 6); ctx.stroke(); }
   },
   tree(x, y, seed) {
+    const d = L.d;
+    if (d.cactus) {
+      // Cactus vu du dessus : une étoile de côtes vertes avec des épines
+      ctx.fillStyle = 'rgba(0,0,0,.2)'; circle(ctx, x + 5, y + 6, 20);
+      ctx.fillStyle = '#4f8f3a'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, r = k % 2 ? 13 : 19; ctx[k ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#7fbf5a'; circle(ctx, x - 3, y - 3, 7);
+      ctx.fillStyle = '#fff4dc'; for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2 + .2; circle(ctx, x + Math.cos(a) * 21, y + Math.sin(a) * 21, 1.6); }
+      if (srand(seed) > .6) { ctx.fillStyle = '#f27bb4'; circle(ctx, x + 2, y - 2, 4); }
+      return;
+    }
+    const [c1, c2, c3] = d.tree || ['#2f6b37', '#3f8f45', '#5cad55'];
     ctx.fillStyle = 'rgba(0,0,0,.22)'; circle(ctx, x + 7, y + 7, 27);
-    ctx.fillStyle = '#2f6b37';
+    ctx.fillStyle = c1;
     for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2 + seed; circle(ctx, x + Math.cos(a) * 17, y + Math.sin(a) * 17, 11); }
     circle(ctx, x, y, 22);
-    ctx.fillStyle = '#3f8f45'; circle(ctx, x - 4, y - 4, 16);
-    ctx.fillStyle = '#5cad55'; circle(ctx, x - 8, y - 8, 8);
+    ctx.fillStyle = c2; circle(ctx, x - 4, y - 4, 16);
+    ctx.fillStyle = c3; circle(ctx, x - 8, y - 8, 8);
+    if (d.snowy) { ctx.fillStyle = '#fff'; circle(ctx, x - 10, y - 2, 6); circle(ctx, x + 6, y - 10, 5); circle(ctx, x + 8, y + 8, 4); }
   },
   gate(g) {
     const x = g.c * T + T / 2;
@@ -1517,7 +1690,7 @@ MODES.shmup = {
     L.gates = gx.map((x, k) => ({ k, x: x - 30, y: 200, baseY: 200, w: 60, h: 80, block: false, open: false, anim: 0, type: d.puzzles[k], eggY: 240 }));
     for (let x = 650; x < d.len - 450;) {
       if (gx.some(g => Math.abs(g - x) < 260)) { x += 120; continue; }
-      if (R() < .62) L.rocks.push({ x, y: 50 + R() * 380, r: 14 + R() * 9, vx: -(.5 + R() * 1.2) * d.rocks, vy: (R() - .5) * .8, rot: R() * 6, seed: Math.floor(R() * 1000) });
+      if (R() < (d.rockRate || .62)) L.rocks.push({ x, y: 50 + R() * 380, r: 14 + R() * 9, vx: -(.5 + R() * 1.2) * d.rocks, vy: (R() - .5) * .8, rot: R() * 6, seed: Math.floor(R() * 1000) });
       else { const y0 = 90 + R() * 300; for (let k = 0; k < 5; k++) L.items.push({ x: x + k * 42, y: y0 + Math.sin(k * .8) * 40, taken: false, ph: k }); }
       x += (170 + R() * 200) / d.rocks;
     }
@@ -1532,9 +1705,12 @@ MODES.shmup = {
     const scroll = camX - before;
     const [ix, iy] = inputDir(p);
     p.x += ix * 4.6 + scroll; p.y += iy * 4.6;
+    // Le vent pousse doucement vers le haut puis vers le bas.
+    if (d.wind) p.y += Math.sin(time * .8) * d.wind;
     if (p.hurt > 0) { p.hurt--; p.x += p.kx; p.kx *= .9; }
-    // Sur téléphone, le ptérodactyle reste loin des bords, là où sont les pouces.
-    const mx = touchUI ? viewW * .18 : 8;
+    // Sur téléphone, le ptérodactyle reste loin des bords, là où sont les pouces (120 au plus :
+    // sur un écran très large, une marge plus grande l'empêchait d'atteindre le nid).
+    const mx = touchUI ? Math.min(viewW * .18, 120) : 8;
     p.x = clamp(p.x, camX + mx, camX + viewW - p.w - mx); p.y = clamp(p.y, 6, VIEW_H - p.h - 6);
     if (--p.fire <= 0) { p.fire = 20; L.shots.push({ x: p.x + p.w, y: p.y + p.h * .45, vx: 7.5, hit: false }); }
     // Bouton d'action : une graine de plus, tout de suite.
@@ -1557,7 +1733,8 @@ MODES.shmup = {
     L.rocks = L.rocks.filter(r => !r.dead && r.x > camX - 80);
     L.gates.forEach(g => { if (!g.open) { g.y = g.baseY + Math.sin(time * 2 + g.k) * 14; g.eggY = g.y + 40; } });
     collectItems(p, 16); checkGates(p); gateAnim();
-    if (!next && p.x + p.w >= L.nestX + 40) levelDone();
+    // Le nid est atteint aussi quand le ptérodactyle est au bout de l'écran, caméra arrêtée.
+    if (!next && p.x + p.w >= Math.min(L.nestX + 40, camX >= limit ? camX + viewW - mx - 4 : Infinity)) levelDone();
     updateParts();
   },
   render() {
@@ -1566,7 +1743,11 @@ MODES.shmup = {
     const g = ctx.createLinearGradient(0, 0, 0, viewH);
     g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
-    ctx.fillStyle = 'rgba(255,220,120,.9)'; circle(ctx, viewW - 90, oy + 70, 34);
+    if (!d.storm) { ctx.fillStyle = d.sunset ? 'rgba(255,150,80,.95)' : 'rgba(255,220,120,.9)'; circle(ctx, viewW - 90, oy + (d.sunset ? 300 : 70), d.sunset ? 50 : 34); }
+    if (d.rainbow) ['#e5483b', '#ff8a2a', '#f5c518', '#3fa34d', '#2f7fe0', '#8a5ad8'].forEach((c, k) => {
+      ctx.strokeStyle = c; ctx.globalAlpha = .45; ctx.lineWidth = 14;
+      ctx.beginPath(); ctx.arc(viewW * .6, oy + VIEW_H + 40, 300 - k * 14, Math.PI, 0); ctx.stroke(); ctx.globalAlpha = 1;
+    });
     drawMountains(d, oy + VIEW_H - 30, .12);
     this.clouds(.35, .7, oy, 0);
     ctx.save(); ctx.translate(-Math.round(camX), oy);
@@ -1588,6 +1769,20 @@ MODES.shmup = {
     drawParts();
     ctx.restore();
     if (d.clouds) this.clouds(1.3, .45, oy, 7);
+    if (d.wind) {
+      // Traits de vent
+      const tilt = -Math.sin(time * .8) * d.wind * 10;
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath();
+      for (let k = 0; k < 10; k++) { const x = wrap(srand(k) * viewW - time * (300 + k * 20), viewW + 120) - 60, y = oy + 30 + srand(k + 7) * (VIEW_H - 60); ctx.moveTo(x, y); ctx.lineTo(x + 46, y - tilt); }
+      ctx.stroke();
+    }
+    if (d.storm) {
+      ctx.strokeStyle = 'rgba(200,220,255,.5)'; ctx.lineWidth = 2; ctx.beginPath();
+      for (let k = 0; k < 40; k++) { const x = wrap(srand(k) * viewW - time * 120, viewW), y = wrap(srand(k + 40) * viewH + time * 600, viewH); ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 16); }
+      ctx.stroke();
+      // Éclair doux, toutes les 6 secondes
+      const f = time % 6; if (f < .25) { ctx.fillStyle = `rgba(255,255,240,${(.25 - f) * 1.4})`; ctx.fillRect(0, 0, viewW, viewH); }
+    }
   },
   clouds(f, alpha, oy, seed) {
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;
@@ -1659,11 +1854,14 @@ MODES.swim = {
       L.jellies.push({ c, x: c * T + T / 2, y0: 150 + R() * 140, amp: 40 + R() * 50, sp: .8 + R() * .8, ph: R() * 6, y: 0 });
     }
     L.items = [];
-    for (let c = 4; c < cols - 8; c += 2) {
-      const y = Math.round(200 + Math.sin(c * .45) * 110), r = Math.floor(y / T);
+    // pearls : 2 rangées de perles au lieu d'une (baie aux perles)
+    for (let k = 0; k < (d.pearls || 1); k++) for (let c = 4 + k; c < cols - 8; c += 2) {
+      const y = Math.round(200 + Math.sin(c * .45 + k * 2.5) * 110), r = Math.floor(y / T);
       if (L.grid[c][r] || d.gates.includes(c)) continue;
       L.items.push({ x: c * T + T / 2, y, taken: false, ph: c });
     }
+    // Courants : [première colonne, dernière colonne, poussée en x, poussée en y]
+    L.currents = (d.currents || []).map(([a, b, dx, dy]) => ({ x: a * T, w: (b - a + 1) * T, dx, dy }));
     L.weeds = [];
     for (let c = 0; c < cols; c++) if (!L.grid[c][L.floor[c] - 1] && R() < .45) L.weeds.push({ x: c * T + R() * T, base: L.floor[c] * T + 4, h: 30 + R() * 50, ph: R() * 6 });
     L.gates = d.gates.map((c, k) => ({ c, k, x: c * T + 6, y: -200, w: T - 12, h: VIEW_H + 400, block: true, open: false, anim: 0, type: d.puzzles[k], eggY: VIEW_H / 2 }));
@@ -1678,6 +1876,7 @@ MODES.swim = {
     if (p.dash > 0) { p.dash--; if (!ix && !iy) ix = p.face; }
     p.vx = (p.vx + ix * acc) * .9; p.vy = (p.vy + iy * acc) * .9;
     if (p.hurt > 0) p.hurt--;
+    L.currents.forEach(k => { if (p.x + p.w / 2 > k.x && p.x + p.w / 2 < k.x + k.w) { p.vx += k.dx * .28; p.vy += k.dy * .28; } });
     const res = moveBox(p, p.vx, p.vy); if (res.x) p.vx = 0; if (res.y) p.vy = 0;
     const top = L.d.cave ? T : 26;
     if (p.y < top) { p.y = top; p.vy = 0; }
@@ -1724,6 +1923,8 @@ MODES.swim = {
       ctx.stroke();
     }
     ctx.fillStyle = d.rock; ctx.fillRect(camX - 10, VIEW_H, viewW + 20, oy + 10);
+    if (d.wreck) this.wreck(d.wreck * T, L.floor[d.wreck] * T);
+    L.currents.forEach(k => this.current(k));
     L.weeds.forEach(w => {
       if (w.x < camX - 40 || w.x > camX + viewW + 40) return;
       ctx.strokeStyle = '#3f9a5f'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(w.x, w.base);
@@ -1739,6 +1940,37 @@ MODES.swim = {
     if (!(p.hurt > 0 && p.hurt % 8 < 4)) drawDino(ctx, world(), p.x + p.w / 2 + 6 * p.face, p.y + p.h / 2 + 13, p.face, time, true, true, 1.1);
     if (L.shield) drawShield(p.x + p.w / 2, p.y + p.h / 2, 38);
     drawParts();
+    ctx.restore();
+    if (d.deep) {
+      // Grands fonds : il fait noir, sauf autour du plésiosaure
+      const px = p.x + p.w / 2 - Math.round(camX), py = p.y + p.h / 2 + oy, gl = ctx.createRadialGradient(px, py, 70, px, py, 320);
+      gl.addColorStop(0, 'rgba(2,8,20,0)'); gl.addColorStop(1, 'rgba(2,8,20,.6)');
+      ctx.fillStyle = gl; ctx.fillRect(0, 0, viewW, viewH);
+    }
+  },
+  current(k) {
+    if (k.x > camX + viewW || k.x + k.w < camX) return;
+    ctx.fillStyle = 'rgba(220,245,255,.08)'; ctx.fillRect(k.x, 0, k.w, VIEW_H);
+    ctx.fillStyle = 'rgba(230,250,255,.7)';
+    for (let i = 0; i < 18; i++) {
+      const x = k.x + wrap(srand(i + k.x) * k.w + time * 70 * k.dx, k.w), y = wrap(srand(i * 3 + k.x) * VIEW_H + time * 70 * k.dy, VIEW_H);
+      circle(ctx, x, y, 2 + srand(i) * 3);
+    }
+    // Flèche douce au milieu
+    const cx = k.x + k.w / 2, cy = VIEW_H / 2 + Math.sin(time * 2) * 6, a = Math.atan2(k.dy, k.dx);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(a); ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(-24, 0); ctx.lineTo(20, 0); ctx.moveTo(6, -14); ctx.lineTo(20, 0); ctx.lineTo(6, 14); ctx.stroke(); ctx.restore();
+  },
+  wreck(x, y) {
+    // Vieux bateau couché sur le sable, derrière les rochers
+    ctx.save(); ctx.translate(x, y + 6); ctx.rotate(-.12);
+    ctx.fillStyle = '#6a4a32'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-170, -80); ctx.lineTo(170, -80); ctx.quadraticCurveTo(150, 10, 80, 10); ctx.lineTo(-110, 10); ctx.quadraticCurveTo(-170, -10, -170, -80); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#4a3222'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-160, -50); ctx.lineTo(160, -50); ctx.moveTo(-140, -20); ctx.lineTo(140, -20); ctx.stroke();
+    ctx.fillStyle = '#1d3a52'; [-90, -30, 30, 90].forEach(h => { circle(ctx, h, -64, 8); });
+    ctx.strokeStyle = '#4a3222'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-20, -80); ctx.lineTo(-40, -240); ctx.stroke();
+    ctx.fillStyle = 'rgba(240,230,200,.5)'; ctx.beginPath(); ctx.moveTo(-36, -220); ctx.lineTo(40, -170); ctx.lineTo(-28, -140); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3f9a5f'; circle(ctx, -150, -78, 8); circle(ctx, 120, -82, 6);
     ctx.restore();
   },
   tiles(d) {
@@ -1893,30 +2125,40 @@ function oops(btn, errs, hintFn, msg) {
   if (hintFn) hintFn(errs);
 }
 /* Aide payée avec les trésors du sac : enlever une mauvaise réponse (2 étoiles au plus),
-   ou montrer la bonne réponse (1 étoile, l'énigme compte comme difficile). */
+   ou montrer la bonne réponse (1 étoile, l'énigme compte comme difficile).
+   Pour les mots (pzHelp.give) : donner une lettre, ou faire briller les lettres une à une. */
 let pzHelp = null;
 function renderHelp() {
   const c = pzHelp; $('pzHelp').hidden = !c || pzLocked;
   if (!c) return;
-  const n = prog.bag.n, wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b));
-  $('helpHint').innerHTML = `Montrer la réponse <span class="tre"></span> ${HELP_HINT}`;
+  const n = prog.bag.n, word = !!c.give, wrong = word ? [] : c.btns.filter(b => !b.disabled && !c.good.includes(b));
+  const hint = word ? 'Montrer les lettres' : 'Montrer la réponse', cut = word ? 'Donner une lettre' : 'Enlever une réponse';
+  $('helpHint').innerHTML = `${hint} <span class="tre"></span> ${HELP_HINT}`;
   $('helpHint').disabled = n < HELP_HINT || c.hinted;
-  $('helpHint').setAttribute('aria-label', `Montrer la réponse, ${HELP_HINT} trésors`);
-  $('helpCut').innerHTML = `Enlever une réponse <span class="tre"></span> ${HELP_CUT}`;
-  $('helpCut').disabled = n < HELP_CUT || wrong.length < 2 || c.hinted;
-  $('helpCut').setAttribute('aria-label', `Enlever une réponse, ${HELP_CUT} trésors`);
+  $('helpHint').setAttribute('aria-label', `${hint}, ${HELP_HINT} trésors`);
+  $('helpCut').innerHTML = `${cut} <span class="tre"></span> ${HELP_CUT}`;
+  $('helpCut').disabled = n < HELP_CUT || c.hinted || (word ? c.left() < 2 : wrong.length < 2);
+  $('helpCut').setAttribute('aria-label', `${cut}, ${HELP_CUT} trésors`);
 }
 $('helpHint').onclick = () => {
   const c = pzHelp; if (!c || pzLocked || c.hinted || prog.bag.n < HELP_HINT) return;
   prog.bag.n -= HELP_HINT; c.hinted = true; pzErrs = Math.max(pzErrs, 2);
-  c.good.forEach(g => g.classList.add('hint')); SFX.key(); say('Regarde la réponse qui brille !'); save(); renderHelp();
+  if (c.give) { c.glow(); say('Appuie sur la lettre qui brille !'); }
+  else { c.good.forEach(g => g.classList.add('hint')); say('Regarde la réponse qui brille !'); }
+  SFX.key(); save(); renderHelp();
 };
 $('helpCut').onclick = () => {
   const c = pzHelp; if (!c || pzLocked || prog.bag.n < HELP_CUT) return;
+  if (c.give) {
+    if (c.left() < 2) return;
+    prog.bag.n -= HELP_CUT; pzErrs = Math.max(pzErrs, 1); c.give(); save(); renderHelp(); return;
+  }
   const wrong = c.btns.filter(b => !b.disabled && !c.good.includes(b)); if (wrong.length < 2) return;
   prog.bag.n -= HELP_CUT; pzErrs = Math.max(pzErrs, 1);
   const b = pick(wrong); b.disabled = true; b.classList.add('gone'); SFX.pop(); save(); renderHelp();
 };
+// Mots : toutes les 2 erreurs depuis la dernière bonne lettre, le jeu offre une lettre.
+const FREE_LETTER = 2;
 function choicePuzzle(o) {
   pz.title.textContent = o.title; pz.visual.innerHTML = o.visual; pz.choices.innerHTML = '';
   let errs = 0; const good = [], btns = [];
@@ -2036,24 +2278,34 @@ const PUZZLES = {
     pz.title.textContent = 'Le mot caché'; pz.choices.innerHTML = '';
     const draw = () => { pz.visual.innerHTML = pic(w) + `<div class="word">${letters.map((ch, i) => `<span>${found[i] ? ch : ''}</span>`).join('')}</div>`; };
     draw();
-    let errs = 0; const btns = {};
+    let errs = 0, miss = 0; const btns = {};
+    const next = () => letters.find((ch, i) => !found[i]);
+    const glow = () => { Object.values(btns).forEach(x => x.classList.remove('hint')); const l = next(); if (l) btns[l].classList.add('hint'); };
+    // Une bonne lettre, trouvée ou offerte
+    const take = (l, given) => {
+      const b = btns[l]; miss = 0;
+      letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
+      b.classList.remove('hint'); b.classList.add('good'); b.disabled = true; SFX.key(); draw();
+      if (found.every(Boolean)) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
+      say(given ? `Je te donne la lettre ${letterName(l)}.` : letterName(l));
+      if (pzHelp.hinted) glow();
+      renderHelp();
+    };
+    pzHelp = { hinted: false, give: () => take(next(), true), glow, left: () => new Set(letters.filter((ch, i) => !found[i])).size };
     pool.forEach(l => {
       const b = document.createElement('button'); b.className = 'choice key'; b.textContent = l; btns[l] = b;
       b.onclick = () => {
         if (pzLocked || b.disabled) return;
-        if (letters.includes(l)) {
-          letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
-          b.classList.add('good'); b.disabled = true; SFX.key(); draw();
-          if (found.every(Boolean)) solved(`Tu as écrit ${w.toLowerCase()} !`); else say(letterName(l));
-        } else {
-          errs++;
-          oops(b, errs, n => {
-            if (n >= 3) { const next = letters.find((ch, i) => !found[i]); if (next) btns[next].classList.add('hint'); say(`Le mot est ${w.toLowerCase()}. Cherche la lettre ${letterName(next)}.`); }
-          }, errs >= 3 ? ' ' : null);
+        if (letters.includes(l)) take(l);
+        else {
+          errs++; miss++;
+          oops(b, errs, null, miss >= FREE_LETTER ? ' ' : null);
+          if (miss >= FREE_LETTER) take(next(), true);
         }
       };
       pz.choices.appendChild(b);
     });
+    renderHelp();
     currentSay = ICON[w] ? "Trouve les lettres du mot caché. Regarde bien l'image !" : `Écris le mot ${w.toLowerCase()}.`; say(currentSay);
   },
   order(w = pickWord()) {
@@ -2063,23 +2315,32 @@ const PUZZLES = {
     const slots = letters.map(() => '');
     const draw = () => { pz.visual.innerHTML = pic(w) + `<div class="word">${slots.map(s => `<span>${s}</span>`).join('')}</div>`; };
     draw();
-    let pos = 0, errs = 0; const btns = [];
+    let pos = 0, miss = 0; const btns = [];
+    const nextBtn = () => btns.find(x => !x.classList.contains('gone') && x.textContent === letters[pos]);
+    const glow = () => { btns.forEach(x => x.classList.remove('hint')); const nb = nextBtn(); if (nb) nb.classList.add('hint'); };
+    // Une bonne lettre posée, trouvée ou offerte
+    const take = (b, given) => {
+      slots[pos] = letters[pos]; pos++; miss = 0; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
+      if (pos === letters.length) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
+      if (given) say(`Je te donne la lettre ${letterName(letters[pos - 1])}.`);
+      if (pzHelp.hinted) glow();
+      renderHelp();
+    };
+    pzHelp = { hinted: false, give: () => take(nextBtn(), true), glow, left: () => letters.length - pos };
     mixed.forEach(l => {
       const b = document.createElement('button'); b.className = 'choice key'; b.textContent = l; btns.push(b);
       b.onclick = () => {
         if (pzLocked || b.classList.contains('gone')) return;
-        if (l === letters[pos]) {
-          slots[pos] = l; pos++; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
-          if (pos === letters.length) solved(`Tu as écrit ${w.toLowerCase()} !`);
-        } else {
-          errs++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
+        if (l === letters[pos]) take(b);
+        else {
+          miss++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
           setTimeout(() => b.classList.remove('bad'), 450);
-          say('Essaie une autre lettre.');
-          if (errs >= 2) { const nb = btns.find(x => !x.classList.contains('gone') && x.textContent === letters[pos]); if (nb) nb.classList.add('hint'); }
+          if (miss >= FREE_LETTER) take(nextBtn(), true); else say('Essaie une autre lettre.');
         }
       };
       pz.choices.appendChild(b);
     });
+    renderHelp();
     currentSay = `Remets les lettres dans l'ordre pour écrire le mot ${w.toLowerCase()}.`; say(currentSay);
   },
   // Suite de nombres : le pas grandit avec le niveau, et peut descendre.
@@ -2594,24 +2855,52 @@ function babyCanvas(sp, w, h) {
 }
 function levelDone() {
   state = 'done'; clearKeys(); SFX.yay();
-  const levels = WORLDS[L.world], w = prog.worlds[L.world], i = L.i, sp = world();
+  const levels = WORLDS[L.world], w = prog.worlds[L.world], i = L.i, d = levels[i], sp = world();
   // Étoiles de l'endroit : la moyenne des 3 pierres (une pierre reprise d'une ancienne sauvegarde compte 2).
   const stars = clamp(Math.round(L.gates.reduce((a, g) => a + (g.stars || 2), 0) / L.gates.length), 1, 3);
-  w.eggs[i] = 3; w.stars[i] = Math.max(w.stars[i], stars); w.unlocked = Math.min(levels.length, Math.max(w.unlocked, i + 2)); prog.run = null; save();
+  w.eggs[i] = 3; w.stars[i] = Math.max(w.stars[i], stars);
+  if (!d.bonus) w.unlocked = Math.min(regularCount(L.world), Math.max(w.unlocked, i + 2));
+  // Fin d'un endroit secret : un morceau de la carte au trésor.
+  const gotMap = d.bonus && !prog.bag.maps[L.world];
+  if (gotMap) prog.bag.maps[L.world] = true;
+  prog.run = null; save();
   $('doneStars').innerHTML = starsHtml(stars); $('doneStars').setAttribute('aria-label', `${stars} étoile${stars > 1 ? 's' : ''} sur 3`);
-  const lastLevel = i === levels.length - 1;
-  $('doneText').textContent = lastLevel
-    ? `Tu as retrouvé tous les œufs ! Tu as aussi ramassé ${fruitCount} ${sp.item}.`
-    : `Tu as retrouvé les 3 œufs de ${levels[i].name.toLowerCase()} et ramassé ${fruitCount} ${sp.item}.`;
-  $('doneText').textContent += ` Ton sac : ${prog.bag.n} trésor${prog.bag.n > 1 ? 's' : ''}.` + (L.gotFossil ? ' Et un fossile pour ton album !' : '');
-  $('doneNext').hidden = lastLevel;
+  const finale = L.world === 'final' && i === levels.length - 1, lastLevel = L.world !== 'final' && i === regularCount(L.world) - 1;
+  let text = finale ? `Tu as traversé toute l'île secrète ! Les quatre familles sont réunies.`
+    : lastLevel ? `Tu as retrouvé tous les œufs ! Tu as aussi ramassé ${fruitCount} ${sp.item}.`
+    : `Tu as retrouvé les 3 œufs de ${d.name.toLowerCase()} et ramassé ${fruitCount} ${sp.item}.`;
+  text += ` Ton sac : ${prog.bag.n} trésor${prog.bag.n > 1 ? 's' : ''}.` + (L.gotFossil ? ' Et un fossile pour ton album !' : '');
+  if (L.gotKey) text += " Avec la clé dorée, tu peux ouvrir l'endroit secret !";
+  if (gotMap) text += allMaps() ? " Et voilà le dernier morceau de la carte : l'île secrète est ouverte !" : ' Et un morceau de la carte au trésor !';
+  $('doneText').textContent = text;
+  $('doneNext').hidden = !canPlay(L.world, i + 1);
+  $('doneNext').textContent = levels[i + 1] && levels[i + 1].bonus ? "L'endroit secret" : 'Endroit suivant';
   const h = $('hatch'); h.innerHTML = '';
-  for (let k = 0; k < 3; k++) {
-    const d = document.createElement('div'); d.className = 'h'; d.innerHTML = EGG_SVG('egg-big'); h.appendChild(d);
-    setTimeout(() => { d.innerHTML = ''; d.appendChild(babyCanvas(sp, 96, 84)); SFX.key(); }, 900 + k * 600);
-  }
-  say(lastLevel ? `Bravo ! Tu as retrouvé tous les œufs. La famille ${sp.spoken.replace(/^Le /, 'du ')} est réunie !` : 'Bravo ! Regarde, les bébés sont nés !');
+  if (gotMap) { const m = document.createElement('div'); m.className = 'h map'; m.innerHTML = mapSvg(prog.bag.maps); h.appendChild(m); }
+  // Au bout de l'île, un bébé de chaque famille.
+  const babies = finale ? ORDER.map(k => SPECIES[k]) : [sp, sp, sp];
+  babies.forEach((b, k) => {
+    const el = document.createElement('div'); el.className = 'h'; el.innerHTML = EGG_SVG('egg-big'); h.appendChild(el);
+    setTimeout(() => { el.innerHTML = ''; el.appendChild(babyCanvas(b, 96, 84)); SFX.key(); }, 900 + k * 600);
+  });
+  say(finale ? "Bravo ! Tu as traversé l'île secrète. Les quatre familles de dinosaures sont réunies !"
+    : gotMap ? (allMaps() ? "Bravo ! Tu as les quatre morceaux de la carte. L'île secrète est ouverte !" : 'Bravo ! Tu as trouvé un morceau de la carte au trésor !')
+    : lastLevel ? `Bravo ! Tu as retrouvé tous les œufs. La famille ${sp.spoken.replace(/^Le /, 'du ')} est réunie !` : 'Bravo ! Regarde, les bébés sont nés !');
   $('done').hidden = false;
+}
+// Carte au trésor en 4 morceaux, un par animal ; les morceaux manquants sont en pointillés.
+function mapSvg(maps) {
+  const pos = { rex: [4, 4], trike: [52, 4], ptero: [4, 40], plesio: [52, 40] };
+  const pieces = ORDER.map(k => maps[k]
+    ? `<rect x="${pos[k][0]}" y="${pos[k][1]}" width="44" height="32" rx="3" fill="#f4e0a8" stroke="#1d2b22" stroke-width="2.5"/>`
+    : `<rect x="${pos[k][0]}" y="${pos[k][1]}" width="44" height="32" rx="3" fill="none" stroke="#8a7a5a" stroke-width="2" stroke-dasharray="4 3"/>`).join('');
+  const all = ORDER.every(k => maps[k]);
+  return `<svg viewBox="0 0 100 76" class="map-i" aria-hidden="true">${pieces}`
+    + (maps.rex ? '<path d="M14 26q8-14 20-6t12-10" fill="none" stroke="#a0692e" stroke-width="2" stroke-dasharray="3 3"/><circle cx="14" cy="26" r="3" fill="#3fa34d"/>' : '')
+    + (maps.trike ? '<path d="M56 10q14 4 18 14t18 4" fill="none" stroke="#a0692e" stroke-width="2" stroke-dasharray="3 3"/><path d="M78 12l4 5 4-5z" fill="#3fa34d"/>' : '')
+    + (maps.ptero ? '<path d="M10 50q10 16 24 8t12 8" fill="none" stroke="#a0692e" stroke-width="2" stroke-dasharray="3 3"/><path d="M22 46l4-6 4 6z" fill="#7a5238"/>' : '')
+    + (maps.plesio ? '<path d="M56 54q10-8 20 2" fill="none" stroke="#2f8fd8" stroke-width="3"/><path d="M80 56l8 8M88 56l-8 8" stroke="#e5483b" stroke-width="3.5" stroke-linecap="round"/>' : '')
+    + (all ? '<circle cx="50" cy="38" r="9" fill="#ffd23a" stroke="#1d2b22" stroke-width="2"/>' : '') + '</svg>';
 }
 $('doneMenu').onclick = () => showMenu();
 $('doneNext').onclick = () => { $('done').hidden = true; startLevel(L.world, L.i + 1); };
@@ -2626,6 +2915,7 @@ function showMenu() {
   renderMenu();
 }
 function renderMenu() {
+  if (prog.world === 'final' && !allMaps()) prog.world = 'rex';
   const pickEl = $('dinoPick'); pickEl.innerHTML = '';
   ORDER.forEach(k => {
     const d = SPECIES[k];
@@ -2636,6 +2926,18 @@ function renderMenu() {
     b.onclick = () => { audio(); prog.world = k; save(); say(`${d.spoken} ! ${d.label}.`); renderMenu(); };
     pickEl.appendChild(b);
   });
+  // L'île secrète : ouverte avec les 4 morceaux de la carte au trésor.
+  const nMaps = ORDER.filter(k => prog.bag.maps[k]).length, open = allMaps();
+  const fb = document.createElement('button'); fb.className = 'island' + (open ? '' : ' locked'); fb.setAttribute('aria-pressed', prog.world === 'final');
+  fb.innerHTML = `${mapSvg(prog.bag.maps)}L'île secrète<small>${open ? 'Les 4 animaux ensemble' : `${nMaps} morceau${nMaps > 1 ? 'x' : ''} de carte sur 4`}</small>`;
+  fb.setAttribute('aria-label', open ? "L'île secrète, les 4 animaux ensemble" : `L'île secrète, pas encore ouverte : ${nMaps} morceau${nMaps > 1 ? 'x' : ''} de carte sur 4`);
+  fb.onclick = () => {
+    audio();
+    if (!open) { say("Pour aller sur l'île secrète, il faut les 4 morceaux de la carte. Chaque animal a un endroit secret qui s'ouvre avec sa clé dorée."); return; }
+    prog.world = 'final'; save(); say("L'île secrète ! Les quatre animaux partent ensemble à l'aventure."); renderMenu();
+  };
+  pickEl.appendChild(fb);
+  const isle = prog.world === 'final';
   $('diffPetit').setAttribute('aria-pressed', prog.diff === 'petit');
   $('diffGrand').setAttribute('aria-pressed', prog.diff === 'grand');
   $('diffExpert').setAttribute('aria-pressed', prog.diff === 'expert');
@@ -2644,23 +2946,23 @@ function renderMenu() {
   renderContinue();
   renderShop();
   const sp = SPECIES[prog.world], levels = WORLDS[prog.world], w = prog.worlds[prog.world];
-  $('worldTitle').textContent = `L'aventure du ${sp.name}`;
+  $('worldTitle').textContent = isle ? "L'île secrète" : `L'aventure du ${sp.name}`;
   const lv = $('levels'); lv.innerHTML = '';
   levels.forEach((d, i) => {
-    const b = document.createElement('button'); b.className = 'lvl';
-    const locked = i >= w.unlocked; b.disabled = locked;
-    b.innerHTML = `<b>${i + 1}</b><span class="nm">${d.name}</span><span class="eg">${locked ? IC.lock : [0, 1, 2].map(k => EGG_SVG('egg-i' + (k < w.eggs[i] ? '' : ' off'))).join('')}</span>${!locked && w.stars[i] ? `<span class="st">${starsHtml(w.stars[i])}</span>` : ''}`;
-    b.setAttribute('aria-label', locked ? `${d.name}, pas encore ouvert` : `${d.name}, ${w.eggs[i]} œufs sur 3` + (w.stars[i] ? `, ${w.stars[i]} étoiles sur 3` : ''));
+    const b = document.createElement('button'); b.className = 'lvl' + (d.bonus ? ' bonus' : '');
+    const locked = !canPlay(prog.world, i), name = d.bonus && locked ? 'Endroit secret' : d.name; b.disabled = locked;
+    b.innerHTML = `<b>${d.bonus ? IC.key : i + 1}</b><span class="nm">${name}</span><span class="eg">${locked ? IC.lock : [0, 1, 2].map(k => EGG_SVG('egg-i' + (k < w.eggs[i] ? '' : ' off'))).join('')}</span>${!locked && w.stars[i] ? `<span class="st">${starsHtml(w.stars[i])}</span>` : ''}`;
+    b.setAttribute('aria-label', locked ? (d.bonus ? 'Endroit secret : il faut la clé dorée' : `${d.name}, pas encore ouvert`) : `${d.name}, ${w.eggs[i]} œufs sur 3` + (w.stars[i] ? `, ${w.stars[i]} étoiles sur 3` : ''));
     b.onclick = () => { audio(); startLevel(prog.world, i); };
     lv.appendChild(b);
   });
   const total = w.eggs.reduce((a, b) => a + b, 0), slots = levels.length * 3;
-  $('nestTitle').textContent = `Le nid du ${sp.name}`;
+  $('nestTitle').textContent = isle ? "Le nid de l'île secrète" : `Le nid du ${sp.name}`;
   $('nestText').textContent = total ? `${total} bébé${total > 1 ? 's sont nés' : ' est né'} sur ${slots}.` : 'Les bébés apparaîtront ici quand tu trouveras les œufs.';
   const n = $('nest'); n.innerHTML = '';
   for (let k = 0; k < slots; k++) {
     const s = document.createElement('div'); s.className = 'slot';
-    if ((k % 3) < w.eggs[Math.floor(k / 3)]) s.appendChild(babyCanvas(sp, 64, 56)); else s.innerHTML = '<span class="empty"></span>';
+    if ((k % 3) < w.eggs[Math.floor(k / 3)]) s.appendChild(babyCanvas(levelSp(prog.world, Math.floor(k / 3)), 64, 56)); else s.innerHTML = '<span class="empty"></span>';
     n.appendChild(s);
   }
   setSoundIcons();
@@ -2685,9 +2987,11 @@ function renderShop() {
       `Acheter : ${po.name}, ${po.price} trésors. Tu en as ${have}.`, null, n < po.price,
       () => buy(po.price, () => { prog.bag.power[k]++; }, `${po.name} ! Il servira au prochain endroit.`)));
   });
-  $('skinTitle').textContent = `Les couleurs du ${sp.name}`;
   const sk = $('shopSkins'); sk.innerHTML = '';
-  [{ id: 'base', name: "Couleur d'origine", price: 0, pal: {} }, ...SKINS[w]].forEach(x => {
+  // Sur l'île secrète, les couleurs se choisissent depuis chaque animal.
+  $('skinTitle').hidden = sk.hidden = !sp;
+  if (sp) $('skinTitle').textContent = `Les couleurs du ${sp.name}`;
+  if (sp) [{ id: 'base', name: "Couleur d'origine", price: 0, pal: {} }, ...SKINS[w]].forEach(x => {
     const owned = x.id === 'base' || prog.bag.owned[`${w}:${x.id}`], on = prog.bag.skin[w] === x.id;
     const it = shopItem(`${x.name}<span class="price">${on ? 'Choisi' : owned ? 'Mettre' : `${tre} ${x.price}`}</span>`,
       on ? `${x.name}, choisi` : owned ? `Mettre : ${x.name}` : `Acheter : ${x.name}, ${x.price} trésors`, on, !owned && n < x.price,
@@ -2700,7 +3004,7 @@ function renderShop() {
   });
   const fl = $('fossilList'); fl.innerHTML = '';
   let found = 0, total = 0;
-  ORDER.forEach(k => WORLDS[k].forEach((d, i) => {
+  Object.keys(WORLDS).forEach(k => WORLDS[k].forEach((d, i) => {
     const got = !!prog.bag.fossils[`${k}-${i}`]; total++; if (got) found++;
     const el = document.createElement('div'); el.className = 'fos' + (got ? '' : ' off');
     el.innerHTML = `${FOSSIL_SVG}<span>${got ? d.name : '?'}</span>`; el.setAttribute('aria-label', got ? `Fossile trouvé : ${d.name}` : 'Fossile pas encore trouvé');
@@ -2711,7 +3015,7 @@ function renderShop() {
 function renderContinue() {
   const r = prog.run, btn = $('continueBtn');
   btn.hidden = !r; if (!r) return;
-  const sp = SPECIES[r.world], d = WORLDS[r.world][r.i];
+  const sp = levelSp(r.world, r.i), d = WORLDS[r.world][r.i];
   btn.innerHTML = `<span>Continuer<small>${sp.name}, ${d.name}</small></span><span class="eg">${[0, 1, 2].map(k => EGG_SVG('egg-i' + (k < r.gates.length ? '' : ' off'))).join('')}</span>`;
   btn.prepend(babyCanvas(sp, 96, 70));
   btn.setAttribute('aria-label', `Continuer la partie : ${sp.name}, ${d.name}, ${r.gates.length} œufs sur 3`);
@@ -2781,8 +3085,8 @@ function restoreRun(r) {
 }
 let hintTimer = 0;
 function startLevel(worldKey, i, run = null) {
-  const sp = SPECIES[worldKey], d = WORLDS[worldKey][i];
-  L = { world: worldKey, mode: sp.mode, i, d, gates: [], items: [], broken: [], oy: 0 };
+  const sp = levelSp(worldKey, i), d = WORLDS[worldKey][i];
+  L = { world: worldKey, sp, mode: sp.mode, i, d, gates: [], items: [], broken: [], oy: 0 };
   parts = []; fruitCount = 0; eggsRun = 0; camX = 0; time = 0; cooldown = run ? 90 : 30;
   resize();
   MODES[sp.mode].build(d);
@@ -2791,6 +3095,9 @@ function startLevel(worldKey, i, run = null) {
   // Un fossile par endroit, tant qu'il n'a pas été trouvé.
   const fi = Math.floor(L.baseItems * .6);
   if (!prog.bag.fossils[`${worldKey}-${i}`] && L.items[fi] && !L.items[fi].taken) L.items[fi].fossil = true;
+  // La clé dorée de l'animal, dans un seul endroit, tant qu'elle n'a pas été trouvée.
+  const ki = Math.floor(L.baseItems * .3);
+  if (d.key && !prog.bag.keys[worldKey] && L.items[ki] && !L.items[ki].taken) L.items[ki].key = true;
   // Pouvoirs : pris dans le sac au début d'un nouvel endroit. Le bouclier ne sert qu'en vol et sous l'eau.
   if (run) { L.magnet = run.magnet; L.shield = run.shield; }
   else Object.keys(POWERS).forEach(k => {
@@ -2807,7 +3114,7 @@ function startLevel(worldKey, i, run = null) {
   $('app').classList.add('playing');
   state = 'play';
   autosave();
-  say(run ? `On reprend : ${d.name.toLowerCase()} !` : d.intro);
+  say(run ? `On reprend : ${d.name.toLowerCase()} !` : d.intro + (L.items.some(f => f.key) ? ' Une clé dorée est cachée ici !' : ''));
   clearTimeout(hintTimer); hintTimer = setTimeout(() => { hint.hidden = true; }, 8000);
 }
 

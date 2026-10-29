@@ -91,6 +91,8 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 - **Utiliser pendant une énigme** :
   - 5 fruits : afficher un indice (surligner la bonne réponse, comme après 2 erreurs aujourd'hui) ;
   - 10 fruits : retirer une mauvaise réponse.
+  - mots cachés et lettres à remettre dans l'ordre : 5 trésors pour recevoir une lettre, 10 pour faire briller les lettres une à une ;
+  - **éviter la frustration** : dans ces énigmes de mots, le jeu offre gratuitement une lettre toutes les 2 erreurs.
 - **Utiliser pendant le jeu** :
   - un bouclier contre les méduses et les cailloux ;
   - un aimant qui attire les fruits proches ;
@@ -113,6 +115,13 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 - Un **niveau bonus** par animal, qui s'ouvre avec la clé dorée (étape 6).
 - Un **monde final** qui réunit les 4 animaux, débloqué avec les 4 morceaux de carte.
 - Les niveaux restent décrits dans `WORLDS` : une nouvelle entrée suffit pour ajouter un niveau, sans toucher au code des modes de jeu.
+
+**Fait :**
+- 6 endroits par animal (24 au total) : le marais et la nuit (T-Rex), le désert, la neige et le canyon (Tricératops), le coucher de soleil, l'orage et les montagnes enneigées (Ptérodactyle), le récif de corail, l'épave et les grands fonds (Plésiosaure).
+- Nouveaux éléments : rondins qui tombent (T-Rex), glace qui glisse (Tricératops), vent et orage (Ptérodactyle), courants marins et grands fonds sombres (Plésiosaure). Il reste les interrupteurs.
+- Une clé dorée cachée au 4e endroit de chaque animal. Elle ouvre l'endroit secret de l'animal : la grotte secrète, le jardin secret, l'arc-en-ciel, la baie aux perles.
+- Chaque endroit secret terminé donne un morceau de la carte au trésor. Avec les 4 morceaux, l'île secrète s'ouvre dans le menu : 4 endroits à la suite, un par animal, et un bébé de chaque famille à la fin.
+- Les anciennes sauvegardes ouvrent directement l'endroit qui suit le dernier terminé.
 
 ## Étape 8 - Statistiques pour les parents
 
@@ -198,6 +207,6 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 4 - Plus de mots et d'énigmes classiques
 - [x] Étape 5 - Énigmes de type jeu (labyrinthe, taquin, mémoire, points, sudoku, ombres ; puzzle à pièces et symétrie à faire)
 - [x] Étape 6 - Sac, objets utiles et boutique du nid (clé dorée et morceaux de carte avec l'étape 7)
-- [ ] Étape 7 - Plus de niveaux, niveaux bonus et monde final
+- [x] Étape 7 - Plus de niveaux, endroits secrets et île secrète (interrupteurs à faire)
 - [ ] Étape 8 - Statistiques pour les parents : tableau par famille et courbe du niveau (enregistrement quotidien déjà en place)
 - [ ] Étape 9 - Version Nintendo Switch avec Atmosphère (prototype sur la console d'abord)

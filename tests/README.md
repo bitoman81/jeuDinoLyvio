@@ -9,6 +9,7 @@ node tests/test-step3.mjs index.html   # étape 3 : joystick
 node tests/test-step4.mjs index.html   # étape 4 : mots et énigmes
 node tests/test-step5.mjs index.html   # étape 5 : jeux de réflexion, statistiques
 node tests/test-step6.mjs index.html   # étape 6 : sac, aide, pouvoirs, fossiles, couleurs
+node tests/test-step7.mjs index.html   # étape 7 : nouveaux endroits, clé dorée, carte, île secrète
 ```
 
 Il faut Node 22 ou plus récent (WebSocket intégré) et Google Chrome installé dans `C:/Program Files/Google/Chrome/Application/chrome.exe` (constante `CHROME` en haut de chaque fichier). Chaque fichier affiche `Tous les tests passent` ou la liste des échecs.
