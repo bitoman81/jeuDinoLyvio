@@ -1708,8 +1708,9 @@ MODES.shmup = {
     // Le vent pousse doucement vers le haut puis vers le bas.
     if (d.wind) p.y += Math.sin(time * .8) * d.wind;
     if (p.hurt > 0) { p.hurt--; p.x += p.kx; p.kx *= .9; }
-    // Sur téléphone, le ptérodactyle reste loin des bords, là où sont les pouces.
-    const mx = touchUI ? viewW * .18 : 8;
+    // Sur téléphone, le ptérodactyle reste loin des bords, là où sont les pouces (120 au plus :
+    // sur un écran très large, une marge plus grande l'empêchait d'atteindre le nid).
+    const mx = touchUI ? Math.min(viewW * .18, 120) : 8;
     p.x = clamp(p.x, camX + mx, camX + viewW - p.w - mx); p.y = clamp(p.y, 6, VIEW_H - p.h - 6);
     if (--p.fire <= 0) { p.fire = 20; L.shots.push({ x: p.x + p.w, y: p.y + p.h * .45, vx: 7.5, hit: false }); }
     // Bouton d'action : une graine de plus, tout de suite.
@@ -1732,7 +1733,8 @@ MODES.shmup = {
     L.rocks = L.rocks.filter(r => !r.dead && r.x > camX - 80);
     L.gates.forEach(g => { if (!g.open) { g.y = g.baseY + Math.sin(time * 2 + g.k) * 14; g.eggY = g.y + 40; } });
     collectItems(p, 16); checkGates(p); gateAnim();
-    if (!next && p.x + p.w >= L.nestX + 40) levelDone();
+    // Le nid est atteint aussi quand le ptérodactyle est au bout de l'écran, caméra arrêtée.
+    if (!next && p.x + p.w >= Math.min(L.nestX + 40, camX >= limit ? camX + viewW - mx - 4 : Infinity)) levelDone();
     updateParts();
   },
   render() {

@@ -101,7 +101,7 @@ await steps(5);
 const shots = await ev(`(() => { player.fire = 99; const n = L.shots.length; jumpPressed = true; MODES.shmup.step(); const a = L.shots.length; jumpPressed = true; MODES.shmup.step(); return [n, a, L.shots.length]; })()`);
 check('une graine de plus, avec un petit délai', shots[1] === shots[0] + 1 && shots[2] === shots[1], shots);
 await ev(`player.x = camX; MODES.shmup.step(); true`);
-check('ptérodactyle loin du bord gauche', await ev(`player.x - camX >= viewW * .18 - 5`), await ev(`[player.x - camX, viewW]`));
+check('ptérodactyle loin du bord gauche', await ev(`player.x - camX >= Math.min(viewW * .18, 120) - 5`), await ev(`[player.x - camX, viewW]`));
 
 // Plésiosaure
 await ev(`startLevel('plesio', 0); cooldown = 9999; true`);
