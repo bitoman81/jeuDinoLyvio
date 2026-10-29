@@ -131,7 +131,7 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 
 - [x] Étape 1 - Sauvegarde automatique et points de passage
 - [x] Étape 2 - Difficulté évolutive et score en étoiles
-- [ ] Étape 3 - Joystick virtuel sur téléphone
+- [x] Étape 3 - Joystick virtuel sur téléphone
 - [ ] Étape 4 - Plus de mots et d'énigmes classiques
 - [ ] Étape 5 - Énigmes de type jeu (labyrinthe, puzzles, mémoire...)
 - [ ] Étape 6 - Sac, objets utiles et boutique du nid

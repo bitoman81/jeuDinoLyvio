@@ -46,6 +46,7 @@ Pour passer sur un autre appareil, l'espace parents donne un **code de sauvegard
 ## Commandes
 
 - **Ordinateur :** flèches ou Z Q S D, Espace pour sauter avec le T-Rex.
-- **Téléphone et tablette :** en mode paysage. Boutons à l'écran pour le T-Rex ; pour les autres, on touche l'écran là où l'animal doit aller.
+- **Téléphone et tablette :** en mode paysage. Un joystick apparaît sous le pouce gauche ; le bouton à droite (ou n'importe où dans la moitié droite) fait l'action : sauter, foncer, lancer une graine, nager plus vite. Pour les plus petits, le menu propose aussi de toucher l'écran là où l'animal doit aller (sauf le T-Rex).
+- **Action au clavier :** Espace, pour tous les animaux.
 
 Un seul fichier, `index.html`, sans installation.

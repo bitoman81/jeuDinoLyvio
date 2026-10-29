@@ -102,17 +102,25 @@ h1 span{color:var(--sun)}
 .continue .eg{display:flex;gap:4px;margin-left:auto}
 .continue:active{transform:translateY(3px);box-shadow:0 3px 0 var(--ink)}
 
-/* Commandes tactiles (T-Rex seulement) */
-#pad{position:absolute;left:0;right:0;bottom:0;display:none;justify-content:space-between;align-items:flex-end;padding-bottom:max(14px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
-#pad button{pointer-events:auto;touch-action:none;width:84px;height:84px;border-radius:50%;background:rgba(255,247,230,.85);border:4px solid var(--ink);box-shadow:0 5px 0 var(--ink);display:grid;place-items:center}
-#pad button.on{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);background:var(--sun)}
-#pad svg{width:40px;height:40px}
-#pad .lr{display:flex;gap:14px}
-#pad #bJ{width:104px;height:104px;font:400 22px var(--display)}
-@media (pointer:coarse){#pad.show{display:flex}}
+/* Téléphone : joystick sous le pouce gauche, bouton d'action à droite */
+#stick,#act{display:none}
+.touch.playing #stick{display:block}
+.touch.playing #act{display:grid;place-items:center}
+.touch.tapmode #stick{display:none}
+#stick{position:absolute;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;border:4px solid rgba(29,43,34,.55);background:rgba(255,247,230,.16);pointer-events:none;opacity:.45;transition:opacity .15s}
+#stick.on{opacity:.8}
+#stick i{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,247,230,.85);border:4px solid var(--ink)}
+#act{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;background:rgba(255,247,230,.6);border:4px solid var(--ink);box-shadow:0 5px 0 var(--ink);font:400 20px var(--display);touch-action:none;opacity:.75;padding:0}
+#act.on{background:var(--sun);opacity:1;transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
 .keys{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(255,247,230,.92);border:3px solid var(--ink);border-radius:14px;padding:4px 12px;font-size:15px;max-width:calc(100% - 32px);text-align:center}
+.touch .keys{max-width:calc(100% - 260px)}
 .keys .touch{display:none}
-@media (pointer:coarse){.keys .kb{display:none}.keys .touch{display:inline}.keys.platform{display:none}}
+.touch .keys .kb{display:none}
+.touch .keys .touch.stick{display:inline}
+.touch.tapmode .keys .touch.stick{display:none}
+.touch.tapmode .keys .touch.tap{display:inline}
+.touch-only{display:none}
+.touch .touch-only{display:flex}
 
 /* Énigmes */
 .pz-head{display:flex;gap:14px;align-items:center}
@@ -211,8 +219,7 @@ body,button{touch-action:manipulation}
   .hud-l{padding:3px 10px;gap:8px}
   .hud-l .egg-i{width:20px;height:26px}
   .fruit{font-size:20px}
-  #pad button{width:68px;height:68px}
-  #pad #bJ{width:84px;height:84px;font-size:18px}
+  #act{width:80px;height:80px;font-size:17px}
   .hatch .h,.hatch canvas{width:72px;height:63px}
 }
 
@@ -240,13 +247,8 @@ body,button{touch-action:manipulation}
   </div>
   <div id="saved" class="saved" aria-hidden="true">Sauvegardé</div>
   <div id="keysHint" class="keys" hidden></div>
-  <div id="pad">
-    <div class="lr">
-      <button id="bL" aria-label="Gauche"><svg viewBox="0 0 24 24"><path d="M15 4L7 12l8 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button id="bR" aria-label="Droite"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    </div>
-    <button id="bJ" aria-label="Sauter">Saute</button>
-  </div>
+  <div id="stick" aria-hidden="true"><i id="stickKnob"></i></div>
+  <button id="act" aria-label="Sauter">Saute</button>
 
   <div id="menu" class="screen">
     <div class="sheet">
@@ -281,6 +283,14 @@ body,button{touch-action:manipulation}
         <h2 id="nestTitle">Le nid</h2>
         <p class="sub" id="nestText"></p>
         <div id="nest" class="nest"></div>
+      </section>
+      <section class="block touch-only">
+        <h2>Sur téléphone</h2>
+        <p class="sub">Pour le tricératops, le ptérodactyle et le plésiosaure. Le T-Rex joue toujours avec le joystick.</p>
+        <div class="seg">
+          <button id="touchStick">Joystick<span>le pouce gauche fait bouger, le bouton à droite fait l'action</span></button>
+          <button id="touchTap">Toucher l'écran<span>on touche là où l'animal doit aller, pour les plus petits</span></button>
+        </div>
       </section>
       <section class="block">
         <h2>La voix</h2>
@@ -387,13 +397,13 @@ const SPEED = 4.2, JUMP = -13.6, GRAV = 0.6, BOUNCE = -17.5;
 
 /* ---------- Espèces : chacune a son mode de jeu ---------- */
 const SPECIES = {
-  rex: { name: 'T-Rex', spoken: 'Le tyrannosaure', mode: 'platform', label: 'Saute de plateforme en plateforme', item: 'fruits', draw: drawRex,
+  rex: { name: 'T-Rex', spoken: 'Le tyrannosaure', mode: 'platform', label: 'Saute de plateforme en plateforme', item: 'fruits', act: 'Saute', actLabel: 'Sauter', draw: drawRex,
     pal: { dark: '#4d4a24', body: '#7d7a3c', belly: '#d2c493' } },
-  trike: { name: 'Tricératops', spoken: 'Le tricératops', mode: 'topdown', label: 'Explore la plaine, vue du ciel', item: 'fruits', draw: drawTrike,
+  trike: { name: 'Tricératops', spoken: 'Le tricératops', mode: 'topdown', label: 'Explore la plaine, vue du ciel', item: 'fruits', act: 'Fonce', actLabel: 'Foncer', draw: drawTrike,
     pal: { dark: '#5b4f3a', body: '#8f7e5e', belly: '#d6c8a6', frill: '#b8642f', frillDark: '#7a3b1a' } },
-  ptero: { name: 'Ptérodactyle', spoken: 'Le ptérodactyle', mode: 'shmup', label: 'Vole et lance des graines', item: 'fruits', draw: drawPtero,
+  ptero: { name: 'Ptérodactyle', spoken: 'Le ptérodactyle', mode: 'shmup', label: 'Vole et lance des graines', item: 'fruits', act: 'Graine', actLabel: 'Lancer une graine', draw: drawPtero,
     pal: { dark: '#6b3f2e', body: '#b0674a', belly: '#ecc7a8', wing: '#c98a62', crest: '#d9452f' } },
-  plesio: { name: 'Plésiosaure', spoken: 'Le plésiosaure', mode: 'swim', label: 'Nage au fond de la mer', item: 'perles', draw: drawPlesio,
+  plesio: { name: 'Plésiosaure', spoken: 'Le plésiosaure', mode: 'swim', label: 'Nage au fond de la mer', item: 'perles', act: 'Vite', actLabel: 'Nager plus vite', draw: drawPlesio,
     pal: { dark: '#2f5d6b', body: '#4f8a9c', belly: '#cfe3e0' } },
 };
 const ORDER = ['rex', 'trike', 'ptero', 'plesio'];
@@ -535,11 +545,12 @@ function cleanRun(r) {
   };
 }
 function cleanProg(s) {
-  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', worlds: {}, skills: {}, run: null, savedAt: 0 };
+  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', touch: 'stick', worlds: {}, skills: {}, run: null, savedAt: 0 };
   if (s && typeof s === 'object') {
     if (s.eggs && !s.worlds) s.worlds = { rex: { unlocked: s.unlocked || 1, eggs: s.eggs } };
     ['world', 'diff', 'voice', 'savedAt'].forEach(k => { if (s[k] !== undefined) p[k] = s[k]; });
     if (typeof s.sound === 'boolean') p.sound = s.sound;
+    if (s.touch === 'tap') p.touch = 'tap';
     if (s.worlds && typeof s.worlds === 'object') p.worlds = s.worlds;
     if (s.skills && typeof s.skills === 'object') p.skills = s.skills;
     p.run = cleanRun(s.run);
@@ -797,6 +808,7 @@ function resize() {
   cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
   scale = Math.max(.1, Math.min(r.height / VIEW_H, r.width / 480));
   viewW = r.width / scale; viewH = r.height / scale;
+  stickHome();
 }
 window.addEventListener('resize', resize);
 const setView = () => ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
@@ -849,8 +861,10 @@ function updateParts() {
   parts.forEach(q => { q.x += q.vx; q.y += q.vy; q.vy += q.g ?? .3; q.life--; });
   parts = parts.filter(q => q.life > 0);
 }
+// Sur téléphone, l'animal reste vers le milieu, entre les deux pouces.
+const camLead = () => touchUI ? (L.mode === 'platform' ? .45 : .5) : .38;
 function follow(p) {
-  const target = clamp(p.x - viewW * .38, 0, Math.max(0, L.cols * T - viewW));
+  const target = clamp(p.x - viewW * camLead(), 0, Math.max(0, L.cols * T - viewW));
   camX += (target - camX) * .15;
 }
 function drawParts() {
@@ -899,7 +913,8 @@ window.addEventListener('keydown', e => {
   if (state !== 'play') return;
   const k = KEYMAP[e.code]; if (!k) return;
   e.preventDefault();
-  if (k === 'jump' || k === 'up') { if (!e.repeat) jumpPressed = true; }
+  // Espace : l'action de chaque animal. La flèche du haut ne saute qu'avec le T-Rex.
+  if (k === 'jump' || (k === 'up' && L && L.mode === 'platform')) { if (!e.repeat) jumpPressed = true; }
   if (k !== 'jump') keys[k] = true;
 });
 window.addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k && k !== 'jump') keys[k] = false; });
@@ -910,20 +925,58 @@ function bindPad(id, down, up) {
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => b.addEventListener(ev, end));
   b.addEventListener('contextmenu', e => e.preventDefault());
 }
-bindPad('bL', () => keys.left = true, () => keys.left = false);
-bindPad('bR', () => keys.right = true, () => keys.right = false);
-bindPad('bJ', () => jumpPressed = true, () => {});
-// Les autres espèces suivent le doigt (ou la souris) : on touche l'écran là où on veut aller.
-function setPointer(e) { const r = cv.getBoundingClientRect(); pointer = { sx: (e.clientX - r.left) / scale, sy: (e.clientY - r.top) / scale }; }
+bindPad('act', () => jumpPressed = true, () => {});
+/* Téléphone : un joystick apparaît sous le pouce dans la moitié gauche de l'écran, la moitié droite
+   et le bouton font l'action. Pour les animaux autres que le T-Rex, on peut choisir à la place
+   de toucher l'écran là où l'animal doit aller (prog.touch = 'tap'). */
+const STICK_R = 52;
+let touchUI = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+const stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+function setTouchUI(on) { touchUI = on; $('app').classList.toggle('touch', on); stickHome(); }
+const useStick = () => touchUI && L && (L.mode === 'platform' || prog.touch !== 'tap');
+function placeStick(x, y) { const el = $('stick'); el.style.left = x + 'px'; el.style.top = y + 'px'; }
+function moveKnob() { $('stickKnob').style.transform = `translate(${stick.x * STICK_R}px,${stick.y * STICK_R}px)`; }
+// Au repos, le joystick attend en bas à gauche, à moitié transparent.
+function stickHome() {
+  if (stick.id !== null) return;
+  const r = cv.getBoundingClientRect(), m = 16 + STICK_R + 10;
+  placeStick(m, r.height - m);
+}
+function releaseStick() { stick.id = null; stick.x = stick.y = 0; $('stick').classList.remove('on'); moveKnob(); stickHome(); }
+function stickDir() {
+  const l = Math.hypot(stick.x, stick.y);
+  return l < .2 ? [0, 0] : [stick.x, stick.y];
+}
+function canvasXY(e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top, r]; }
+function setPointer(e) { const [x, y] = canvasXY(e); pointer = { sx: x / scale, sy: y / scale }; }
 cv.addEventListener('pointerdown', e => {
-  if (state !== 'play' || !L || L.mode === 'platform') return;
-  audio(); try { cv.setPointerCapture(e.pointerId); } catch (_) {} setPointer(e);
+  if (state !== 'play' || !L) return;
+  audio();
+  if (useStick()) {
+    const [x, y, r] = canvasXY(e);
+    if (x >= r.width / 2) { jumpPressed = true; return; }
+    if (stick.id !== null) return;
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    Object.assign(stick, { id: e.pointerId, ox: x, oy: y, x: 0, y: 0 });
+    placeStick(x, y); moveKnob(); $('stick').classList.add('on');
+    return;
+  }
+  if (L.mode === 'platform') return;
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {} setPointer(e);
 });
-cv.addEventListener('pointermove', e => { if (pointer) setPointer(e); });
-['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => { pointer = null; }));
-function clearKeys() { keys.left = keys.right = keys.up = keys.down = false; jumpPressed = false; pointer = null; document.querySelectorAll('#pad .on').forEach(b => b.classList.remove('on')); }
+cv.addEventListener('pointermove', e => {
+  if (e.pointerId === stick.id) {
+    const [x, y] = canvasXY(e), dx = (x - stick.ox) / STICK_R, dy = (y - stick.oy) / STICK_R, l = Math.max(1, Math.hypot(dx, dy));
+    stick.x = dx / l; stick.y = dy / l; moveKnob();
+    return;
+  }
+  if (pointer) setPointer(e);
+});
+['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, e => { if (e.pointerId === stick.id) releaseStick(); else pointer = null; }));
+function clearKeys() { keys.left = keys.right = keys.up = keys.down = false; jumpPressed = false; pointer = null; releaseStick(); document.querySelectorAll('#act.on').forEach(b => b.classList.remove('on')); }
 function inputDir(p) {
   let ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), iy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  if (!ix && !iy && stick.id !== null) [ix, iy] = stickDir();
   if (!ix && !iy && pointer) {
     const dx = pointer.sx + camX - (p.x + p.w / 2), dy = pointer.sy - L.oy - (p.y + p.h / 2), d = Math.hypot(dx, dy);
     if (d > 10) { const k = Math.min(1, d / 60); ix = dx / d * k; iy = dy / d * k; }
@@ -954,8 +1007,9 @@ MODES.platform = {
   },
   step() {
     const p = player;
-    const ax = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    p.vx = ax * SPEED; if (ax) p.face = ax;
+    let ax = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    if (!ax && stick.id !== null) ax = clamp(stickDir()[0] * 1.5, -1, 1);
+    p.vx = ax * SPEED; if (ax) p.face = Math.sign(ax);
     if (jumpPressed) { p.buf = 8; jumpPressed = false; } else if (p.buf > 0) p.buf--;
     if (p.ground) p.coy = 8; else if (p.coy > 0) p.coy--;
     if (p.buf > 0 && p.coy > 0) { p.vy = JUMP; p.buf = 0; p.coy = 0; p.ground = false; p.on = null; SFX.jump(); }
@@ -1154,10 +1208,18 @@ MODES.topdown = {
     player = { x: T + 7, y: path[1] * T + 7, w: 34, h: 34, vx: 0, vy: 0, ang: 0, moving: false };
   },
   step() {
-    const p = player, [ix, iy] = inputDir(p);
+    const p = player; let [ix, iy] = inputDir(p);
+    // Bouton d'action : le tricératops fonce, droit devant s'il ne tourne pas.
+    if (jumpPressed) { jumpPressed = false; if (!(p.dash > 0)) { p.dash = 26; SFX.jump(); } }
+    if (p.dash > 0) {
+      p.dash--;
+      if (!ix && !iy) { ix = Math.cos(p.ang); iy = Math.sin(p.ang); }
+      if (p.dash % 3 === 0) parts.push({ x: p.x + p.w / 2 - Math.cos(p.ang) * 20, y: p.y + p.h / 2 - Math.sin(p.ang) * 20, vx: 0, vy: 0, g: 0, life: 18, col: 'rgba(150,130,90,.55)', r: 6 });
+    }
+    const sp = p.dash > 0 ? 6.8 : 3.6;
     p.moving = ix !== 0 || iy !== 0;
     if (p.moving) { const ta = Math.atan2(iy, ix); const da = ((ta - p.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI; p.ang += da * .25; }
-    moveBox(p, ix * 3.6, iy * 3.6, (c, r) => {
+    moveBox(p, ix * sp, iy * sp, (c, r) => {
       if (L.grid[c][r] !== 3) return false;
       L.grid[c][r] = 0; L.broken.push([c, r]); SFX.crack();
       for (let i = 0; i < 12; i++) parts.push({ x: c * T + T / 2, y: r * T + T / 2, vx: (Math.random() - .5) * 6, vy: (Math.random() - .5) * 6, g: 0, life: 30, col: pick(['#a39a8a', '#7d7466']), r: 3 + Math.random() * 3 });
@@ -1274,8 +1336,13 @@ MODES.shmup = {
     const [ix, iy] = inputDir(p);
     p.x += ix * 4.6 + scroll; p.y += iy * 4.6;
     if (p.hurt > 0) { p.hurt--; p.x += p.kx; p.kx *= .9; }
-    p.x = clamp(p.x, camX + 8, camX + viewW - p.w - 8); p.y = clamp(p.y, 6, VIEW_H - p.h - 6);
+    // Sur téléphone, le ptérodactyle reste loin des bords, là où sont les pouces.
+    const mx = touchUI ? viewW * .18 : 8;
+    p.x = clamp(p.x, camX + mx, camX + viewW - p.w - mx); p.y = clamp(p.y, 6, VIEW_H - p.h - 6);
     if (--p.fire <= 0) { p.fire = 20; L.shots.push({ x: p.x + p.w, y: p.y + p.h * .45, vx: 7.5, hit: false }); }
+    // Bouton d'action : une graine de plus, tout de suite.
+    if (jumpPressed) { jumpPressed = false; if (!(p.cool > 0)) { p.cool = 12; L.shots.push({ x: p.x + p.w, y: p.y + p.h * .45, vx: 8.5, hit: false }); SFX.pop(); } }
+    if (p.cool > 0) p.cool--;
     L.shots.forEach(s => { s.x += s.vx; });
     L.rocks.forEach(r => {
       if (r.dead || r.x > camX + viewW + 60) return;
@@ -1406,8 +1473,12 @@ MODES.swim = {
     player = { x: T * 1.5, y: 200, w: 46, h: 24, vx: 0, vy: 0, face: 1, hurt: 0 };
   },
   step() {
-    const p = player, [ix, iy] = inputDir(p);
-    p.vx = (p.vx + ix * .5) * .9; p.vy = (p.vy + iy * .5) * .9;
+    const p = player; let [ix, iy] = inputDir(p);
+    // Bouton d'action : un coup de nageoire pour aller plus vite.
+    if (jumpPressed) { jumpPressed = false; if (!(p.dash > 0)) { p.dash = 30; SFX.pop(); } }
+    const acc = p.dash > 0 ? 1 : .5;
+    if (p.dash > 0) { p.dash--; if (!ix && !iy) ix = p.face; }
+    p.vx = (p.vx + ix * acc) * .9; p.vy = (p.vy + iy * acc) * .9;
     if (p.hurt > 0) p.hurt--;
     const res = moveBox(p, p.vx, p.vy); if (res.x) p.vx = 0; if (res.y) p.vy = 0;
     const top = L.d.cave ? T : 26;
@@ -1950,10 +2021,10 @@ $('wordForm').onsubmit = e => {
   saveCustom(); renderParents();
 };
 /* Code de sauvegarde : la progression en base64, pour passer d'un appareil à l'autre.
-   La voix et le son restent ceux de l'appareil. */
+   La voix, le son et les commandes sur téléphone restent ceux de l'appareil. */
 const CODE_PREFIX = 'DINO2-';
 function exportCode() {
-  const { voice: _v, sound: _s, ...data } = prog;
+  const { voice: _v, sound: _s, touch: _t, ...data } = prog;
   return CODE_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))));
 }
 function importCode(code) {
@@ -1963,7 +2034,7 @@ function importCode(code) {
     const bytes = Uint8Array.from(atob(c.slice(CODE_PREFIX.length)), ch => ch.charCodeAt(0));
     const s = JSON.parse(new TextDecoder().decode(bytes));
     if (!s || typeof s !== 'object' || !s.worlds) return false;
-    prog = cleanProg({ ...s, voice: prog.voice, sound: prog.sound }); save();
+    prog = cleanProg({ ...s, voice: prog.voice, sound: prog.sound, touch: prog.touch }); save();
     return true;
   } catch (e) { return false; }
 }
@@ -2034,7 +2105,6 @@ function showMenu() {
   if (state === 'play' || state === 'puzzle') autosave();
   state = 'menu'; clearKeys(); $('app').classList.remove('playing');
   ['hud', 'puzzle', 'done', 'keysHint'].forEach(id => $(id).hidden = true);
-  $('pad').classList.remove('show');
   $('menu').hidden = false;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   renderMenu();
@@ -2053,6 +2123,8 @@ function renderMenu() {
   $('diffPetit').setAttribute('aria-pressed', prog.diff === 'petit');
   $('diffGrand').setAttribute('aria-pressed', prog.diff === 'grand');
   $('diffExpert').setAttribute('aria-pressed', prog.diff === 'expert');
+  $('touchStick').setAttribute('aria-pressed', prog.touch !== 'tap');
+  $('touchTap').setAttribute('aria-pressed', prog.touch === 'tap');
   renderContinue();
   const sp = SPECIES[prog.world], levels = WORLDS[prog.world], w = prog.worlds[prog.world];
   $('worldTitle').textContent = `L'aventure du ${sp.name}`;
@@ -2094,16 +2166,18 @@ function setDiff(d, label) {
 $('diffPetit').onclick = () => setDiff('petit', 'Petit');
 $('diffGrand').onclick = () => setDiff('grand', 'Grand');
 $('diffExpert').onclick = () => setDiff('expert', 'Expert');
+$('touchStick').onclick = () => { audio(); prog.touch = 'stick'; save(); say('Joystick'); renderMenu(); };
+$('touchTap').onclick = () => { audio(); prog.touch = 'tap'; save(); say("Toucher l'écran"); renderMenu(); };
 $('menuSound').onclick = () => { audio(); toggleSound(); };
 $('btnSound').onclick = () => { audio(); toggleSound(); $('btnSound').blur(); };
 $('btnHome').innerHTML = IC.home;
 $('btnHome').onclick = () => showMenu();
 
 const HINTS = {
-  platform: '<span class="kb">Flèches ou Q / D pour marcher, Espace pour sauter</span>',
-  topdown: '<span class="kb">Flèches ou Z Q S D pour marcher, ou clique là où tu veux aller</span><span class="touch">Touche l\'écran là où tu veux aller</span>',
-  shmup: '<span class="kb">Flèches ou Z Q S D pour voler, les graines partent toutes seules</span><span class="touch">Touche l\'écran pour voler, les graines partent toutes seules</span>',
-  swim: '<span class="kb">Flèches ou Z Q S D pour nager, ou clique là où tu veux aller</span><span class="touch">Touche l\'écran là où tu veux nager</span>',
+  platform: '<span class="kb">Flèches ou Q / D pour marcher, Espace pour sauter</span><span class="touch stick">Pouce gauche pour marcher, bouton Saute pour sauter</span>',
+  topdown: '<span class="kb">Flèches ou Z Q S D pour marcher, Espace pour foncer, ou clique là où tu veux aller</span><span class="touch stick">Pouce gauche pour marcher, bouton Fonce pour casser les cailloux</span><span class="touch tap">Touche l\'écran là où tu veux aller</span>',
+  shmup: '<span class="kb">Flèches ou Z Q S D pour voler, Espace pour une graine de plus</span><span class="touch stick">Pouce gauche pour voler, les graines partent toutes seules</span><span class="touch tap">Touche l\'écran pour voler, les graines partent toutes seules</span>',
+  swim: '<span class="kb">Flèches ou Z Q S D pour nager, Espace pour aller plus vite, ou clique là où tu veux aller</span><span class="touch stick">Pouce gauche pour nager, bouton Vite pour accélérer</span><span class="touch tap">Touche l\'écran là où tu veux nager</span>',
 };
 /* ---------- Partie en cours : sauvegarde automatique ----------
    Chaque pierre ouverte est un point de passage. On enregistre aussi chaque objet,
@@ -2141,9 +2215,10 @@ function restoreRun(r) {
   else {
     player.x = clamp(player.x, 0, L.cols * T - player.w);
     if (L.safe) L.safe = { x: player.x, y: player.y };
-    camX = clamp(player.x - viewW * .38, 0, Math.max(0, L.cols * T - viewW));
+    camX = clamp(player.x - viewW * camLead(), 0, Math.max(0, L.cols * T - viewW));
   }
 }
+let hintTimer = 0;
 function startLevel(worldKey, i, run = null) {
   const sp = SPECIES[worldKey], d = WORLDS[worldKey][i];
   L = { world: worldKey, mode: sp.mode, i, d, gates: [], items: [], broken: [], oy: 0 };
@@ -2157,15 +2232,17 @@ function startLevel(worldKey, i, run = null) {
   $('hud').hidden = false; $('hudFruit').textContent = fruitCount; renderHudEggs();
   $('hudIcon').className = sp.item === 'perles' ? 'pearl' : 'berry';
   const hint = $('keysHint'); hint.innerHTML = HINTS[sp.mode]; hint.className = 'keys ' + sp.mode; hint.hidden = false;
-  $('pad').classList.toggle('show', sp.mode === 'platform');
+  $('act').textContent = sp.act; $('act').setAttribute('aria-label', sp.actLabel);
+  $('app').classList.toggle('tapmode', touchUI && prog.touch === 'tap' && sp.mode !== 'platform');
   $('app').classList.add('playing');
   state = 'play';
   autosave();
   say(run ? `On reprend : ${d.name.toLowerCase()} !` : d.intro);
-  setTimeout(() => { hint.hidden = true; }, 8000);
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => { hint.hidden = true; }, 8000);
 }
 
 resize();
+setTouchUI(touchUI);
 showMenu();
 requestAnimationFrame(loop);
 </script>
