@@ -93,6 +93,13 @@ h1 span{color:var(--sun)}
 .berry{background:var(--berry)}
 .pearl{background:#f6f3ff;box-shadow:inset -4px -4px 0 #cfc6e6}
 .hud-r{display:flex;gap:8px}
+.saved{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:2px 12px;font:700 14px var(--body);pointer-events:none;opacity:0;transition:opacity .4s}
+.saved.show{opacity:.9}
+.continue{background:var(--sun);border:4px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:12px 18px;display:flex;align-items:center;gap:14px;text-align:left;font:400 30px var(--display)}
+.continue canvas{width:96px;height:70px;flex:none}
+.continue small{display:block;font:700 17px var(--body)}
+.continue .eg{display:flex;gap:4px;margin-left:auto}
+.continue:active{transform:translateY(3px);box-shadow:0 3px 0 var(--ink)}
 
 /* Commandes tactiles (T-Rex seulement) */
 #pad{position:absolute;left:0;right:0;bottom:0;display:none;justify-content:space-between;align-items:flex-end;padding-bottom:max(14px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
@@ -149,6 +156,7 @@ h1 span{color:var(--sun)}
 .field{display:flex;gap:10px;flex-wrap:wrap}
 .field input{flex:1 1 200px;min-width:0;font:700 20px var(--body);padding:10px 12px;border:4px solid var(--ink);border-radius:16px;background:#fff;color:var(--ink)}
 .field input:disabled{background:#e7e2d4}
+.field input{-webkit-user-select:text;user-select:text}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:4px 6px 4px 12px;font:700 18px var(--body)}
 .chip button{width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);font:700 18px var(--body);line-height:1;padding:0}
@@ -215,6 +223,7 @@ body,button{touch-action:manipulation}
       <button id="btnHome" class="round" aria-label="Retour au menu"></button>
     </div>
   </div>
+  <div id="saved" class="saved" aria-hidden="true">Sauvegardé</div>
   <div id="keysHint" class="keys" hidden></div>
   <div id="pad">
     <div class="lr">
@@ -234,6 +243,7 @@ body,button{touch-action:manipulation}
         </div>
       </div>
       <p class="lead">Les œufs des familles de dinosaures sont perdus. Choisis ton animal : chacun vit sa propre aventure !</p>
+      <button id="continueBtn" class="continue" hidden></button>
       <section class="block">
         <h2>Choisis ton dino</h2>
         <div id="dinoPick" class="pick"></div>
@@ -326,6 +336,18 @@ body,button{touch-action:manipulation}
       <h3>Tables de multiplication</h3>
       <p>Les tables utilisées dans le niveau Expert.</p>
       <div class="tables" id="tableList"></div>
+      <h3>Code de sauvegarde</h3>
+      <p>La progression est enregistrée sur cet appareil. Pour la retrouver sur un autre appareil, copiez ce code puis collez-le dans l'espace parents de l'autre appareil. Vos calculs et vos mots ne sont pas dans le code.</p>
+      <div class="field">
+        <input id="saveCode" readonly aria-label="Code de sauvegarde de cet appareil">
+        <button class="btn" type="button" id="saveCopy">Copier</button>
+      </div>
+      <form class="field" id="loadForm">
+        <input id="loadIn" placeholder="Collez ici le code d'un autre appareil" autocomplete="off" aria-label="Code de sauvegarde à charger">
+        <button class="btn" type="submit">Charger</button>
+      </form>
+      <p class="err" id="loadErr"></p>
+      <p class="status" id="loadOk" hidden></p>
       <button class="btn primary" id="parentsClose" style="align-self:center">Fermer</button>
     </div>
   </div>
@@ -459,24 +481,43 @@ const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
-/* ---------- Sauvegarde (reprend l'ancienne progression du T-Rex) ---------- */
-const KEY = 'dino-explorateur-v1';
-let prog = { world: 'rex', diff: 'petit', sound: true, voice: '', worlds: {} };
-try {
-  const s = JSON.parse(localStorage.getItem(KEY));
-  if (s) {
+/* ---------- Sauvegarde ----------
+   v2 ajoute la partie en cours (prog.run) pour reprendre là où on s'est arrêté.
+   On lit la v1 si la v2 n'existe pas encore, sans l'effacer. */
+const KEY = 'dino-explorateur-v2', KEY_V1 = 'dino-explorateur-v1', SAVE_VERSION = 2;
+const isInt = v => Number.isInteger(v);
+function cleanRun(r) {
+  if (!r || !SPECIES[r.world] || !isInt(r.i) || !WORLDS[r.world][r.i]) return null;
+  const nums = a => Array.isArray(a) ? a.filter(isInt) : [];
+  const num = v => typeof v === 'number' && isFinite(v) ? v : null;
+  return {
+    world: r.world, i: r.i, gates: nums(r.gates).filter(k => k >= 0 && k < 3), taken: nums(r.taken),
+    broken: Array.isArray(r.broken) ? r.broken.filter(b => Array.isArray(b) && isInt(b[0]) && isInt(b[1])) : [],
+    fruit: Math.max(0, num(r.fruit) || 0), x: num(r.x), y: num(r.y), cam: num(r.cam),
+  };
+}
+function cleanProg(s) {
+  const p = { version: SAVE_VERSION, world: 'rex', diff: 'petit', sound: true, voice: '', worlds: {}, run: null, savedAt: 0 };
+  if (s && typeof s === 'object') {
     if (s.eggs && !s.worlds) s.worlds = { rex: { unlocked: s.unlocked || 1, eggs: s.eggs } };
-    Object.assign(prog, s);
-    delete prog.eggs; delete prog.unlocked; delete prog.dino;
+    ['world', 'diff', 'voice', 'savedAt'].forEach(k => { if (s[k] !== undefined) p[k] = s[k]; });
+    if (typeof s.sound === 'boolean') p.sound = s.sound;
+    if (s.worlds && typeof s.worlds === 'object') p.worlds = s.worlds;
+    p.run = cleanRun(s.run);
   }
-} catch (e) {}
-ORDER.forEach(k => {
-  const n = WORLDS[k].length, w = prog.worlds[k] || {};
-  prog.worlds[k] = { unlocked: clamp(w.unlocked || 1, 1, n), eggs: Array.from({ length: n }, (_, i) => (w.eggs && w.eggs[i]) || 0) };
-});
-if (!SPECIES[prog.world]) prog.world = 'rex';
-if (!['petit', 'grand', 'expert'].includes(prog.diff)) prog.diff = 'petit';
-function save() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
+  ORDER.forEach(k => {
+    const n = WORLDS[k].length, w = p.worlds[k] || {};
+    p.worlds[k] = { unlocked: clamp(w.unlocked || 1, 1, n), eggs: Array.from({ length: n }, (_, i) => clamp((w.eggs && w.eggs[i]) || 0, 0, 3)) };
+  });
+  if (!SPECIES[p.world]) p.world = 'rex';
+  if (!['petit', 'grand', 'expert'].includes(p.diff)) p.diff = 'petit';
+  if (typeof p.voice !== 'string') p.voice = '';
+  if (!isInt(p.savedAt)) p.savedAt = 0;
+  return p;
+}
+let prog;
+try { prog = cleanProg(JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(KEY_V1))); } catch (e) { prog = cleanProg(null); }
+function save() { prog.savedAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
 
 /* ---------- Son ---------- */
 let actx = null, voice = null;
@@ -746,7 +787,7 @@ function moveBox(p, dx, dy, onTile) {
 function collectItems(p, pad) {
   L.items.forEach(f => {
     if (f.taken || !hit(p, { x: f.x - pad, y: f.y - pad, w: pad * 2, h: pad * 2 })) return;
-    f.taken = true; fruitCount++; $('hudFruit').textContent = fruitCount; SFX.fruit();
+    f.taken = true; fruitCount++; $('hudFruit').textContent = fruitCount; SFX.fruit(); autosave();
     for (let i = 0; i < 8; i++) parts.push({ x: f.x, y: f.y, vx: Math.cos(i) * 3, vy: Math.sin(i) * 3 - 1, life: 26, col: '#ffd23a', r: 4 });
   });
 }
@@ -1071,7 +1112,7 @@ MODES.topdown = {
     if (p.moving) { const ta = Math.atan2(iy, ix); const da = ((ta - p.ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI; p.ang += da * .25; }
     moveBox(p, ix * 3.6, iy * 3.6, (c, r) => {
       if (L.grid[c][r] !== 3) return false;
-      L.grid[c][r] = 0; SFX.crack();
+      L.grid[c][r] = 0; L.broken.push([c, r]); SFX.crack();
       for (let i = 0; i < 12; i++) parts.push({ x: c * T + T / 2, y: r * T + T / 2, vx: (Math.random() - .5) * 6, vy: (Math.random() - .5) * 6, g: 0, life: 30, col: pick(['#a39a8a', '#7d7466']), r: 3 + Math.random() * 3 });
       return true;
     });
@@ -1440,6 +1481,7 @@ function loop(now) {
       MODES[L.mode].step(); acc -= 1000 / 60;
       if (state !== 'play') break;
     }
+    if (state === 'play' && now - lastAutosave > AUTOSAVE_MS) autosave();
   } else { acc = 0; if (L) time += 1 / 60; }
   if (L && state !== 'menu') { L.oy = MODES[L.mode].oy(); MODES[L.mode].render(); }
   requestAnimationFrame(loop);
@@ -1664,7 +1706,7 @@ function closePuzzle(win) {
   const g = currentGate; currentGate = null;
   if (win && g) {
     g.open = true; g.anim = 0; eggsRun++;
-    const w = prog.worlds[L.world]; w.eggs[L.i] = Math.max(w.eggs[L.i], eggsRun); save();
+    const w = prog.worlds[L.world]; w.eggs[L.i] = Math.max(w.eggs[L.i], eggsRun); autosave(true);
     renderHudEggs(eggsRun - 1);
     const gx = g.x + g.w / 2;
     for (let i = 0; i < 16; i++) parts.push({ x: gx, y: g.eggY + (Math.random() - .5) * 60, vx: (Math.random() - .5) * 7, vy: -Math.random() * 6, life: 50, col: pick(['#7a6f9b', '#665c88', '#39c9a8']), r: 4 + Math.random() * 4 });
@@ -1761,6 +1803,7 @@ function chips(id, labels, remove, ro, emptyText) {
 function renderParents() {
   const ro = storeMode === 'db' && !canWrite;
   $('pStatus').textContent = statusText();
+  $('saveCode').value = exportCode();
   ['calcIn', 'wordIn'].forEach(id => { $(id).disabled = ro; });
   chips('calcList', custom.calcs.map(k => parseCalc(k).disp + ' = ' + parseCalc(k).ans), i => custom.calcs.splice(i, 1), ro, 'Aucun calcul pour le moment. Ajoutez par exemple 5x5.');
   chips('wordList', custom.words, i => custom.words.splice(i, 1), ro, 'Aucun mot pour le moment. Ajoutez par exemple les mots de la semaine.');
@@ -1798,6 +1841,38 @@ $('wordForm').onsubmit = e => {
   $('wordIn').value = bad.join(' ');
   saveCustom(); renderParents();
 };
+/* Code de sauvegarde : la progression en base64, pour passer d'un appareil à l'autre.
+   La voix et le son restent ceux de l'appareil. */
+const CODE_PREFIX = 'DINO2-';
+function exportCode() {
+  const { voice: _v, sound: _s, ...data } = prog;
+  return CODE_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))));
+}
+function importCode(code) {
+  const c = code.replace(/\s+/g, '');
+  if (!c.startsWith(CODE_PREFIX)) return false;
+  try {
+    const bytes = Uint8Array.from(atob(c.slice(CODE_PREFIX.length)), ch => ch.charCodeAt(0));
+    const s = JSON.parse(new TextDecoder().decode(bytes));
+    if (!s || typeof s !== 'object' || !s.worlds) return false;
+    prog = cleanProg({ ...s, voice: prog.voice, sound: prog.sound }); save();
+    return true;
+  } catch (e) { return false; }
+}
+$('saveCopy').onclick = () => {
+  const done = () => { $('loadOk').textContent = 'Code copié.'; $('loadOk').hidden = false; };
+  $('saveCode').select();
+  if (navigator.clipboard) navigator.clipboard.writeText($('saveCode').value).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) {} });
+  else { try { document.execCommand('copy'); done(); } catch (e) {} }
+};
+$('loadForm').onsubmit = e => {
+  e.preventDefault();
+  const v = $('loadIn').value.trim(); if (!v) return;
+  const ok = importCode(v);
+  $('loadErr').textContent = ok ? '' : "Ce code n'est pas valide. Vérifiez qu'il commence par DINO2- et qu'il est complet.";
+  $('loadOk').textContent = 'Progression chargée.'; $('loadOk').hidden = !ok;
+  if (ok) { $('loadIn').value = ''; renderParents(); }
+};
 let gateAns = 0;
 $('parentsBtn').onclick = () => {
   const a = rand(6, 9), b = rand(6, 9); gateAns = a * b;
@@ -1807,7 +1882,7 @@ $('parentsBtn').onclick = () => {
 };
 $('gateForm').onsubmit = e => {
   e.preventDefault();
-  if (+$('gateIn').value === gateAns) { $('gate').hidden = true; renderParents(); $('parents').hidden = false; }
+  if (+$('gateIn').value === gateAns) { $('gate').hidden = true; $('loadErr').textContent = ''; $('loadOk').hidden = true; renderParents(); $('parents').hidden = false; }
   else $('gateErr').textContent = "Ce n'est pas la bonne réponse.";
 };
 $('gateBack').onclick = () => { $('gate').hidden = true; };
@@ -1826,7 +1901,7 @@ function babyCanvas(sp, w, h) {
 function levelDone() {
   state = 'done'; clearKeys(); SFX.yay();
   const levels = WORLDS[L.world], w = prog.worlds[L.world], i = L.i, sp = world();
-  w.eggs[i] = 3; w.unlocked = Math.min(levels.length, Math.max(w.unlocked, i + 2)); save();
+  w.eggs[i] = 3; w.unlocked = Math.min(levels.length, Math.max(w.unlocked, i + 2)); prog.run = null; save();
   const lastLevel = i === levels.length - 1;
   $('doneText').textContent = lastLevel
     ? `Tu as retrouvé tous les œufs ! Tu as aussi ramassé ${fruitCount} ${sp.item}.`
@@ -1845,6 +1920,7 @@ $('doneNext').onclick = () => { $('done').hidden = true; startLevel(L.world, L.i
 
 /* ---------- Menu ---------- */
 function showMenu() {
+  if (state === 'play' || state === 'puzzle') autosave();
   state = 'menu'; clearKeys(); $('app').classList.remove('playing');
   ['hud', 'puzzle', 'done', 'keysHint'].forEach(id => $(id).hidden = true);
   $('pad').classList.remove('show');
@@ -1866,6 +1942,7 @@ function renderMenu() {
   $('diffPetit').setAttribute('aria-pressed', prog.diff === 'petit');
   $('diffGrand').setAttribute('aria-pressed', prog.diff === 'grand');
   $('diffExpert').setAttribute('aria-pressed', prog.diff === 'expert');
+  renderContinue();
   const sp = SPECIES[prog.world], levels = WORLDS[prog.world], w = prog.worlds[prog.world];
   $('worldTitle').textContent = `L'aventure du ${sp.name}`;
   const lv = $('levels'); lv.innerHTML = '';
@@ -1888,6 +1965,15 @@ function renderMenu() {
   }
   setSoundIcons();
 }
+function renderContinue() {
+  const r = prog.run, btn = $('continueBtn');
+  btn.hidden = !r; if (!r) return;
+  const sp = SPECIES[r.world], d = WORLDS[r.world][r.i];
+  btn.innerHTML = `<span>Continuer<small>${sp.name}, ${d.name}</small></span><span class="eg">${[0, 1, 2].map(k => EGG_SVG('egg-i' + (k < r.gates.length ? '' : ' off'))).join('')}</span>`;
+  btn.prepend(babyCanvas(sp, 96, 70));
+  btn.setAttribute('aria-label', `Continuer la partie : ${sp.name}, ${d.name}, ${r.gates.length} œufs sur 3`);
+}
+$('continueBtn').onclick = () => { const r = prog.run; if (!r) return; audio(); prog.world = r.world; startLevel(r.world, r.i, r); };
 $('diffPetit').onclick = () => { audio(); prog.diff = 'petit'; save(); say('Petit'); renderMenu(); };
 $('diffGrand').onclick = () => { audio(); prog.diff = 'grand'; save(); say('Grand'); renderMenu(); };
 $('diffExpert').onclick = () => { audio(); prog.diff = 'expert'; save(); say('Expert'); renderMenu(); };
@@ -1902,21 +1988,62 @@ const HINTS = {
   shmup: '<span class="kb">Flèches ou Z Q S D pour voler, les graines partent toutes seules</span><span class="touch">Touche l\'écran pour voler, les graines partent toutes seules</span>',
   swim: '<span class="kb">Flèches ou Z Q S D pour nager, ou clique là où tu veux aller</span><span class="touch">Touche l\'écran là où tu veux nager</span>',
 };
-function startLevel(worldKey, i) {
+/* ---------- Partie en cours : sauvegarde automatique ----------
+   Chaque pierre ouverte est un point de passage. On enregistre aussi chaque objet,
+   toutes les 10 secondes, et quand on quitte la page (indispensable sur téléphone). */
+const AUTOSAVE_MS = 10000;
+let lastAutosave = 0, savedTimer = 0;
+function snapshotRun() {
+  // Le T-Rex repart du dernier sol sûr, jamais en plein saut ou sur une bûche.
+  const pos = L.mode === 'platform' ? L.safe : player;
+  prog.run = {
+    world: L.world, i: L.i,
+    gates: L.gates.filter(g => g.open).map(g => g.k),
+    taken: L.items.slice(0, L.baseItems).flatMap((f, k) => f.taken ? [k] : []),
+    broken: L.broken.slice(), fruit: fruitCount,
+    x: Math.round(pos.x), y: Math.round(pos.y), cam: L.mode === 'shmup' ? Math.round(camX) : null,
+  };
+}
+function autosave(show = false) {
+  if (L && player && (state === 'play' || state === 'puzzle')) snapshotRun();
+  save(); lastAutosave = performance.now();
+  if (show) { const el = $('saved'); el.classList.add('show'); clearTimeout(savedTimer); savedTimer = setTimeout(() => el.classList.remove('show'), 1600); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(); });
+window.addEventListener('pagehide', () => autosave());
+function restoreRun(r) {
+  L.gates.forEach(g => { if (r.gates.includes(g.k)) { g.open = true; g.anim = 1; } });
+  eggsRun = L.gates.filter(g => g.open).length;
+  r.taken.forEach(k => { if (k < L.baseItems) L.items[k].taken = true; });
+  fruitCount = r.fruit;
+  if (L.mode === 'topdown') r.broken.forEach(([c, row]) => { if (L.grid[c] && L.grid[c][row] === 3) { L.grid[c][row] = 0; L.broken.push([c, row]); } });
+  if (r.x === null || r.y === null) return;
+  player.x = r.x; player.y = r.y;
+  if (L.mode === 'shmup') camX = r.cam || 0;
+  else {
+    player.x = clamp(player.x, 0, L.cols * T - player.w);
+    if (L.safe) L.safe = { x: player.x, y: player.y };
+    camX = clamp(player.x - viewW * .38, 0, Math.max(0, L.cols * T - viewW));
+  }
+}
+function startLevel(worldKey, i, run = null) {
   const sp = SPECIES[worldKey], d = WORLDS[worldKey][i];
-  L = { world: worldKey, mode: sp.mode, i, d, gates: [], items: [], oy: 0 };
-  parts = []; fruitCount = 0; eggsRun = 0; camX = 0; time = 0; cooldown = 30;
+  L = { world: worldKey, mode: sp.mode, i, d, gates: [], items: [], broken: [], oy: 0 };
+  parts = []; fruitCount = 0; eggsRun = 0; camX = 0; time = 0; cooldown = run ? 90 : 30;
   resize();
   MODES[sp.mode].build(d);
+  L.baseItems = L.items.length;
+  if (run) restoreRun(run);
   L.oy = MODES[sp.mode].oy();
   $('menu').hidden = true; $('done').hidden = true; $('puzzle').hidden = true;
-  $('hud').hidden = false; $('hudFruit').textContent = '0'; renderHudEggs();
+  $('hud').hidden = false; $('hudFruit').textContent = fruitCount; renderHudEggs();
   $('hudIcon').className = sp.item === 'perles' ? 'pearl' : 'berry';
   const hint = $('keysHint'); hint.innerHTML = HINTS[sp.mode]; hint.className = 'keys ' + sp.mode; hint.hidden = false;
   $('pad').classList.toggle('show', sp.mode === 'platform');
   $('app').classList.add('playing');
   state = 'play';
-  say(d.intro);
+  autosave();
+  say(run ? `On reprend : ${d.name.toLowerCase()} !` : d.intro);
   setTimeout(() => { hint.hidden = true; }, 8000);
 }
 

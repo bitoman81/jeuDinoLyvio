@@ -27,6 +27,12 @@ Depuis le menu, on ajoute ses propres calculs (`5x5`, `12+8`, `18:3`...), ses pr
 
 Sur ce site, les réglages et la progression sont enregistrés dans le navigateur de chaque appareil.
 
+## Sauvegarde
+
+La partie s'enregistre toute seule : à chaque pierre magique ouverte, à chaque objet ramassé, toutes les 10 secondes et quand on quitte la page. Le bouton **Continuer** du menu reprend la partie là où elle s'était arrêtée.
+
+Pour passer sur un autre appareil, l'espace parents donne un **code de sauvegarde** à copier, puis à coller dans l'espace parents de l'autre appareil.
+
 ## Commandes
 
 - **Ordinateur :** flèches ou Z Q S D, Espace pour sauter avec le T-Rex.
