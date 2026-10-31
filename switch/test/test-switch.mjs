@@ -105,6 +105,9 @@ await game(`player.x = 2 * T; player.y = GROUND * T - player.h; player.vy = 0; t
 await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 2, clientX: 1000, clientY: 400 }] }); true`); await sleep(60);
 check('tactile : la moitié droite fait sauter', (await game('player.vy')) < -3, await game('player.vy'));
 
+await ev(`__pad.buttons[6].pressed = true; __pad.buttons[7].pressed = true`); await sleep(150); await ev(`__pad.buttons[6].pressed = false; __pad.buttons[7].pressed = false`);
+for (let k = 0; k < 30 && !(await ev(`Object.keys(__files).some(f => f.includes('dino-captures/'))`)); k++) await sleep(100);
+check('ZL + ZR : capture PNG sur la carte SD', await ev(`Object.keys(__files).some(f => f.startsWith('sdmc:/switch/dino-captures/capture-') && f.endsWith('.png'))`), await ev(`Object.keys(__files)`));
 check('journal sur la carte SD', await ev(`/main.js lanc/.test(__files['sdmc:/switch/dino-journal.txt']) && /jeu : image 60/.test(__files['sdmc:/switch/dino-journal.txt'])`), await ev(`__files['sdmc:/switch/dino-journal.txt']`));
 check('aucune erreur JavaScript', errors.length === 0 && (await ev('__errors.length')) === 0, [errors, await ev('__errors')]);
 console.log('Captures :', title, bravo);

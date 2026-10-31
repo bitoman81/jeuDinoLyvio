@@ -36,6 +36,25 @@ function swStart(i) {
 }
 function swNext() { swStart((L.i + 1) % SW_LEVELS); }
 
+// Capture d'écran (ZL + ZR) : une image PNG sur la carte SD, dans switch/dino-captures/
+// (avec Atmosphère, l'album de la Switch est remplacé par le menu homebrew).
+const SW_CAP_DIR = 'sdmc:/switch/dino-captures/';
+function swCapture() {
+  if (!globalThis.Switch || !screen.toBlob) return;
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const name = `capture-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
+  try {
+    screen.toBlob(b => {
+      if (!b) { swToast("La capture n'a pas marché"); return; }
+      b.arrayBuffer().then(buf => {
+        try { Switch.mkdirSync(SW_CAP_DIR); } catch (e) {}
+        Switch.writeFileSync(SW_CAP_DIR + name, buf);
+        swLog('capture : ' + name); swToast('Capture enregistrée : ' + name);
+      }).catch(e => swToast("La capture n'a pas marché"));
+    });
+  } catch (e) { swToast("La capture n'a pas marché"); }
+}
+
 /* ---------- Manette ---------- */
 function swPad() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -44,6 +63,8 @@ function swPad() {
   const on = i => !!(pad.buttons[i] && pad.buttons[i].pressed);
   const down = i => { const was = SW.prev[i]; SW.prev[i] = on(i); return SW.prev[i] && !was; };
   const ax = pad.axes[0] || 0, ay = pad.axes[1] || 0;
+  const zl = down(SW_BTN.ZL), zr = down(SW_BTN.ZR);
+  if ((zl || zr) && on(SW_BTN.ZL) && on(SW_BTN.ZR)) swCapture();
   const jump = down(SW_BTN.A) | down(SW_BTN.B);
   if (!SW.started || state === 'menu') { if (jump) swStart(prog.worlds.rex.unlocked - 1); return; }
   if (state === 'done') { if (jump) swNext(); return; }
