@@ -13,9 +13,17 @@ if (!m) throw new Error('Script du jeu introuvable dans index.html');
 if (/console\./.test(m[1])) throw new Error('Le jeu appelle console : sur nx.js, cela repasse l’écran en mode texte');
 
 const part = (name, code) => `\n/* ======== ${name} ======== */\n${code}\n`;
-const main = part('switch/src/dom.js', readFileSync(join(here, 'src', 'dom.js'), 'utf8'))
+// Démarrage : chaque étape s'affiche à l'écran, et une erreur s'écrit en rouge au lieu d'un écran noir.
+const boot = readFileSync(join(here, 'src', 'boot.js'), 'utf8');
+const main = boot
+  + '\ntry {\n(function () {\n'
+  + part('switch/src/dom.js', readFileSync(join(here, 'src', 'dom.js'), 'utf8'))
+  + "swBoot('code du jeu');\n"
   + part('index.html (code du jeu)', m[1])
-  + part('switch/src/switch.js', readFileSync(join(here, 'src', 'switch.js'), 'utf8'));
+  + "swBoot('couche Switch');\n"
+  + part('switch/src/switch.js', readFileSync(join(here, 'src', 'switch.js'), 'utf8'))
+  + "swBoot('prêt');\n"
+  + '})();\n} catch (e) { swBoot(\'erreur\', e); }\n';
 mkdirSync(join(here, 'romfs'), { recursive: true });
 writeFileSync(join(here, 'romfs', 'main.js'), main);
 console.log(`romfs/main.js prêt (${Math.round(main.length / 1024)} Ko)`);

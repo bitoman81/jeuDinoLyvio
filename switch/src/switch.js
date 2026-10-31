@@ -126,6 +126,8 @@ globalThis.dinoEval = code => eval(code);
 
 function swLoop() {
   try { swPad(); swDraw(); } catch (e) { swToast('Erreur : ' + (e && e.message)); }
+  // Une erreur du jeu reste affichée (sinon l'écran se figerait sans explication).
+  if (SWB.err) swBoot(SWB.step, null);
   requestAnimationFrame(swLoop);
 }
 requestAnimationFrame(swLoop);

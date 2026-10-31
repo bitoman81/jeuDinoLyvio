@@ -49,6 +49,21 @@ const swGameCanvas = Object.assign(fakeEl('canvas'), {
   addEventListener: (type, fn) => { (swCanvasListeners[type] = swCanvasListeners[type] || []).push(fn); },
 });
 
+// Sauvegarde : le vrai localStorage de nx.js (mémoire de sauvegarde de la Switch ; le premier accès
+// fait choisir un profil). S'il est refusé, le jeu garde la partie en mémoire au lieu de s'arrêter.
+const localStorage = (() => {
+  const mem = {}; let real;
+  const get = () => {
+    if (real === undefined) { swBoot('sauvegarde (choix du profil)'); try { real = globalThis.localStorage || null; } catch (e) { real = null; } }
+    return real;
+  };
+  return {
+    getItem(k) { try { const r = get(); if (r) { const v = r.getItem(k); return v === undefined ? null : v; } } catch (e) {} return k in mem ? mem[k] : null; },
+    setItem(k, v) { mem[k] = String(v); try { const r = get(); if (r) r.setItem(k, String(v)); } catch (e) {} },
+    removeItem(k) { delete mem[k]; try { const r = get(); if (r) r.removeItem(k); } catch (e) {} },
+  };
+})();
+
 const swEls = {};
 const document = ({
   getElementById: id => id === 'game' ? swGameCanvas : (swEls[id] = swEls[id] || fakeEl()),
