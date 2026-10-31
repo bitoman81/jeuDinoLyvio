@@ -186,6 +186,11 @@ Une petite page de test, empaquetée comme nx-spa, qui vérifie :
 - **La voix** : si la lecture à voix haute manque, utiliser des fichiers son préparés à l'avance.
 - **Le build** : un script qui produit la version Switch (ES5, fichiers dans `romfs:/webapp`) et le `.nro`.
 
+### Fait (premier essai)
+- Dossier `switch/` : un petit programme en C (libnx) copie la page sur la carte SD puis l'ouvre dans le moteur web hors ligne de la console. `build.mjs` traduit le jeu en ES5 (Babel) et ajoute core-js ; le `.nro` se compile avec l'image Docker officielle `devkitpro/devkita64` (voir `switch/README.md`).
+- Le jeu traduit en ES5 passe les tests automatiques du jeu sur ordinateur.
+- Le `.nro` s'ouvre d'abord sur une page de test (Joy-Con, manette, tactile, voix, son, sauvegarde, fluidité), avec un bouton « Lancer le jeu ». À essayer sur la console.
+
 ### Si la route A ne suffit pas
 Route B avec nx.js, ou Brewser (un moteur web pour Switch construit sur nx.js). Les menus seraient alors redessinés sur le canvas.
 
