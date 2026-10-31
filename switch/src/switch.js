@@ -6,6 +6,15 @@
 const SW = { ctx: screen.getContext('2d'), prev: {}, toast: '', toastT: 0, started: false };
 const SW_BTN = { B: 0, A: 1, Y: 2, X: 3, L: 4, R: 5, ZL: 6, ZR: 7, Minus: 8, Plus: 9, Up: 12, Down: 13, Left: 14, Right: 15 };
 const SW_LEVELS = WORLDS.rex.filter(d => !d.bonus).length;
+// Lancé depuis l'album (applet : peu de mémoire, pas de carte graphique), le jeu saccade.
+// libnx : AppletType_Application = 0, SystemApplet = 1, LibraryApplet = 2 (l'album), OverlayApplet = 3.
+const SW_APPLET = (() => {
+  let t = 'ordinateur';
+  try { if (globalThis.Switch) t = Switch.appletType(); } catch (e) { t = 'inconnu'; }
+  const applet = t === 1 || t === 2 || t === 3;
+  swLog('type de lancement : ' + t + (applet ? ' (album)' : ''));
+  return applet;
+})();
 
 // Un bruitage qui échoue ne doit jamais arrêter le jeu.
 const swTone = tone;
@@ -88,6 +97,10 @@ function swDraw() {
     swText("Prototype Switch : l'aventure du T-Rex", SW_W / 2, 320, 36, '#ffb238', 'center');
     swText('Appuie sur A (ou touche l’écran) pour jouer', SW_W / 2, 450, 34, '#fff7e6', 'center');
     swText('Stick ou croix : marcher    A : sauter    + : quitter', SW_W / 2, 530, 26, '#d9f0dc', 'center');
+    if (SW_APPLET) {
+      swPanel(SW_W / 2 - 470, 600, 940, 70);
+      swText('Pour jouer sans saccades : quitte, puis relance le jeu en gardant R appuyé sur un jeu', SW_W / 2, 635, 24, '#b23a7a', 'center');
+    }
     return;
   }
   // HUD : les œufs, les fruits, le nom de l'endroit

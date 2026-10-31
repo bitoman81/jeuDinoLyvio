@@ -18,7 +18,7 @@ window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false }))
 Object.defineProperty(navigator, 'getGamepads', { value: () => [window.__pad, null, null, null, null, null, null, null] });
 // Fichiers de la carte SD (Switch.readFileSync / writeFileSync) ; le localStorage de nx.js ne doit jamais être touché
 window.__files = {};
-window.Switch = { readFileSync: f => f in __files ? new TextEncoder().encode(__files[f]).buffer : null, writeFileSync: (f, d) => { __files[f] = String(d); }, appendFileSync: (f, d) => { __files[f] = (__files[f] || '') + String(d); }, mkdirSync() {} };
+window.Switch = { readFileSync: f => f in __files ? new TextEncoder().encode(__files[f]).buffer : null, writeFileSync: (f, d) => { __files[f] = String(d); }, appendFileSync: (f, d) => { __files[f] = (__files[f] || '') + String(d); }, mkdirSync() {}, appletType: () => 0 };
 Object.defineProperty(window, 'localStorage', { configurable: true, get() { __errors.push('localStorage de nx.js touché (choix du profil sans fin)'); return null; } });
 delete window.speechSynthesis; delete Window.prototype.speechSynthesis;
 window.__errors = []; addEventListener('error', e => __errors.push(e.message)); addEventListener('unhandledrejection', e => __errors.push(String(e.reason)));
