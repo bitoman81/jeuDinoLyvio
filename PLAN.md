@@ -118,7 +118,8 @@ Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'aut
 
 **Fait :**
 - 6 endroits par animal (24 au total) : le marais et la nuit (T-Rex), le désert, la neige et le canyon (Tricératops), le coucher de soleil, l'orage et les montagnes enneigées (Ptérodactyle), le récif de corail, l'épave et les grands fonds (Plésiosaure).
-- Nouveaux éléments : rondins qui tombent (T-Rex), glace qui glisse (Tricératops), vent et orage (Ptérodactyle), courants marins et grands fonds sombres (Plésiosaure). Il reste les interrupteurs.
+- Nouveaux éléments : rondins qui tombent (T-Rex), glace qui glisse (Tricératops), vent et orage (Ptérodactyle), courants marins et grands fonds sombres (Plésiosaure).
+- Interrupteurs, dans 2 endroits par animal (3e et 6e) : un gros bouton rouge ouvre une porte plus loin (porte en bois, barrière, mur de lianes, grille sous l'eau). Devant la porte fermée, la voix explique, une flèche montre le bouton, et au bout de 15 secondes la porte s'ouvre toute seule. Le bouton appuyé est gardé dans la sauvegarde.
 - Une clé dorée cachée au 4e endroit de chaque animal. Elle ouvre l'endroit secret de l'animal : la grotte secrète, le jardin secret, l'arc-en-ciel, la baie aux perles.
 - Chaque endroit secret terminé donne un morceau de la carte au trésor. Avec les 4 morceaux, l'île secrète s'ouvre dans le menu : 4 endroits à la suite, un par animal, et un bébé de chaque famille à la fin.
 - Les anciennes sauvegardes ouvrent directement l'endroit qui suit le dernier terminé.
@@ -209,6 +210,6 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 4 - Plus de mots et d'énigmes classiques
 - [x] Étape 5 - Énigmes de type jeu (labyrinthe, taquin, mémoire, points, sudoku, ombres ; puzzle à pièces et symétrie à faire)
 - [x] Étape 6 - Sac, objets utiles et boutique du nid (clé dorée et morceaux de carte avec l'étape 7)
-- [x] Étape 7 - Plus de niveaux, endroits secrets et île secrète (interrupteurs à faire)
+- [x] Étape 7 - Plus de niveaux, endroits secrets, île secrète et interrupteurs
 - [x] Étape 8 - Statistiques pour les parents : tableau par compétence et courbe du niveau
 - [ ] Étape 9 - Version Nintendo Switch avec Atmosphère (prototype sur la console d'abord)
