@@ -44,5 +44,5 @@ writeFileSync(join(here, 'romfs', 'main.js'), ascii);
 // Réglages du moteur nx.js. JIT automatique (actif en gardant R sur un jeu, coupé depuis l'album), mais
 // sans Sparkplug : avec lui, nx.js 1.0.0-beta plante au démarrage dès qu'il compile une grosse fonction
 // (bug nx.js n° 424). Sans JIT du tout (jit = off), le jeu marche mais saccade.
-writeFileSync(join(here, 'romfs', 'nxjs.ini'), '[v8]\n; JIT sans Sparkplug : contourne le plantage au démarrage (bug nx.js n° 424)\njit = auto\nflags = --no-sparkplug\n');
+writeFileSync(join(here, 'romfs', 'nxjs.ini'), '[v8]\n; JIT sans Sparkplug (bug nx.js 424)\njit = auto\nflags = --no-sparkplug\n');
 console.log(`romfs/main.js prêt (${Math.round(main.length / 1024)} Ko)`);
