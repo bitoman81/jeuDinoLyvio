@@ -186,6 +186,23 @@ Une petite page de test, empaquetée comme nx-spa, qui vérifie :
 - **La voix** : si la lecture à voix haute manque, utiliser des fichiers son préparés à l'avance.
 - **Le build** : un script qui produit la version Switch (ES5, fichiers dans `romfs:/webapp`) et le `.nro`.
 
+### Essais sur la console (31 octobre 2026)
+- **Route A abandonnée.** Le navigateur intégré marche (touches et tactile OK), mais : pas de voix, pas de Web Audio, `localStorage` refusé (SecurityError), et la console garde la main sur certains boutons (X ferme le navigateur). Ce n'est pas un vrai jeu. Le code de cet essai reste dans l'historique Git (branche `etape9-switch`).
+- **Route B choisie : nx.js**, un vrai homebrew sans navigateur. Canvas, Joy-Con, tactile, Web Audio et sauvegarde dans un fichier de la carte SD (`switch/dino-explorateur/sauvegarde.json`). Pas de synthèse vocale : il faudra des phrases enregistrées à l'avance (les voix françaises de Windows, Hortense, Julie ou Paul, peuvent les produire).
+- Un seul code de jeu : `switch/build.mjs` met dans un même module un faux DOM (`switch/src/dom.js`), le code du jeu tiré tel quel de `index.html`, et la couche Switch (`switch/src/switch.js`). Le `.nro` se fabrique avec `nxjs-nro --fat`, sans autre outil que Node.js.
+
+### Étapes de la version Switch (nx.js)
+Le code de la version Switch est maintenant dans son propre dépôt (privé) : https://github.com/bitoman81/dino-explorateur-switch (31 octobre 2026). Le dossier `switch/` d'ici y a été déplacé avec son historique ; les chemins `switch/src/...` ci-dessous y sont à la racine (`src/...`). Ce dépôt garde une copie du jeu dans `jeu/index.html`, à mettre à jour quand `index.html` change.
+
+- [x] 1. Prototype du T-Rex : les 6 endroits, stick ou croix pour marcher, A ou B pour sauter, joystick tactile ; les pierres s'ouvrent seules. Test dans Chrome en imitant nx.js (`switch/test/test-switch.mjs`). Lancé sur la console le 31 octobre 2026, après trois corrections : JIT coupé (`nxjs.ini`, bug nx.js n° 424 ; remplacé à l'étape 2 par le JIT sans Sparkplug), sauvegarde dans un fichier au lieu du localStorage de nx.js (son choix du profil bloquait), et plus de `\p{L}` ni de `toLocale...` (le moteur n'a pas les tables Unicode ; `build.mjs` les refuse). En cas de souci : `switch/nxjs-debug.log` et `switch/dino-journal.txt` sur la carte SD.
+- [x] 2. Menu et choix du dino, à la manette et au doigt : écran titre, les 4 animaux et l'île secrète, les endroits (œufs, étoiles, cadenas, clé dorée), − pour revenir au menu, écran Bravo. Essayé sur la console le 31 octobre 2026. Fluidité : JIT automatique sans Sparkplug (`flags = --no-sparkplug` dans `nxjs.ini`), à lancer en gardant R sur un jeu. Capture d'écran avec ZL + ZR dans `switch/dino-captures/`. Les coins arrondis sont tracés avec `arc` (avec `arcTo`, nx.js dessinait une boucle en trop).
+- [ ] 3. Énigmes dessinées dans le jeu, à la manette et au doigt.
+  - [x] Énigmes à choix (15 types) : le code des énigmes tourne tel quel, `switch/src/puzzle.js` relit le titre, l'image et les boutons, les dessine (petit lecteur HTML et SVG) et renvoie les choix au jeu. A répondre, X et Y les aides payantes, B retour. Essayé sur la console le 31 octobre 2026.
+  - [ ] Mots à écrire (mot caché, lettres dans l'ordre) et énigmes-jeux (labyrinthe, taquin, mémoire, points, sudoku, puzzle à pièces, miroir) : faits le 31 octobre 2026, à essayer sur la console. Le faux DOM (`switch/src/dom.js`) est devenu un petit DOM : innerHTML construit un arbre d'éléments avec classes, data-*, onclick et querySelectorAll, si bien que le code de ces jeux tourne tel quel. La Switch dessine l'arbre ; la croix va d'une case à la case voisine, A clique, le doigt touche ; dans le labyrinthe, la croix déplace le bébé.
+- [ ] 4. Voix et sons enregistrés.
+- [ ] 5. Les 4 animaux, sauvegarde, sac et boutique.
+- [ ] 6. Espace parents, avec le clavier de la Switch.
+
 ### Si la route A ne suffit pas
 Route B avec nx.js, ou Brewser (un moteur web pour Switch construit sur nx.js). Les menus seraient alors redessinés sur le canvas.
 

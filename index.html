@@ -958,7 +958,16 @@ function toggleSound() { prog.sound = !prog.sound; save(); setSoundIcons(); if (
 
 /* ---------- Dessin : outils ---------- */
 function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
-function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+// Rectangle aux coins arrondis, avec arc() (arcTo dessine une boucle en trop sur la Switch).
+function rr(c, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2)); const P = Math.PI;
+  c.beginPath(); c.moveTo(x + r, y);
+  c.lineTo(x + w - r, y); c.arc(x + w - r, y + r, r, -P / 2, 0);
+  c.lineTo(x + w, y + h - r); c.arc(x + w - r, y + h - r, r, 0, P / 2);
+  c.lineTo(x + r, y + h); c.arc(x + r, y + h - r, r, P / 2, P);
+  c.lineTo(x, y + r); c.arc(x + r, y + r, r, P, P * 1.5);
+  c.closePath();
+}
 const INK = 'rgba(30,24,14,.9)';
 function grad(c, top, bot, pal) {
   const g = c.createLinearGradient(0, top, 0, bot);
@@ -2896,7 +2905,8 @@ $('pzBack').onclick = () => { if (!pzLocked) { if ('speechSynthesis' in window) 
    les modifie, tous ceux qui ouvrent le jeu les lisent. Sans base (hors claude.ai), on garde
    une copie sur l'appareil. */
 const PKEY = 'dino-explorateur-parents';
-const WORD_RE = /^\p{L}{2,12}$/u;
+// Lettres écrites à la main (pas de classe Unicode) : le moteur de la Switch n'a pas les tables Unicode.
+const WORD_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ]{2,12}$/;
 let custom = { calcs: [], words: [], tables: [2, 3, 4, 5, 10] }, dbDoc = null, canWrite = true, storeMode = 'local', saving = Promise.resolve();
 function parseCalc(s) {
   if (typeof s !== 'string') return null;
@@ -3109,7 +3119,7 @@ $('wordForm').onsubmit = e => {
   e.preventDefault();
   const bad = [];
   $('wordIn').value.split(/[\s,;]+/).filter(Boolean).forEach(s => {
-    const w = s.toLocaleUpperCase('fr-FR');
+    const w = s.toUpperCase();
     if (!WORD_RE.test(w)) bad.push(s); else if (!custom.words.includes(w)) custom.words.push(w);
   });
   $('wordErr').textContent = bad.length ? `Pas compris : ${bad.join(', ')}. Un mot, c'est seulement des lettres, de 2 à 12 lettres.` : '';
