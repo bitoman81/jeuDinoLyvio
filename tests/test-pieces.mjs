@@ -130,6 +130,10 @@ for (const [t, l] of [['pieces', 7], ['symetrie', 7]]) {
 }
 await send('Emulation.clearDeviceMetricsOverride');
 
+// 8. Nom des lettres : de vrais mots, sinon la voix épelle (« èl » devenait « E accent grave L »)
+const letters = await ev(`JSON.stringify(LETTER)`);
+check('nom des lettres : plus de « èl », « èm »…', !/"(èf|èl|èm|èn|èr|èss|zèd|iks|ku)"/.test(letters) && JSON.parse(letters).L === 'elle', letters);
+
 check('aucune erreur JavaScript', errors.length === 0, errors);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');
 ws.close(); chrome.kill();

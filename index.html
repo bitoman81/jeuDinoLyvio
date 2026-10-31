@@ -934,7 +934,8 @@ function loadVoices() {
 if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 // Corrections de prononciation pour les voix de synthèse
 const SAY_FIX = [[/œufs|oeufs/gi, 'eux'], [/œuf|oeuf/gi, 'euf']];
-const LETTER = { A: 'a', B: 'bé', C: 'cé', D: 'dé', E: 'eu', F: 'èf', G: 'gé', H: 'hache', I: 'i', J: 'ji', K: 'ka', L: 'èl', M: 'èm', N: 'èn', O: 'o', P: 'pé', Q: 'ku', R: 'èr', S: 'èss', T: 'té', U: 'u', V: 'vé', W: 'double vé', X: 'iks', Y: 'i grec', Z: 'zèd' };
+// Nom des lettres écrit avec de vrais mots qui se prononcent pareil : sinon la voix épelle « èl » (« E accent grave L »).
+const LETTER = { A: 'a', B: 'bé', C: 'cé', D: 'dé', E: 'eu', F: 'effe', G: 'gé', H: 'hache', I: 'i', J: 'ji', K: 'ka', L: 'elle', M: 'aime', N: 'haine', O: 'o', P: 'pé', Q: 'cu', R: 'air', S: 'esse', T: 'té', U: 'u', V: 'vé', W: 'double vé', X: 'ixe', Y: 'i grec', Z: 'zède' };
 const letterName = l => LETTER[l] || l;
 function say(text) {
   if (!prog.sound || !('speechSynthesis' in window)) return;
