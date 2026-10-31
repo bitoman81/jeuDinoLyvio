@@ -52,6 +52,7 @@ const pixel = (x, y) => ev(`Array.from(screen.getContext('2d').getImageData(${x}
 const shot = async name => { const s = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(join(prof, name), Buffer.from(s.result.data, 'base64')); return join(prof, name); };
 
 await send('Runtime.enable'); await send('Page.enable');
+await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url: pathToFileURL(pagePath).href }); await sleep(500);
 await ev(`(() => { const s = document.createElement('script'); s.type = 'module'; s.textContent = ${JSON.stringify(code)}; document.body.appendChild(s); return true; })()`);
 await sleep(800);
@@ -124,7 +125,7 @@ await shot('switch-jeu.png');
 await game(`player.x = 3 * T; player.y = GROUND * T - player.h; camX = 0; true`);
 await ev(`__pad.axes[0] = 1; window.__bot = setInterval(() => { __pad.buttons[1].pressed = !__pad.buttons[1].pressed; }, 260)`);
 let st = '';
-for (let k = 0; k < 120 && st !== 'done'; k++) { await sleep(250); st = await game('state'); }
+for (let k = 0; k < 200 && st !== 'done'; k++) { await sleep(250); st = await game(`(() => { if (swPzOn() && !pzLocked) swPzChoose(SW.pz.cards.findIndex(cd => pzHelp.good.includes(cd.b))); return state; })()`); }
 await ev(`clearInterval(__bot); __pad.axes[0] = 0; __pad.buttons[1].pressed = false`);
 check('le robot finit la clairière : 3 œufs, écran Bravo', st === 'done' && await game('eggsRun === 3'), [st, await game('eggsRun'), await game('Math.round(player.x / T)')]);
 await sleep(300);
@@ -149,8 +150,55 @@ await ev(`__pad.buttons[6].pressed = true; __pad.buttons[7].pressed = true`); aw
 for (let k = 0; k < 30 && !(await ev(`Object.keys(__files).some(f => f.includes('dino-captures/'))`)); k++) await sleep(100);
 check('ZL + ZR : capture PNG sur la carte SD', await ev(`Object.keys(__files).some(f => f.startsWith('sdmc:/switch/dino-captures/capture-') && f.endsWith('.png'))`), await ev(`Object.keys(__files)`));
 check('journal sur la carte SD', await ev(`/main.js lanc/.test(__files['sdmc:/switch/dino-journal.txt']) && /jeu : image 60/.test(__files['sdmc:/switch/dino-journal.txt'])`), await ev(`__files['sdmc:/switch/dino-journal.txt']`));
+// 6. Énigmes à choix : chacune s'affiche (capture), puis on essaie erreurs, aides et bonne réponse.
+const PZ_TYPES = ['count', 'add', 'sub', 'mult', 'compare', 'sequence', 'numseq', 'parity', 'coins', 'clock', 'intrus', 'first', 'missing', 'wordpic', 'ombres'];
+// Ouvre une énigme d'un type précis (comme openPuzzle, sans le tirage au sort du type).
+const openType = (t, lvl = 3) => game(`(() => {
+  Object.values(prog.skills).forEach(s => s.lvl = ${lvl});
+  state = 'puzzle'; currentGate = { ...L.gates[0], open: false }; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = TYPE_SKILL['${t}']; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true;
+  SW.pzo = null; SW.said = ''; PUZZLES['${t}'](); if (SW.pzo && pzHelp && pzHelp.btns) swPuzzleSetup();
+  return !!SW.pz && SW.pz.cards.length >= 2;
+})()`);
+const pzShots = [];
+for (const t of PZ_TYPES) {
+  for (const lvl of t === 'compare' ? [1, 8] : [3]) {
+    const ok = await openType(t, lvl); await sleep(250);
+    const vis = await game(`SW.pz ? [Math.round(SW.pz.visual.w), Math.round(SW.pz.visual.h), SW.pz.cards.map(cd => Math.round(cd.box.w) + 'x' + Math.round(cd.box.h)).join(' ')] : null`);
+    check(`énigme ${t} (niveau ${lvl}) : dessinée, ${vis && vis[2]}`, ok && vis && (await game(`SW.pz.cards.every(cd => cd.box.w > 0 && cd.box.h > 0)`)), vis);
+    pzShots.push(await shot(`switch-pz-${t}-${lvl}.png`));
+    await game(`swPzBack(); true`); await sleep(80);
+  }
+}
+check('B : retour au jeu depuis une énigme', await game(`state === 'play' && SW.pz === null`), await game(`[state, !!SW.pz]`));
+// Erreurs, aide gratuite, aides payantes, bonne réponse
+await openType('count', 3); await game(`prog.bag.n = 30; renderHelp(); true`); await sleep(100);
+const wrongIdx = await game(`SW.pz.cards.map((cd, i) => pzHelp.good.includes(cd.b) ? -1 : i).filter(i => i >= 0)`);
+await game(`SW.pz.focus = ${wrongIdx[0]}; true`); await press(1);
+check('A sur une mauvaise réponse : elle est grisée, message', await game(`SW.pz.cards[${wrongIdx[0]}].b.classList.contains('bad') && /essaie|Presque|Regarde/.test(SW.said)`), await game(`[SW.pz.cards.map(cd => [...'x'].length && cd.b.className), SW.said]`));
+check('après une erreur, le curseur passe à une autre réponse', await game(`SW.pz.focus !== ${wrongIdx[0]}`));
+await game(`SW.pz.focus = ${wrongIdx[1]}; true`); await press(1);
+check('2 erreurs : la bonne réponse brille (aide gratuite)', await game(`pzHelp.good[0].classList.contains('hint')`));
+await shot('switch-pz-aide.png');
+await game(`(() => { pzHelp.good.forEach(g => g.classList.remove('hint')); return true; })()`);
+const n0 = await game('prog.bag.n');
+await press(3);
+check('X : enlever une réponse coûte 5 trésors', (await game('prog.bag.n')) === n0 - 5 || (await game(`$('helpCut').disabled`)), [n0, await game('prog.bag.n')]);
+await press(2);
+check('Y : montrer la réponse coûte 10 trésors et la fait briller', await game(`pzHelp.good[0].classList.contains('hint') && pzHelp.hinted`), await game('[prog.bag.n, pzHelp.hinted]'));
+const goodIdx = await game(`SW.pz.cards.findIndex(cd => pzHelp.good.includes(cd.b))`);
+await game(`SW.pz.focus = ${goodIdx}; true`); await press(1);
+check('A sur la bonne réponse : gagné, étoiles', await game(`pzLocked && pzStars >= 1 && SW.pz.cards[${goodIdx}].b.classList.contains('good')`));
+await sleep(150); await shot('switch-pz-gagne.png');
+await sleep(2900);
+check('après la réussite, retour au jeu', await game(`state === 'play'`), await game('state'));
+// Au doigt : toucher une réponse
+await openType('add', 3); await sleep(150);
+const hit = JSON.parse(await game(`JSON.stringify(SW.pzHits[SW.pz.cards.findIndex(cd => pzHelp.good.includes(cd.b))])`));
+await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 3, clientX: ${hit.x + hit.w / 2}, clientY: ${hit.y + hit.h / 2} }] }); true`);
+check('au doigt : toucher la bonne réponse gagne', await game(`pzLocked && pzStars === 3`));
+await sleep(3000);
 check('aucune erreur JavaScript', errors.length === 0 && (await ev('__errors.length')) === 0, [errors, await ev('__errors')]);
-console.log('Captures :', title, menuShot, bravo);
+console.log('Captures :', title, menuShot, bravo, ...pzShots);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');
 ws.close(); chrome.kill();
 process.exit(fails ? 1 : 0);

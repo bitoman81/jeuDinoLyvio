@@ -30,12 +30,7 @@ tone = (...a) => { try { swTone(...a); } catch (e) { tone = () => {}; } };
 
 function swToast(text) { SW.toast = text; SW.toastT = 150; }
 
-// Énigmes : pas encore sur la Switch. La pierre s'ouvre, l'œuf est gagné.
-openPuzzle = g => {
-  currentGate = g; pzStars = 3; pzLocked = true;
-  closePuzzle(true);
-  SFX.yay(); swToast('Bravo, un œuf ! (les énigmes arrivent bientôt sur la Switch)');
-};
+// Les énigmes sont dans src/puzzle.js.
 
 /* ---------- Passer d'un écran à l'autre ---------- */
 const swWorld = () => SW_WORLDS[SW.wi];
@@ -125,18 +120,21 @@ function swPad() {
   const up = on(SW_BTN.Up) || ay < -.5, dn = on(SW_BTN.Down) || ay > .5;
   const zl = down(SW_BTN.ZL), zr = down(SW_BTN.ZR);
   if ((zl || zr) && on(SW_BTN.ZL) && on(SW_BTN.ZR)) swCapture();
-  const a = down(SW_BTN.A), b = down(SW_BTN.B), minus = down(SW_BTN.Minus);
+  const a = down(SW_BTN.A), b = down(SW_BTN.B), x = down(SW_BTN.X), y = down(SW_BTN.Y), minus = down(SW_BTN.Minus);
+  // Dans les menus et les énigmes, la croix agit une fois, puis se répète si on la garde appuyée.
+  const dir = left ? 'l' : right ? 'r' : up ? 'u' : dn ? 'd' : '', now = performance.now();
+  let step = '';
+  if (dir && (dir !== SW.dir || now > SW.dirT)) { step = dir; SW.dirT = now + (dir !== SW.dir ? 380 : 150); }
+  SW.dir = dir;
 
   if (SW.screen === 'title') { if (a) swMenu(); return; }
   if (SW.screen === 'menu') {
-    // La croix agit une fois, puis se répète si on la garde appuyée.
-    const dir = left ? 'l' : right ? 'r' : up ? 'u' : dn ? 'd' : '', now = performance.now();
-    if (dir && (dir !== SW.dir || now > SW.dirT)) { swMove(dir); SW.dirT = now + (dir !== SW.dir ? 380 : 150); }
-    SW.dir = dir;
+    if (step) swMove(step);
     if (a) { if (SW.row === 0) swChooseWorld(); else swChooseLevel(); }
     else if (b) { if (SW.row === 1) SW.row = 0; else SW.screen = 'title'; }
     return;
   }
+  if (swPzPad({ dir: step, a, b, x, y })) return;
   if (minus) { swMenu(1); return; }
   if (state === 'done') { if (a) swNextLevel(); else if (b) swMenu(1); return; }
   if (state !== 'play') return;
@@ -156,6 +154,7 @@ function swTouch(type, e) {
     if (h) h.fn();
     return;
   }
+  if (swPzOn()) { if (type === 'pointerdown' && t0) swPzTouch(t0.clientX, t0.clientY); return; }
   if (type === 'pointerdown' && state === 'done') { swNextLevel(); return; }
   if (type === 'pointerdown' && t0 && t0.clientX > SW_W - 140 && t0.clientY < 90) { swMenu(1); return; }
   for (let k = 0; k < list.length; k++) {
@@ -344,7 +343,7 @@ function swDraw() {
   c.setTransform(1, 0, 0, 1, 0, 0); c.textAlign = 'left'; c.globalAlpha = 1;
   if (SW.screen === 'title') swDrawTitle();
   else if (SW.screen === 'menu') swDrawMenu();
-  else if (L) swDrawGame();
+  else if (L) { swDrawGame(); swDrawPuzzle(); }
   swDrawToast();
 }
 

@@ -33,6 +33,7 @@ const main = boot
   + part('index.html (code du jeu)', m[1])
   + "swBoot('couche Switch');\n"
   + part('switch/src/switch.js', readFileSync(join(here, 'src', 'switch.js'), 'utf8'))
+  + part('switch/src/puzzle.js', readFileSync(join(here, 'src', 'puzzle.js'), 'utf8'))
   + "swBoot('prêt');\n"
   + '})();\n} catch (e) { swBoot(\'erreur\', e); requestAnimationFrame(swErrLoop); }\n}\n'
   + 'requestAnimationFrame(swWait);\n';
