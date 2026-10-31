@@ -125,7 +125,7 @@ await shot('switch-jeu.png');
 await game(`player.x = 3 * T; player.y = GROUND * T - player.h; camX = 0; true`);
 await ev(`__pad.axes[0] = 1; window.__bot = setInterval(() => { __pad.buttons[1].pressed = !__pad.buttons[1].pressed; }, 260)`);
 let st = '';
-for (let k = 0; k < 200 && st !== 'done'; k++) { await sleep(250); st = await game(`(() => { if (swPzOn() && !pzLocked) swPzChoose(SW.pz.cards.findIndex(cd => pzHelp.good.includes(cd.b))); return state; })()`); }
+for (let k = 0; k < 200 && st !== 'done'; k++) { await sleep(250); st = await game(`(() => { if (swPzOn() && !pzLocked) { if (SW.pz.game) { pzStars = 3; closePuzzle(true); } else swPzChoose(SW.pz.cards.findIndex(cd => pzHelp.good.includes(cd.b))); } return state; })()`); }
 await ev(`clearInterval(__bot); __pad.axes[0] = 0; __pad.buttons[1].pressed = false`);
 check('le robot finit la clairière : 3 œufs, écran Bravo', st === 'done' && await game('eggsRun === 3'), [st, await game('eggsRun'), await game('Math.round(player.x / T)')]);
 await sleep(300);
@@ -196,6 +196,54 @@ await openType('add', 3); await sleep(150);
 const hit = JSON.parse(await game(`JSON.stringify(SW.pzHits[SW.pz.cards.findIndex(cd => pzHelp.good.includes(cd.b))])`));
 await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 3, clientX: ${hit.x + hit.w / 2}, clientY: ${hit.y + hit.h / 2} }] }); true`);
 check('au doigt : toucher la bonne réponse gagne', await game(`pzLocked && pzStars === 3`));
+await sleep(3000);
+// 7. Énigmes-jeux et mots à écrire : dessinés à partir des éléments du jeu, joués à la croix + A ou au doigt.
+const GAMES = ['maze', 'slide', 'memory', 'dots', 'sudoku', 'pieces', 'symetrie', 'hangman', 'order'];
+const openGame = (t, lvl = 4) => game(`(() => {
+  Object.values(prog.skills).forEach(s => s.lvl = ${lvl});
+  state = 'puzzle'; currentGate = { ...L.gates[0], open: false }; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = TYPE_SKILL['${t}']; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true;
+  SW.pzo = null; SW.said = ''; PUZZLES['${t}'](); SW.pz = { game: true, t0: performance.now() };
+  return true;
+})()`);
+const html = () => game(`pz.visual.innerHTML + '|' + pz.choices.innerHTML`);
+for (const t of GAMES) {
+  await openGame(t); await sleep(300);
+  const nClick = await game('SW.pzClick.length');
+  check(`jeu ${t} : dessiné, ${nClick} zones à toucher`, nClick > 0 || t === 'maze', nClick);
+  pzShots.push(await shot(`switch-jeu-${t}.png`));
+  const h0 = await html();
+  if (t === 'maze') {
+    for (const b of [15, 13, 14, 12]) { await press(b); if ((await html()) !== h0) break; }
+    check('labyrinthe : la croix déplace le bébé', (await html()) !== h0);
+  } else {
+    // Quelques coups : croix vers la droite et le bas, puis A
+    for (const b of [15, 13]) await press(b);
+    await press(1); await sleep(100);
+    if (t === 'memory') check('mémoire : A retourne une carte', await game(`pz.choices.querySelectorAll('.mcard.up').length >= 1`));
+    else if (t === 'sudoku') check('sudoku : A choisit une case ou pose une forme', (await html()) !== h0 || (await game('pzErrs')) > 0);
+    else check(`${t} : A agit sur le jeu`, (await html()) !== h0 || (await game('pzErrs')) > 0 || (await game('SW.said')) !== '', (await game('SW.said')));
+  }
+  await game(`swPzBack(); true`); await sleep(80);
+}
+// Partie complète au doigt : relier les points dans l'ordre
+await openGame('dots', 1); await sleep(250);
+for (let i = 0; i < 20 && !(await game('pzLocked')); i++) {
+  const z = JSON.parse(await game(`JSON.stringify((z => z ? { x: z.x, y: z.y, w: z.w, h: z.h } : {})(SW.pzClick.find(z => z.el.dataset.i === '${i}')))`));
+  if (z.x === undefined) break;
+  await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 5, clientX: ${z.x + z.w / 2}, clientY: ${z.y + z.h / 2} }] }); true`); await sleep(60);
+}
+check('points à relier : gagné au doigt', await game('pzLocked && pzStars === 3'), await game('[pzLocked, pzStars, pzErrs]'));
+await sleep(150); pzShots.push(await shot('switch-jeu-dots-fini.png'));
+await sleep(3000);
+// Partie complète à la manette : le mot caché, lettre par lettre
+await openGame('hangman', 1); await sleep(250);
+for (let n = 0; n < 15 && !(await game('pzLocked')); n++) {
+  const need = await game(`(() => { const w = currentWord; const shown = pz.visual.querySelectorAll('.word span').map(s => s.textContent); return [...w].find((ch, i) => !shown[i]); })()`);
+  const z = JSON.parse(await game(`JSON.stringify((z => z ? { x: z.x, y: z.y, w: z.w, h: z.h } : {})(SW.pzClick.find(z => z.el.textContent === '${need}' && !z.el.disabled)))`));
+  if (z.x === undefined) break;
+  await game(`SW.pz.fx = ${z.x + z.w / 2}; SW.pz.fy = ${z.y + z.h / 2}; true`); await press(1); await sleep(60);
+}
+check('mot caché : gagné à la manette (A)', await game('pzLocked && pzStars === 3'), await game('[pzLocked, pzStars, currentWord]'));
 await sleep(3000);
 check('aucune erreur JavaScript', errors.length === 0 && (await ev('__errors.length')) === 0, [errors, await ev('__errors')]);
 console.log('Captures :', title, menuShot, bravo, ...pzShots);

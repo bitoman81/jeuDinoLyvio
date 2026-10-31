@@ -7,31 +7,10 @@
    Les énigmes-jeux (labyrinthe, taquin, mémoire...) et les mots à écrire viendront ensuite :
    en attendant, leur pierre s'ouvre toute seule. */
 
-/* ---------- Lire du HTML ou du SVG ---------- */
-const SW_ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
-const swDecode = s => s.replace(/&(#\d+|[a-z]+);/g, (m, e) => e[0] === '#' ? String.fromCharCode(+e.slice(1)) : SW_ENT[e] || m);
-// Transforme une chaîne en arbre : { tag, a: {attributs}, k: [enfants] } ou { t: 'texte' }.
-function swParse(html) {
-  const root = { tag: '#root', a: {}, k: [] }, stack = [root];
-  const re = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][\w-]*)((?:\s+[\w:-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>|([^<]+)/g;
-  let m;
-  while ((m = re.exec(String(html)))) {
-    const top = stack[stack.length - 1];
-    if (m[5] !== undefined) { const t = swDecode(m[5]); if (t.trim()) top.k.push({ t }); continue; }
-    if (!m[2]) continue;
-    const tag = m[2].toLowerCase();
-    if (m[1]) { for (let i = stack.length - 1; i > 0; i--) if (stack[i].tag === tag) { stack.length = i; break; } continue; }
-    const a = {}, ar = /([\w:-]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?/g; let am;
-    while ((am = ar.exec(m[3]))) a[am[1]] = am[2] === undefined ? '' : swDecode(am[2].replace(/^["']|["']$/g, ''));
-    const node = { tag, a, k: [] };
-    top.k.push(node);
-    if (!m[4] && !['br', 'img', 'input', 'hr'].includes(tag)) stack.push(node);
-  }
-  return root;
-}
+/* ---------- Lire du HTML ou du SVG (le lecteur est dans dom.js) ---------- */
+const swParse = html => swParseInto(new SwEl('#root'), html);
 const swCls = (n, c) => n.a && (' ' + (n.a.class || '') + ' ').includes(' ' + c + ' ');
 const swStyle = (n, prop) => { const m = n.a && n.a.style && n.a.style.match(new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)')); return m ? m[1].trim() : null; };
-const swTextOf = n => n.t !== undefined ? n.t : (n.k || []).map(swTextOf).join('');
 
 /* ---------- Dessiner du SVG sur le canvas ---------- */
 const swNum = (v, d = 0) => { const f = parseFloat(v); return isNaN(f) ? d : f; };
@@ -99,14 +78,18 @@ function swSvgNode(c, n, st, masks, opt) {
 // Dessine un <svg> dans le rectangle (x, y, w, h), en gardant ses proportions.
 function swSvg(c, svg, x, y, w, h, opt = {}) {
   const vb = (svg.a.viewbox || svg.a.viewBox || '0 0 100 100').split(/[\s,]+/).map(Number);
-  let s = Math.min(w / vb[2], h / vb[3]);
-  const sc = (swStyle(svg, 'transform') || '').match(/scale\(([\d.]+)\)/); if (sc) s *= +sc[1];
+  // stretch : étiré dans le rectangle (preserveAspectRatio="none", morceaux du puzzle)
+  let s = Math.min(w / vb[2], h / vb[3]), sy = s;
+  if (opt.stretch) { s = w / vb[2]; sy = h / vb[3]; }
+  const sc = (swStyle(svg, 'transform') || '').match(/scale\(([\d.]+)\)/); if (sc) { s *= +sc[1]; sy *= +sc[1]; }
   const masks = {};
   (function find(n) { (n.k || []).forEach(k => { if (k.tag === 'mask' && k.a.id) masks[k.a.id] = k; else find(k); }); })(svg);
   c.save();
+  // Comme dans un navigateur, ce qui dépasse du cadre du SVG est caché (morceaux du puzzle).
+  c.beginPath(); c.rect(x, y, w, h); c.clip();
   c.translate(x + w / 2, y + h / 2);
   if (opt.flip) c.scale(-1, 1);
-  c.scale(s, s); c.translate(-vb[0] - vb[2] / 2, -vb[1] - vb[3] / 2);
+  c.scale(s, sy); c.translate(-vb[0] - vb[2] / 2, -vb[1] - vb[3] / 2);
   if (opt.alpha !== undefined) c.globalAlpha *= opt.alpha;
   svg.k.forEach(k => swSvgNode(c, k, { fill: '#000', fo: 1, so: 1 }, masks, opt));
   c.restore();
@@ -211,10 +194,218 @@ function swBoxGroup(kids, ctx, maxW = 1000) {
   return smalls.length ? swBoxCol([row, ...smalls], 4) : row;
 }
 // Réduit une boîte pour qu'elle tienne dans (maxW, maxH), ou l'agrandit jusqu'à `grow` fois s'il y a la place.
+// SW.tf garde les agrandissements en cours, pour placer les zones à toucher au bon endroit de l'écran.
+SW.tf = [];
 function swFitBox(b, maxW, maxH, grow = 1) {
   const s = Math.min(grow, maxW / Math.max(1, b.w), maxH / Math.max(1, b.h));
   if (s === 1) return b;
-  return { w: b.w * s, h: b.h * s, draw(x, y) { const c = SW.ctx; c.save(); c.translate(x, y); c.scale(s, s); b.draw(0, 0); c.restore(); } };
+  return { w: b.w * s, h: b.h * s, draw(x, y) { const c = SW.ctx; c.save(); c.translate(x, y); c.scale(s, s); SW.tf.push([x, y, s]); b.draw(0, 0); SW.tf.pop(); c.restore(); } };
+}
+
+/* ---------- Les énigmes-jeux : dessiner les éléments du jeu et noter ceux qu'on peut toucher ---------- */
+SW.pzClick = [];
+// Note un élément cliquable à sa place sur l'écran (nav : false = seulement au doigt).
+function swReg(el, x, y, w, h, extra = {}) {
+  for (let i = SW.tf.length - 1; i >= 0; i--) { const [tx, ty, s] = SW.tf[i]; x = tx + x * s; y = ty + y * s; w *= s; h *= s; }
+  SW.pzClick.push({ el, x, y, w, h, ...extra });
+}
+const swClickable = el => typeof el.onclick === 'function' && !el.disabled;
+const swGridCols = (n, d) => { const m = (n.a.style || '').match(/repeat\((\d+)/); return m ? +m[1] : d; };
+const swCssVar = (n, v, d) => { const m = (n.a.style || '').match(new RegExp('--' + v + ':\\s*([\\d.-]+)')); return m ? +m[1] : d; };
+// Une grille de cases (taquin, sudoku, miroir, plateau du puzzle).
+function swGrid(cells, cols, cw, ch, gap, gapAfter = () => 0) {
+  const rows = Math.ceil(cells.length / cols);
+  const xs = [], ys = []; let x = 0, y = 0;
+  for (let i = 0; i < cols; i++) { xs.push(x); x += cw + gap + gapAfter('c', i); }
+  for (let i = 0; i < rows; i++) { ys.push(y); y += ch + gap + gapAfter('r', i); }
+  return { w: x - gap, h: y - gap, draw(x0, y0) { cells.forEach((cell, i) => cell(x0 + xs[i % cols], y0 + ys[(i / cols) | 0], cw, ch)); } };
+}
+// Contour qui brille (aide) ou rouge (erreur) autour d'une case.
+function swMark(el, x, y, w, h, r = 14) {
+  const c = SW.ctx, cl = el.classList;
+  if (cl.contains('hint') && !pzLocked) { c.globalAlpha = .55 + .45 * Math.sin(performance.now() / 160); c.strokeStyle = SW_SUN; c.lineWidth = 8; rr(c, x - 5, y - 5, w + 10, h + 10, r + 4); c.stroke(); c.globalAlpha = 1; }
+  if (cl.contains('bad')) { c.strokeStyle = '#e5483b'; c.lineWidth = 5; rr(c, x - 3, y - 3, w + 6, h + 6, r + 2); c.stroke(); }
+}
+function swCellBox(el, x, y, w, h, fill, r = 14) {
+  const c = SW.ctx;
+  c.fillStyle = fill; c.strokeStyle = SW_INK; c.lineWidth = 4; rr(c, x, y, w, h, r); c.fill(); c.stroke();
+}
+function swGBox(n, ctx) {
+  if (n.t !== undefined) return swBoxText(n.t.trim(), ctx.fs, ctx.color);
+  const c = SW.ctx, kids = n.k.filter(k => k.tag || (k.t && k.t.trim()));
+  // Taquin : tuiles de couleur numérotées
+  if (swCls(n, 'slide')) {
+    return swGrid(kids.map(k => (x, y, w, h) => {
+      if (k.tag !== 'button') { c.strokeStyle = 'rgba(29,43,34,.25)'; c.lineWidth = 3; rr(c, x, y, w, h, 16); c.stroke(); return; }
+      swCellBox(k, x, y, w, h, swStyle(k, 'background') || '#ccc', 16);
+      swText(swTextOf(k), x + w / 2, y + h / 2 + 2, 52, '#fff', 'center');
+      if (swClickable(k)) swReg(k, x, y, w, h);
+    }), swGridCols(n, 3), 116, 116, 8);
+  }
+  // Sudoku des formes : 4 x 4, traits épais entre les carrés
+  if (swCls(n, 'sdk')) {
+    return swGrid(kids.map(k => (x, y, w, h) => {
+      const sel = swCls(k, 'sel'), given = swCls(k, 'given');
+      swCellBox(k, x, y, w, h, given ? '#efe6cf' : sel ? '#ffe7b8' : '#fff', 10);
+      if (sel) { c.strokeStyle = SW_SUN; c.lineWidth = 6; rr(c, x + 4, y + 4, w - 8, h - 8, 8); c.stroke(); }
+      const svg = k.k.find(s => s.tag === 'svg'); if (svg) swSvg(c, svg, x + 10, y + 10, w - 20, h - 20);
+      swMark(k, x, y, w, h, 10);
+      if (swClickable(k)) swReg(k, x, y, w, h);
+    }), 4, 92, 92, 4, (d, i) => i === 1 ? 10 : 0);
+  }
+  // Miroir : cases à colorier, la ligne du miroir au milieu
+  if (swCls(n, 'sym')) {
+    const cols = swGridCols(n, 4);
+    return swGrid(kids.map(k => (x, y, w, h) => {
+      const bg = swStyle(k, 'background');
+      swCellBox(k, x, y, w, h, bg || (swCls(k, 'given') ? '#efe6cf' : '#fff'), 8);
+      if (swCls(k, 'mid')) { c.fillStyle = SW_RUNE; c.fillRect(x - 9, y - 4, 6, h + 8); }
+      swMark(k, x, y, w, h, 8);
+      if (swClickable(k)) swReg(k, x, y, w, h);
+    }), cols, 64, 64, 4, (d, i) => d === 'c' && i === cols / 2 - 1 ? 10 : 0);
+  }
+  // Puzzle à pièces : le plateau (avec le dessin en transparence) et les pièces à poser
+  if (swCls(n, 'jig')) {
+    const cols = swCssVar(n, 'c', 2), rows = swCssVar(n, 'r', 2), BW = 360, cw = BW / cols, ch = BW / rows;
+    const board = n.k.find(k => swCls(k, 'board')), tray = n.k.find(k => swCls(k, 'tray'));
+    const ghost = board && board.k.find(k => k.tag === 'svg' && swCls(k, 'ghost-img'));
+    const slots = board ? board.k.filter(k => swCls(k, 'slot')) : [];
+    const pcs = tray ? tray.k.filter(k => swCls(k, 'pc')) : [];
+    const boardBox = {
+      w: BW, h: BW, draw(x, y) {
+        swCellBox(board, x - 6, y - 6, BW + 12, BW + 12, '#fff', 12);
+        if (ghost) swSvg(c, ghost, x, y, BW, BW, { alpha: .25, stretch: true });
+        slots.forEach((k, i) => {
+          const sx = x + (i % cols) * cw, sy = y + ((i / cols) | 0) * ch;
+          const svg = k.k.find(s => s.tag === 'svg');
+          if (svg) swSvg(c, svg, sx, sy, cw, ch, { stretch: true });
+          else { c.strokeStyle = 'rgba(29,43,34,.3)'; c.lineWidth = 2; c.strokeRect(sx + 2, sy + 2, cw - 4, ch - 4); }
+          swMark(k, sx, sy, cw, ch, 4);
+          if (swClickable(k)) swReg(k, sx, sy, cw, ch);
+        });
+      },
+    };
+    const pcBoxes = pcs.map(k => ({
+      w: cw, h: ch, draw(x, y) {
+        if (swCls(k, 'sel')) { c.fillStyle = SW_SUN; rr(c, x - 8, y - 8, cw + 16, ch + 16, 12); c.fill(); }
+        swCellBox(k, x - 3, y - 3, cw + 6, ch + 6, '#fff', 8);
+        const rot = swCssVar(k, 'rot', 0), svg = k.k.find(s => s.tag === 'svg');
+        c.save(); c.translate(x + cw / 2, y + ch / 2); c.rotate(rot * Math.PI / 180);
+        if (svg) swSvg(c, svg, -cw / 2, -ch / 2, cw, ch, { stretch: true });
+        c.restore();
+        swMark(k, x - 3, y - 3, cw + 6, ch + 6, 8);
+        if (swClickable(k)) swReg(k, x, y, cw, ch);
+      },
+    }));
+    const trayBox = swBoxFlow(pcBoxes, 3 * cw + 60, 24, 24);
+    return swBoxFlow([boardBox, trayBox], 1100, 60);
+  }
+  // Jeu de mémoire : la carte est retournée (dessin) ou cachée (dos vert)
+  if (n.tag === 'button' && swCls(n, 'mcard')) {
+    return {
+      w: 120, h: 120, draw(x, y) {
+        const up = swCls(n, 'up') || swCls(n, 'done');
+        c.globalAlpha = swCls(n, 'done') ? .6 : 1;
+        swCellBox(n, x, y, 120, 120, up ? '#fff' : '#3f9a4f', 18);
+        const svg = n.k.find(s => s.tag === 'svg');
+        if (up && svg) swSvg(c, svg, x + 12, y + 12, 96, 96);
+        else if (!up) swText('?', x + 60, y + 64, 56, '#d4efb0', 'center');
+        c.globalAlpha = 1;
+        if (swClickable(n)) swReg(n, x, y, 120, 120);
+      },
+    };
+  }
+  // Touches : lettres, flèches, formes, couleurs
+  if (n.tag === 'button' && swCls(n, 'choice')) {
+    const inner = swBoxGroup(n.k, { fs: 48, color: SW_INK }), S = Math.max(92, inner.w + 30);
+    return {
+      w: S, h: 92, draw(x, y) {
+        if (swCls(n, 'gone')) return;
+        const cl = n.classList, pressed = n.a['aria-pressed'] === 'true';
+        c.globalAlpha = cl.contains('bad') || n.disabled && !cl.contains('good') ? .35 : 1;
+        c.fillStyle = SW_INK; rr(c, x, y + 5, S, 92, 18); c.fill();
+        swCellBox(n, x, y, S, 92, cl.contains('good') ? '#8fd18f' : pressed ? '#ffe7b8' : '#fff', 18);
+        if (pressed) { c.strokeStyle = SW_SUN; c.lineWidth = 6; rr(c, x + 4, y + 4, S - 8, 84, 14); c.stroke(); }
+        inner.draw(x + (S - inner.w) / 2, y + (92 - inner.h) / 2);
+        c.globalAlpha = 1;
+        swMark(n, x, y, S, 92, 18);
+        if (swClickable(n)) swReg(n, x, y, S, 92);
+      },
+    };
+  }
+  // Dessins SVG : labyrinthe (la croix déplace le bébé) et points à relier (chaque point se touche)
+  if (n.tag === 'svg' && (swCls(n, 'maze') || swCls(n, 'dots'))) {
+    const S = 440;
+    return {
+      w: S, h: S, draw(x, y) {
+        swSvg(c, n, x, y, S, S);
+        const vb = n.a.viewBox.split(/[\s,]+/).map(Number), s = Math.min(S / vb[2], S / vb[3]);
+        const ox = x + S / 2 - (vb[0] + vb[2] / 2) * s, oy = y + S / 2 - (vb[1] + vb[3] / 2) * s;
+        if (swClickable(n)) swReg(n, x, y, S, S, { nav: false, svg: { n, ox, oy, s } });
+        swWalk(n, g => {
+          if (!swClickable(g)) return;
+          const dot = g.k.find(k => k.tag === 'circle');
+          if (dot) { const cx = ox + swNum(dot.a.cx) * s, cy = oy + swNum(dot.a.cy) * s, r = 9 * s; swReg(g, cx - r, cy - r, 2 * r, 2 * r); }
+        });
+      },
+    };
+  }
+  if (n.tag === 'svg' || swCls(n, 'word') || swCls(n, 'say-big') || swCls(n, 'group') || n.tag === 'small' || swCls(n, 'dot') || swCls(n, 'num')) return swBox(n, ctx);
+  // Autres conteneurs : leurs enfants à la suite
+  return swBoxFlow(kids.map(k => swGBox(k, ctx)), 1100, 16, 12);
+}
+// Touche d'un dessin SVG (labyrinthe) : la case sous le doigt devient la cible du clic.
+function swSvgClick(e, px, py) {
+  const { n, ox, oy, s } = e.svg, sx = (px - ox) / s, sy = (py - oy) / s;
+  let target = n;
+  swWalk(n, k => {
+    const a = k.a, N = swNum;
+    if (k.tag === 'rect' && 'data-c' in a && sx >= N(a.x) && sx <= N(a.x) + N(a.width) && sy >= N(a.y) && sy <= N(a.y) + N(a.height)) target = k;
+  });
+  n.onclick({ type: 'click', target, currentTarget: n, preventDefault() {}, stopPropagation() {} });
+}
+// La case choisie à la croix : la plus proche du dernier point visé (les cases sont redessinées après chaque coup).
+function swPzCur() {
+  const P = SW.pz, l = SW.pzClick.filter(e => e.nav !== false);
+  if (!l.length) return null;
+  if (P.fx === undefined) { P.fx = l[0].x + l[0].w / 2; P.fy = l[0].y + l[0].h / 2; }
+  let best = null, bd = 1e12;
+  l.forEach(e => { const d = (e.x + e.w / 2 - P.fx) ** 2 + (e.y + e.h / 2 - P.fy) ** 2; if (d < bd) { bd = d; best = e; } });
+  return best;
+}
+function swPzNav(dir) {
+  const cur = swPzCur(); if (!cur) return;
+  const cx = cur.x + cur.w / 2, cy = cur.y + cur.h / 2;
+  let best = null, bs = 1e12;
+  SW.pzClick.filter(e => e.nav !== false && e !== cur).forEach(e => {
+    const dx = e.x + e.w / 2 - cx, dy = e.y + e.h / 2 - cy;
+    const along = { l: -dx, r: dx, u: -dy, d: dy }[dir], side = dir === 'l' || dir === 'r' ? Math.abs(dy) : Math.abs(dx);
+    if (along < 8) return;
+    const sc = along + side * 2.5; if (sc < bs) { bs = sc; best = e; }
+  });
+  if (best) { SW.pz.fx = best.x + best.w / 2; SW.pz.fy = best.y + best.h / 2; SFX.key(); }
+}
+const SW_ARROW = { l: 'ArrowLeft', r: 'ArrowRight', u: 'ArrowUp', d: 'ArrowDown' };
+function swDrawGamePuzzle() {
+  const c = SW.ctx, ctx = { fs: 56, color: SW_INK };
+  SW.pzClick = [];
+  const visKids = pz.visual.k.filter(k => k.tag || (k.t && k.t.trim())), choKids = pz.choices.k.filter(k => k.tag && !swCls(k, 'pz-stars'));
+  const top = 134, room = 476;
+  // Les cartes et les touches en lignes égales (8 cartes : 2 lignes de 4, pas 7 + 1)
+  let cho = null;
+  if (choKids.length) {
+    const boxes = choKids.map(k => swGBox(k, ctx)), n = boxes.length, bw = Math.max(...boxes.map(b => b.w)), gap = 16;
+    const rows = Math.ceil((n * (bw + gap) - gap) / 1060) || 1, per = Math.ceil(n / rows);
+    cho = swBoxFlow(boxes, per * (bw + gap) - gap + 1, gap, 18);
+  }
+  const choMax = visKids.length ? 210 : room;
+  const choFit = cho ? swFitBox(cho, 1060, choMax) : null;
+  const visRoom = room - (choFit ? choFit.h + 18 : 0);
+  if (visKids.length) { const vis = swFitBox(swGBox(pz.visual, ctx), 1060, visRoom, 1.25); vis.draw((SW_W - vis.w) / 2, top + (visRoom - vis.h) / 2); }
+  if (choFit) choFit.draw((SW_W - choFit.w) / 2, top + (visKids.length ? visRoom + 18 : (room - choFit.h) / 2));
+  // La case choisie à la croix
+  const cur = !pzLocked && !pzKey && swPzCur();
+  if (cur) { c.strokeStyle = SW_SUN; c.lineWidth = 7; rr(c, cur.x - 7, cur.y - 7, cur.w + 14, cur.h + 14, 16); c.stroke(); }
 }
 
 /* ---------- L'énigme à l'écran ---------- */
@@ -229,10 +420,8 @@ openPuzzle = g => {
   SW.pzo = null; SW.said = '';
   swOpenPuzzle(g);
   if (SW.pzo && pzHelp && pzHelp.btns) { swPuzzleSetup(); return; }
-  // Énigme-jeu ou mot à écrire : pas encore sur la Switch, la pierre s'ouvre.
-  currentGate = g; pzStars = 3; pzLocked = true;
-  closePuzzle(true);
-  SFX.yay(); swToast('Bravo, un œuf ! (cette énigme arrive bientôt sur la Switch)');
+  // Énigme-jeu ou mot à écrire : dessinée à chaque image à partir des éléments créés par le jeu.
+  SW.pz = { game: true, t0: performance.now() };
 };
 function swPuzzleSetup() {
   const o = SW.pzo, ctx = { fs: 56, color: SW_INK };
@@ -242,7 +431,7 @@ function swPuzzleSetup() {
     cards: pzHelp.btns.map(b => ({ b, box: swFitBox(swBoxGroup(swParse(b.innerHTML).k, ctx), 320, 190) })),
   };
 }
-const swPzOn = () => state === 'puzzle' && SW.pz && pzHelp;
+const swPzOn = () => state === 'puzzle' && !!SW.pz;
 const swCardOk = cd => !cd.b.disabled && !cd.b.classList.contains('gone');
 function swPzMove(d) {
   const cards = SW.pz.cards; let i = SW.pz.focus;
@@ -262,9 +451,16 @@ const swPzBack = () => { if (!pzLocked) { $('pzBack').onclick(); SW.pz = null; }
 // Manette pendant une énigme : renvoie true si elle a pris la main.
 function swPzPad(btn) {
   if (!swPzOn()) return false;
-  if (btn.dir === 'l') swPzMove(-1); else if (btn.dir === 'r') swPzMove(1);
-  if (btn.a) swPzChoose(SW.pz.focus);
-  else if (btn.x) swHelpCut();
+  if (SW.pz.game) {
+    // Labyrinthe : la croix déplace le bébé (comme les flèches du clavier). Sinon, elle choisit une case.
+    if (btn.dir) { if (pzKey) pzKey(SW_ARROW[btn.dir]); else swPzNav(btn.dir); }
+    if (btn.a && !pzLocked && !pzKey) { const cur = swPzCur(); if (cur) cur.el.click(); }
+  } else {
+    if (btn.dir === 'l') swPzMove(-1); else if (btn.dir === 'r') swPzMove(1);
+    if (btn.a) swPzChoose(SW.pz.focus);
+  }
+  if (btn.a) return true;
+  if (btn.x) swHelpCut();
   else if (btn.y) swHelpHint();
   else if (btn.b) swPzBack();
   return true;
@@ -272,7 +468,12 @@ function swPzPad(btn) {
 function swPzTouch(x, y) {
   if (!swPzOn()) return false;
   const h = SW.pzHits.find(z => x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h);
-  if (h) h.fn();
+  if (h) { h.fn(); return true; }
+  if (SW.pz.game && !pzLocked) {
+    // La plus petite zone sous le doigt (un point plutôt que tout le dessin)
+    const e = SW.pzClick.filter(z => x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h).sort((a, b) => a.w * a.h - b.w * b.h)[0];
+    if (e) { if (e.svg) swSvgClick(e, x, y); else { SW.pz.fx = e.x + e.w / 2; SW.pz.fy = e.y + e.h / 2; e.el.click(); } }
+  }
   return true;
 }
 function swDrawPuzzle() {
@@ -282,9 +483,15 @@ function swDrawPuzzle() {
   c.fillStyle = 'rgba(16,40,26,.6)'; c.fillRect(0, 0, SW_W, SW_H);
   swPanel(60, 24, SW_W - 120, SW_H - 48);
   // Titre, puis ce que la voix dirait
-  swText(P.title, SW_W / 2, 70, swFit(P.title, SW_W - 200, 40), SW_INK, 'center');
+  const title = P.game ? pz.title.textContent : P.title;
+  swText(title, SW_W / 2, 70, swFit(title, SW_W - 360, 40), SW_INK, 'center');
   const said = SW.said || '';
-  if (said && said !== P.title) swText(said, SW_W / 2, 112, swFit(said, SW_W - 200, 24), '#4b5d50', 'center');
+  if (said && said !== title) swText(said, SW_W / 2, 112, swFit(said, SW_W - 200, 24), '#4b5d50', 'center');
+  if (P.game) swDrawGamePuzzle(); else swDrawChoices(P, t);
+  swDrawPzBar();
+}
+function swDrawChoices(P, t) {
+  const c = SW.ctx;
   // L'image de l'énigme
   const vy = 136, vh = 250;
   if (P.visual.w > 0) P.visual.draw((SW_W - P.visual.w) / 2, vy + (vh - P.visual.h) / 2);
@@ -306,8 +513,10 @@ function swDrawPuzzle() {
     c.globalAlpha = 1;
     SW.pzHits.push({ x, y: cy, w: cw, h: ch, fn: () => swPzChoose(i) });
   });
-  // Bas de l'écran : les aides et le retour, ou les étoiles quand c'est gagné
-  const by = SW_H - 92;
+}
+// Bas de l'écran : les aides et le retour, ou les étoiles quand c'est gagné
+function swDrawPzBar() {
+  const c = SW.ctx, by = SW_H - 92;
   if (pzLocked) {
     for (let k = 0; k < 3; k++) swStar(SW_W / 2 + (k - 1) * 60, by + 30, 24, k < pzStars);
     return;

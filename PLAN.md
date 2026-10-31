@@ -196,7 +196,7 @@ Une petite page de test, empaquetée comme nx-spa, qui vérifie :
 - [x] 2. Menu et choix du dino, à la manette et au doigt : écran titre, les 4 animaux et l'île secrète, les endroits (œufs, étoiles, cadenas, clé dorée), − pour revenir au menu, écran Bravo. Essayé sur la console le 31 octobre 2026. Fluidité : JIT automatique sans Sparkplug (`flags = --no-sparkplug` dans `nxjs.ini`), à lancer en gardant R sur un jeu. Capture d'écran avec ZL + ZR dans `switch/dino-captures/`. Les coins arrondis sont tracés avec `arc` (avec `arcTo`, nx.js dessinait une boucle en trop).
 - [ ] 3. Énigmes dessinées dans le jeu, à la manette et au doigt.
   - [x] Énigmes à choix (15 types) : le code des énigmes tourne tel quel, `switch/src/puzzle.js` relit le titre, l'image et les boutons, les dessine (petit lecteur HTML et SVG) et renvoie les choix au jeu. A répondre, X et Y les aides payantes, B retour. Essayé sur la console le 31 octobre 2026.
-  - [ ] Mots à écrire (pendu, lettres dans l'ordre) et énigmes-jeux (labyrinthe, taquin, mémoire, points, sudoku, puzzle à pièces, miroir).
+  - [ ] Mots à écrire (mot caché, lettres dans l'ordre) et énigmes-jeux (labyrinthe, taquin, mémoire, points, sudoku, puzzle à pièces, miroir) : faits le 31 octobre 2026, à essayer sur la console. Le faux DOM (`switch/src/dom.js`) est devenu un petit DOM : innerHTML construit un arbre d'éléments avec classes, data-*, onclick et querySelectorAll, si bien que le code de ces jeux tourne tel quel. La Switch dessine l'arbre ; la croix va d'une case à la case voisine, A clique, le doigt touche ; dans le labyrinthe, la croix déplace le bébé.
 - [ ] 4. Voix et sons enregistrés.
 - [ ] 5. Les 4 animaux, sauvegarde, sac et boutique.
 - [ ] 6. Espace parents, avec le clavier de la Switch.
