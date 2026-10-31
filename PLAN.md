@@ -84,6 +84,8 @@ Une nouvelle famille d'énigmes « logique », qui se joue avec les doigts et pa
 - Ces énigmes s'ouvrent dans la même fenêtre que les énigmes actuelles (`openPuzzle`, puis `solved` et `oops`), donc elles marchent dans les 4 modes de jeu.
 - Score : étoiles selon le temps mis ou le nombre de coups, et non selon le nombre d'erreurs.
 
+**Fait (fin de l'étape) :** le puzzle à pièces (4 pièces avec le dessin en pâle, puis 6, puis 9, puis des pièces tournées qu'on tourne en les touchant) et le miroir (colorier l'autre moitié d'un dessin : grille 4 x 4, puis 6 x 5 et 8 x 6, puis deux couleurs). On touche une pièce puis sa place, ou une case à colorier ; une mauvaise case ne se colorie pas. Aide : 5 trésors pour poser une pièce ou colorier une case, 10 pour faire briller la place ; après 2 erreurs, le jeu pose une pièce ou colorie une case gratuitement.
+
 ## Étape 6 - Des objets qui servent à quelque chose
 
 Les fruits et les perles deviennent une monnaie qu'on garde d'un niveau à l'autre, dans le **sac**.
@@ -208,7 +210,7 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 2 - Difficulté évolutive et score en étoiles
 - [x] Étape 3 - Joystick virtuel sur téléphone
 - [x] Étape 4 - Plus de mots et d'énigmes classiques
-- [x] Étape 5 - Énigmes de type jeu (labyrinthe, taquin, mémoire, points, sudoku, ombres ; puzzle à pièces et symétrie à faire)
+- [x] Étape 5 - Énigmes de type jeu (labyrinthe, taquin, mémoire, points, sudoku, ombres, puzzle à pièces, miroir)
 - [x] Étape 6 - Sac, objets utiles et boutique du nid (clé dorée et morceaux de carte avec l'étape 7)
 - [x] Étape 7 - Plus de niveaux, endroits secrets, île secrète et interrupteurs
 - [x] Étape 8 - Statistiques pour les parents : tableau par compétence et courbe du niveau

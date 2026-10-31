@@ -192,6 +192,23 @@ h1 span{color:var(--sun)}
 .choice.key .shape{width:40px;height:40px}
 .shadow{width:72px;height:72px;filter:brightness(0);opacity:.85}
 .shadow.flip{transform:scaleX(-1)}
+/* Puzzle à pièces et miroir */
+.jig{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;--S:clamp(140px,40vh,250px)}
+.jig .board{position:relative;width:var(--S);height:var(--S);display:grid;grid-template-columns:repeat(var(--c),1fr);grid-template-rows:repeat(var(--r),1fr);border:4px solid var(--ink);border-radius:10px;background:#fff;overflow:hidden;box-sizing:content-box}
+.jig .ghost-img{position:absolute;inset:0;width:100%;height:100%;opacity:.18;pointer-events:none}
+.jig .slot{position:relative;border:1px dashed rgba(29,43,34,.45);background:transparent;padding:0;display:block;min-width:0;min-height:0}
+.jig .slot svg,.jig .pc svg{width:100%;height:100%;display:block}
+.jig .tray{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:calc(var(--S) * 1.15)}
+.jig .pc{width:calc(var(--S) / var(--c));height:calc(var(--S) / var(--r));padding:0;border:3px solid var(--ink);border-radius:8px;background:#fff;box-shadow:0 3px 0 var(--ink);overflow:hidden}
+.jig .pc svg{transform:rotate(var(--rot));transition:transform .2s}
+.jig .pc.sel{outline:4px solid var(--sun);outline-offset:2px}
+.jig .hint,.sym .hint{animation:pulse 1s infinite;outline:4px solid var(--sun);outline-offset:-4px}
+.jig .slot.bad,.sym button.bad{animation:shake .4s}
+.sym{--q:clamp(26px,7.5vh,44px);display:grid;gap:2px;background:var(--ink);border:4px solid var(--ink);border-radius:10px;overflow:hidden}
+.sym button{width:var(--q);height:var(--q);border:0;padding:0;background:#fff;box-sizing:border-box}
+.sym button.given{cursor:default;background:#efe6cf}
+.sym button.mid{border-left:5px solid #7a6f9b}
+.choice.key[aria-pressed="true"]{background:var(--sun)}
 .star{width:20px;height:20px}
 .star.off{opacity:.25}
 .stars{display:flex;gap:6px;justify-content:center}
@@ -795,7 +812,7 @@ const SKILLS = {
 const SKILL_START = { petit: 1, grand: 4, expert: 7 }, MAX_LVL = 10;
 const TYPE_SKILL = { count: 'count', add: 'add', sub: 'sub', mult: 'mult', compare: 'compare', sequence: 'suite', first: 'lettres', missing: 'lettres', hangman: 'mots', order: 'mots',
   numseq: 'suite', parity: 'count', coins: 'add', clock: 'heure', intrus: 'logique', wordpic: 'lire',
-  maze: 'logique', slide: 'logique', memory: 'logique', sudoku: 'logique', ombres: 'logique', dots: 'count' };
+  maze: 'logique', slide: 'logique', memory: 'logique', sudoku: 'logique', ombres: 'logique', dots: 'count', pieces: 'logique', symetrie: 'logique' };
 
 /* ---------- Sauvegarde ----------
    v2 ajoute la partie en cours (prog.run) pour reprendre là où on s'est arrêté.
@@ -2257,7 +2274,7 @@ function renderHelp() {
   const c = pzHelp; $('pzHelp').hidden = !c || pzLocked;
   if (!c) return;
   const n = prog.bag.n, word = !!c.give, wrong = word ? [] : c.btns.filter(b => !b.disabled && !c.good.includes(b));
-  const hint = word ? 'Montrer les lettres' : 'Montrer la réponse', cut = word ? 'Donner une lettre' : 'Enlever une réponse';
+  const [cut, hint] = c.labels || (word ? ['Donner une lettre', 'Montrer les lettres'] : ['Enlever une réponse', 'Montrer la réponse']);
   $('helpHint').innerHTML = `${hint} <span class="tre"></span> ${HELP_HINT}`;
   $('helpHint').disabled = n < HELP_HINT || c.hinted;
   $('helpHint').setAttribute('aria-label', `${hint}, ${HELP_HINT} trésors`);
@@ -2268,7 +2285,7 @@ function renderHelp() {
 $('helpHint').onclick = () => {
   const c = pzHelp; if (!c || pzLocked || c.hinted || prog.bag.n < HELP_HINT) return;
   prog.bag.n -= HELP_HINT; c.hinted = true; pzErrs = Math.max(pzErrs, 2);
-  if (c.give) { c.glow(); say('Appuie sur la lettre qui brille !'); }
+  if (c.give) { c.glow(); say(c.glowSay || 'Appuie sur la lettre qui brille !'); }
   else { c.good.forEach(g => g.classList.add('hint')); say('Regarde la réponse qui brille !'); }
   SFX.key(); save(); renderHelp();
 };
@@ -2723,6 +2740,93 @@ const PUZZLES = {
       win: "C'est la bonne ombre !",
     });
   },
+  /* Puzzle à pièces : remettre les morceaux d'une image à leur place. 4 pièces, puis 6, puis 9,
+     puis des pièces tournées (on touche une pièce choisie pour la tourner). On touche une pièce, puis sa place.
+     Aide : 5 trésors pour poser une pièce, 10 pour faire briller la pièce et sa place ; une pièce offerte après 2 erreurs. */
+  pieces() {
+    const k = lv('logique'), [cols, rows] = k <= 3 ? [2, 2] : k <= 6 ? [3, 2] : [3, 3], turn = k >= 9, n = cols * rows;
+    const w = pick(Object.keys(ICON).filter(x => x !== 'LUNE')), pw = 100 / cols, ph = 100 / rows;
+    const placed = Array(n).fill(false), rot = Array.from({ length: n }, () => turn && Math.random() < .6 ? pick([90, 180, 270]) : 0);
+    const order = shuffle([...Array(n).keys()]);
+    let sel = -1, miss = 0;
+    const left = () => placed.filter(x => !x).length;
+    const target = () => sel >= 0 ? sel : order.find(i => !placed[i]);
+    const piece = i => `<svg viewBox="${(i % cols) * pw} ${((i / cols) | 0) * ph} ${pw} ${ph}" preserveAspectRatio="none" aria-hidden="true">${ICON[w]}</svg>`;
+    const draw = () => {
+      const glow = pzHelp && pzHelp.hinted ? target() : -1;
+      pz.visual.innerHTML = `<div class="jig" style="--c:${cols};--r:${rows}"><div class="board">${k <= 5 ? `<svg viewBox="0 0 100 100" preserveAspectRatio="none" class="ghost-img" aria-hidden="true">${ICON[w]}</svg>` : ''}${placed.map((p, i) => `<button type="button" class="slot${i === glow ? ' hint' : ''}" data-s="${i}" aria-label="${p ? 'Pièce posée' : `Place ${i + 1}`}">${p ? piece(i) : ''}</button>`).join('')}</div>`
+        + `<div class="tray">${order.filter(i => !placed[i]).map(i => `<button type="button" class="pc${i === sel ? ' sel' : ''}${i === glow ? ' hint' : ''}" data-p="${i}" aria-label="Pièce" style="--rot:${rot[i]}deg">${piece(i)}</button>`).join('')}</div></div>`;
+      pz.visual.querySelectorAll('.pc').forEach(el => { el.onclick = () => choose(+el.dataset.p); });
+      pz.visual.querySelectorAll('.slot').forEach(el => { el.onclick = () => drop(+el.dataset.s, el); });
+    };
+    const put = (i, given) => {
+      placed[i] = true; rot[i] = 0; sel = -1; miss = 0; SFX.key(); draw();
+      if (!left()) { gameDone(pzErrs, `Le dessin est complet : ${w.toLowerCase()} !`); return; }
+      if (given) say('Je te pose une pièce.');
+      renderHelp();
+    };
+    const choose = i => {
+      if (pzLocked) return;
+      if (i === sel && turn) { rot[i] = (rot[i] + 90) % 360; SFX.pop(); }
+      else { sel = i; SFX.key(); }
+      draw();
+    };
+    const drop = (s, el) => {
+      if (pzLocked || placed[s]) return;
+      if (sel < 0) { say("Choisis d'abord une pièce."); return; }
+      if (s === sel && !rot[sel]) { put(sel); return; }
+      pzErrs++; miss++; SFX.no(); el.classList.remove('bad'); void el.offsetWidth; el.classList.add('bad');
+      if (miss >= 2) { put(target(), true); return; }
+      say(s === sel ? 'Bonne place ! Mais la pièce est tournée : touche-la pour la tourner.' : 'Pas ici. Regarde bien le dessin.');
+    };
+    pzHelp = { hinted: false, give: () => put(target(), true), glow: draw, left, labels: ['Poser une pièce', 'Montrer la place'], glowSay: 'Regarde la pièce et sa place qui brillent !' };
+    pz.title.textContent = 'Le puzzle'; pz.choices.innerHTML = '';
+    draw(); renderHelp();
+    currentSay = 'Touche une pièce, puis touche sa place pour refaire le dessin.' + (turn ? ' Si une pièce est tournée, touche-la encore pour la tourner.' : ''); say(currentSay);
+  },
+  /* Symétrie : colorier l'autre moitié du dessin, comme dans un miroir. Grille plus grande avec le niveau,
+     puis deux couleurs. Une case mauvaise ne se colorie pas. Aide : 5 trésors pour colorier une case,
+     10 pour faire briller les cases à colorier ; une case offerte après 2 erreurs. */
+  symetrie() {
+    const k = lv('logique'), [half, rows] = k <= 3 ? [2, 4] : k <= 6 ? [3, 5] : [4, 6], cols = half * 2;
+    const pal = k >= 8 ? shuffle(COLORS).slice(0, 2) : [pick(COLORS)];
+    const side = Array.from({ length: rows * half }, () => Math.random() < .4 ? pick(pal) : null);
+    while (side.filter(Boolean).length < Math.max(3, rows - 1)) side[rand(0, side.length - 1)] = pick(pal);
+    pal.forEach(c => { if (!side.includes(c)) side[side.findIndex(v => v !== null && side.filter(x => x === v).length > 1)] = c; });
+    const goal = Array(rows * cols).fill(null);
+    side.forEach((v, j) => { const r = (j / half) | 0, c = j % half; goal[r * cols + c] = v; goal[r * cols + cols - 1 - c] = v; });
+    const cur = goal.map((v, i) => i % cols < half ? v : null);
+    let color = pal[0], miss = 0;
+    const todo = () => goal.flatMap((v, i) => v && !cur[i] ? [i] : []);
+    const draw = () => {
+      const glow = pzHelp && pzHelp.hinted ? new Set(todo()) : new Set();
+      pz.visual.innerHTML = `<div class="sym" style="grid-template-columns:repeat(${cols},var(--q))">${cur.map((v, i) => `<button type="button" data-i="${i}" class="${i % cols < half ? 'given' : ''}${i % cols === half ? ' mid' : ''}${glow.has(i) ? ' hint' : ''}" style="${v ? `background:${v.c}` : ''}" aria-label="${v ? 'case ' + v.f : 'case blanche'}"${i % cols < half ? ' disabled' : ''}></button>`).join('')}</div>`;
+      pz.visual.querySelectorAll('.sym button:not(.given)').forEach(el => { el.onclick = () => tap(+el.dataset.i, el); });
+    };
+    const fill = (i, given) => {
+      cur[i] = goal[i]; miss = 0; SFX.key(); draw();
+      if (!todo().length) { gameDone(pzErrs, 'Les deux côtés sont pareils !'); return; }
+      if (given) say("Je t'en colorie une.");
+      renderHelp();
+    };
+    const tap = (i, el) => {
+      if (pzLocked || cur[i]) return;
+      if (goal[i] === color) { fill(i); return; }
+      pzErrs++; miss++; SFX.no(); el.classList.remove('bad'); void el.offsetWidth; el.classList.add('bad');
+      if (miss >= 2) { fill(todo()[0], true); return; }
+      say(goal[i] ? `Pas cette couleur ici : prends le ${goal[i].n}.` : "Cette case reste blanche. Regarde l'autre côté, comme dans un miroir.");
+    };
+    pzHelp = { hinted: false, give: () => fill(todo()[0], true), glow: draw, left: () => todo().length, labels: ['Colorier une case', 'Montrer les cases'], glowSay: 'Regarde les cases qui brillent !' };
+    pz.title.textContent = 'Le miroir'; pz.choices.innerHTML = '';
+    if (pal.length > 1) pal.forEach(c => {
+      const b = document.createElement('button'); b.className = 'choice key'; b.innerHTML = `<span class="dot" style="background:${c.c}"></span>`; b.setAttribute('aria-label', c.n);
+      b.setAttribute('aria-pressed', c === color);
+      b.onclick = () => { color = c; pz.choices.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); say(c.n); };
+      pz.choices.appendChild(b);
+    });
+    draw(); renderHelp();
+    currentSay = "Colorie l'autre moitié du dessin, comme dans un miroir." + (pal.length > 1 ? ' Choisis la couleur en bas, puis touche les cases.' : ' Touche les cases à colorier.'); say(currentSay);
+  },
 };
 
 // Énigme écrite par les parents : un calcul ou un mot de leur liste.
@@ -2740,8 +2844,8 @@ function customPuzzle() {
 const FAMILY = {
   count: ['count', 'count', 'parity', 'coins', 'dots'],
   add: ['add', 'add', 'coins', 'numseq'],
-  compare: ['compare', 'compare', 'intrus', 'clock', 'memory', 'ombres'],
-  sequence: ['sequence', 'numseq', 'intrus', 'maze', 'slide', 'sudoku'],
+  compare: ['compare', 'compare', 'intrus', 'clock', 'memory', 'ombres', 'pieces'],
+  sequence: ['sequence', 'numseq', 'intrus', 'maze', 'slide', 'sudoku', 'symetrie'],
   first: ['first', 'wordpic'],
   missing: ['missing', 'wordpic'],
   order: ['order', 'wordpic'],
