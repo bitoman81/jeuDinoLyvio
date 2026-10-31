@@ -18,7 +18,7 @@ window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false }))
 Object.defineProperty(navigator, 'getGamepads', { value: () => [window.__pad, null, null, null, null, null, null, null] });
 // Fichiers de la carte SD (Switch.readFileSync / writeFileSync) ; le localStorage de nx.js ne doit jamais être touché
 window.__files = {};
-window.Switch = { readFileSync: f => f in __files ? new TextEncoder().encode(__files[f]).buffer : null, writeFileSync: (f, d) => { __files[f] = String(d); }, mkdirSync() {} };
+window.Switch = { readFileSync: f => f in __files ? new TextEncoder().encode(__files[f]).buffer : null, writeFileSync: (f, d) => { __files[f] = String(d); }, appendFileSync: (f, d) => { __files[f] = (__files[f] || '') + String(d); }, mkdirSync() {} };
 Object.defineProperty(window, 'localStorage', { configurable: true, get() { __errors.push('localStorage de nx.js touché (choix du profil sans fin)'); return null; } });
 delete window.speechSynthesis; delete Window.prototype.speechSynthesis;
 window.__errors = []; addEventListener('error', e => __errors.push(e.message)); addEventListener('unhandledrejection', e => __errors.push(String(e.reason)));
@@ -105,6 +105,7 @@ await game(`player.x = 2 * T; player.y = GROUND * T - player.h; player.vy = 0; t
 await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 2, clientX: 1000, clientY: 400 }] }); true`); await sleep(60);
 check('tactile : la moitié droite fait sauter', (await game('player.vy')) < -3, await game('player.vy'));
 
+check('journal sur la carte SD', await ev(`/main.js lanc/.test(__files['sdmc:/switch/dino-journal.txt']) && /jeu : image 60/.test(__files['sdmc:/switch/dino-journal.txt'])`), await ev(`__files['sdmc:/switch/dino-journal.txt']`));
 check('aucune erreur JavaScript', errors.length === 0 && (await ev('__errors.length')) === 0, [errors, await ev('__errors')]);
 console.log('Captures :', title, bravo);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');

@@ -124,7 +124,9 @@ function swDraw() {
 // Pour les tests sur ordinateur (switch/test) : lire ou changer les variables du jeu de l'extérieur.
 globalThis.dinoEval = code => eval(code);
 
+let swFrames = 0;
 function swLoop() {
+  if (++swFrames === 1 || swFrames === 60) swLog('jeu : image ' + swFrames + ', état ' + state);
   try { swPad(); swDraw(); } catch (e) { swToast('Erreur : ' + (e && e.message)); }
   // Une erreur du jeu reste affichée (sinon l'écran se figerait sans explication).
   if (SWB.err) swBoot(SWB.step, null);

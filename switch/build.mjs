@@ -20,7 +20,7 @@ const boot = readFileSync(join(here, 'src', 'boot.js'), 'utf8');
 const main = boot
   + '\nlet swWaitF = 0;\n'
   + 'function swErrLoop() { swBoot(SWB.step, null); requestAnimationFrame(swErrLoop); }\n'
-  + "function swWait() { if (++swWaitF < 4) { swBoot('démarrage'); requestAnimationFrame(swWait); return; }\n"
+  + "function swWait() { if (++swWaitF < 4) { swLog('image ' + swWaitF); swBoot('démarrage'); requestAnimationFrame(swWait); return; }\n"
   + 'try {\n(function () {\n'
   + part('switch/src/dom.js', readFileSync(join(here, 'src', 'dom.js'), 'utf8'))
   + "swBoot('code du jeu');\n"
@@ -31,7 +31,10 @@ const main = boot
   + '})();\n} catch (e) { swBoot(\'erreur\', e); requestAnimationFrame(swErrLoop); }\n}\n'
   + 'requestAnimationFrame(swWait);\n';
 mkdirSync(join(here, 'romfs'), { recursive: true });
-writeFileSync(join(here, 'romfs', 'main.js'), main);
+// Fichier écrit en ASCII pur : chaque caractère accentué devient une séquence \u (même sens pour
+// JavaScript), au cas où le moteur lirait mal les accents.
+const ascii = main.replace(/[^\x00-\x7f]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+writeFileSync(join(here, 'romfs', 'main.js'), ascii);
 // Réglages du moteur nx.js. JIT coupé : avec le JIT (lancement en gardant R sur un jeu), nx.js 1.0.0-beta
 // plante au démarrage dès qu'il compile une grosse fonction (bug nx.js n° 424), ce qui donne un écran noir.
 writeFileSync(join(here, 'romfs', 'nxjs.ini'), '[v8]\n; JIT coupé : contourne le plantage au démarrage (bug nx.js n° 424)\njit = off\n');

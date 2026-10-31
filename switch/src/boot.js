@@ -1,9 +1,16 @@
 /* ---------- Version Switch (nx.js) : démarrage visible ----------
    Affiche l'étape du chargement en cours, et toute erreur en rouge, au lieu d'un écran noir.
    Une fois le jeu prêt, c'est lui qui dessine l'écran. */
+// Journal sur la carte SD (sdmc:/switch/dino-journal.txt) : chaque étape y est écrite, même si l'écran reste noir.
+const SW_LOG = 'sdmc:/switch/dino-journal.txt';
+function swLog(m) {
+  try { if (globalThis.Switch) Switch.appendFileSync(SW_LOG, new Date().toISOString().slice(11, 19) + ' ' + m + '\n'); } catch (e) {}
+}
+try { if (globalThis.Switch) Switch.writeFileSync(SW_LOG, 'Journal de Dino Explorateur\n'); } catch (e) {}
 const SWB = { ctx: screen.getContext('2d'), step: '', ready: false, err: '' };
 function swBoot(step, err) {
   SWB.step = step;
+  swLog('étape : ' + step + (err ? ' ERREUR ' + String((err && (err.stack || err.message)) || err) : ''));
   if (step === 'prêt') { SWB.ready = true; return; }
   if (err) SWB.err = String((err && (err.stack || err.message)) || err);
   const c = SWB.ctx;
@@ -22,6 +29,7 @@ function swBoot(step, err) {
     }
   } catch (e) {}
 }
+swLog('main.js lancé');
 try { addEventListener('error', e => swBoot(SWB.step + ' (erreur)', e && (e.error || e.message))); } catch (e) {}
 try { addEventListener('unhandledrejection', e => swBoot(SWB.step + ' (erreur)', e && e.reason)); } catch (e) {}
 swBoot('démarrage');
