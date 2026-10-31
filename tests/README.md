@@ -8,6 +8,7 @@ node tests/test-step2.mjs index.html   # étape 2 : difficulté évolutive, éto
 node tests/test-step3.mjs index.html   # étape 3 : joystick
 node tests/test-step4.mjs index.html   # étape 4 : mots et énigmes
 node tests/test-step5.mjs index.html   # étape 5 : jeux de réflexion, statistiques
+node tests/test-pieces.mjs index.html   # étape 5 : puzzle à pièces, miroir
 node tests/test-step6.mjs index.html   # étape 6 : sac, aide, pouvoirs, fossiles, couleurs
 node tests/test-step7.mjs index.html   # étape 7 : nouveaux endroits, clé dorée, carte, île secrète
 node tests/test-switches.mjs index.html # étape 7 : interrupteurs
