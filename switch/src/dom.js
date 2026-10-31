@@ -49,18 +49,27 @@ const swGameCanvas = Object.assign(fakeEl('canvas'), {
   addEventListener: (type, fn) => { (swCanvasListeners[type] = swCanvasListeners[type] || []).push(fn); },
 });
 
-// Sauvegarde : le vrai localStorage de nx.js (mémoire de sauvegarde de la Switch ; le premier accès
-// fait choisir un profil). S'il est refusé, le jeu garde la partie en mémoire au lieu de s'arrêter.
+// Sauvegarde : un fichier sur la carte SD. On ne touche jamais au localStorage de nx.js : son premier
+// accès ouvre le choix du profil dans une boucle `while (!profile)` qui tourne sans fin si le sélecteur
+// ne s'affiche pas (écran noir au lancement). Hors Switch (tests sur ordinateur), la partie reste en mémoire.
+const SW_SAVE_DIR = 'sdmc:/switch/dino-explorateur/', SW_SAVE = SW_SAVE_DIR + 'sauvegarde.json';
 const localStorage = (() => {
-  const mem = {}; let real;
-  const get = () => {
-    if (real === undefined) { swBoot('sauvegarde (choix du profil)'); try { real = globalThis.localStorage || null; } catch (e) { real = null; } }
-    return real;
+  const fs = globalThis.Switch;
+  let mem = {};
+  try {
+    const raw = fs && fs.readFileSync(SW_SAVE);
+    const txt = !raw ? '' : typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
+    if (txt) mem = JSON.parse(txt) || {};
+  } catch (e) { mem = {}; }
+  const flush = () => {
+    if (!fs) return;
+    try { fs.mkdirSync(SW_SAVE_DIR); } catch (e) {}
+    try { fs.writeFileSync(SW_SAVE, JSON.stringify(mem)); } catch (e) {}
   };
   return {
-    getItem(k) { try { const r = get(); if (r) { const v = r.getItem(k); return v === undefined ? null : v; } } catch (e) {} return k in mem ? mem[k] : null; },
-    setItem(k, v) { mem[k] = String(v); try { const r = get(); if (r) r.setItem(k, String(v)); } catch (e) {} },
-    removeItem(k) { delete mem[k]; try { const r = get(); if (r) r.removeItem(k); } catch (e) {} },
+    getItem: k => Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null,
+    setItem(k, v) { mem[k] = String(v); flush(); },
+    removeItem(k) { delete mem[k]; flush(); },
   };
 })();
 

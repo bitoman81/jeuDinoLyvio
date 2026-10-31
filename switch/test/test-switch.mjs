@@ -16,6 +16,10 @@ writeFileSync(pagePath, `<!doctype html><meta charset="utf-8"><body style="margi
 window.screen = document.getElementById('scr');
 window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false })), axes: [0, 0, 0, 0] };
 Object.defineProperty(navigator, 'getGamepads', { value: () => [window.__pad, null, null, null, null, null, null, null] });
+// Fichiers de la carte SD (Switch.readFileSync / writeFileSync) ; le localStorage de nx.js ne doit jamais être touché
+window.__files = {};
+window.Switch = { readFileSync: f => f in __files ? new TextEncoder().encode(__files[f]).buffer : null, writeFileSync: (f, d) => { __files[f] = String(d); }, mkdirSync() {} };
+Object.defineProperty(window, 'localStorage', { configurable: true, get() { __errors.push('localStorage de nx.js touché (choix du profil sans fin)'); return null; } });
 delete window.speechSynthesis; delete Window.prototype.speechSynthesis;
 window.__errors = []; addEventListener('error', e => __errors.push(e.message)); addEventListener('unhandledrejection', e => __errors.push(String(e.reason)));
 </script></body>`);
@@ -88,6 +92,7 @@ const bravo = await shot('switch-bravo.png');
 await press(1);
 check('A : endroit suivant (la rivière)', await game(`state === 'play' && L.i === 1`), await game(`[state, L.i]`));
 check('sauvegarde : la clairière est finie', await game(`prog.worlds.rex.eggs[0] === 3 && JSON.parse(localStorage.getItem(KEY)).worlds.rex.unlocked >= 2`));
+check('sauvegarde écrite sur la carte SD', await ev(`JSON.parse(JSON.parse(__files['sdmc:/switch/dino-explorateur/sauvegarde.json'])[${JSON.stringify('dino-explorateur-v2')}] || 'null')?.worlds?.rex?.unlocked >= 2`), await ev(`Object.keys(__files)`));
 
 // 5. Écran tactile : pouce gauche = joystick, moitié droite = saut
 const tx0 = await game('player.x');

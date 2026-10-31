@@ -15,15 +15,21 @@ if (/console\./.test(m[1])) throw new Error('Le jeu appelle console : sur nx.js,
 const part = (name, code) => `\n/* ======== ${name} ======== */\n${code}\n`;
 // Démarrage : chaque étape s'affiche à l'écran, et une erreur s'écrit en rouge au lieu d'un écran noir.
 const boot = readFileSync(join(here, 'src', 'boot.js'), 'utf8');
+// nx.js ne montre l'écran qu'entre deux images : on laisse passer quelques images (écran de chargement
+// visible) avant de lancer le jeu. Si quelque chose bloque ensuite, l'étape atteinte reste affichée.
 const main = boot
-  + '\ntry {\n(function () {\n'
+  + '\nlet swWaitF = 0;\n'
+  + 'function swErrLoop() { swBoot(SWB.step, null); requestAnimationFrame(swErrLoop); }\n'
+  + "function swWait() { if (++swWaitF < 4) { swBoot('démarrage'); requestAnimationFrame(swWait); return; }\n"
+  + 'try {\n(function () {\n'
   + part('switch/src/dom.js', readFileSync(join(here, 'src', 'dom.js'), 'utf8'))
   + "swBoot('code du jeu');\n"
   + part('index.html (code du jeu)', m[1])
   + "swBoot('couche Switch');\n"
   + part('switch/src/switch.js', readFileSync(join(here, 'src', 'switch.js'), 'utf8'))
   + "swBoot('prêt');\n"
-  + '})();\n} catch (e) { swBoot(\'erreur\', e); }\n';
+  + '})();\n} catch (e) { swBoot(\'erreur\', e); requestAnimationFrame(swErrLoop); }\n}\n'
+  + 'requestAnimationFrame(swWait);\n';
 mkdirSync(join(here, 'romfs'), { recursive: true });
 writeFileSync(join(here, 'romfs', 'main.js'), main);
 // Réglages du moteur nx.js. JIT coupé : avec le JIT (lancement en gardant R sur un jeu), nx.js 1.0.0-beta
