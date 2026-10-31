@@ -37,5 +37,13 @@ const test = readFileSync(join(here, 'web', 'test.html'), 'utf8');
 for (const s of test.match(/<script>([\s\S]*?)<\/script>/g) || []) parse(s.slice(8, -9), { ecmaVersion: 5, sourceType: 'script' });
 copyFileSync(join(here, 'web', 'test.html'), join(out, 'test.html'));
 
+// bip.wav pour la page de test : 0,3 seconde à 660 Hz, 22 050 Hz, 16 bits, mono.
+const rate = 22050, count = Math.round(rate * .3), wav = Buffer.alloc(44 + count * 2);
+wav.write('RIFF', 0); wav.writeUInt32LE(36 + count * 2, 4); wav.write('WAVE', 8); wav.write('fmt ', 12);
+wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22); wav.writeUInt32LE(rate, 24);
+wav.writeUInt32LE(rate * 2, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(count * 2, 40);
+for (let i = 0; i < count; i++) wav.writeInt16LE(Math.round(Math.sin(2 * Math.PI * 660 * i / rate) * 9000 * Math.min(1, (count - i) / 800)), 44 + i * 2);
+writeFileSync(join(out, 'bip.wav'), wav);
+
 const kb = f => Math.round(readFileSync(join(out, f)).length / 1024) + ' Ko';
 console.log(`romfs/webapp prêt : index.html ${kb('index.html')}, jeu.js ${kb('jeu.js')}, polyfills.js ${kb('polyfills.js')}, test.html ${kb('test.html')}`);

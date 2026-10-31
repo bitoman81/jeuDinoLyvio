@@ -6,34 +6,31 @@
 <title>Test de la Switch</title>
 <style>
 body{margin:0;background:#1f5b3a;color:#1d2b22;font:18px "Trebuchet MS",sans-serif}
-.wrap{max-width:1240px;margin:0 auto;padding:12px 16px}
-h1{color:#fff7e6;font-size:30px;margin:4px 0 8px}
-.top{display:flex;align-items:center;justify-content:space-between}
-.go{background:#ffb238;border:4px solid #1d2b22;border-radius:18px;font:bold 26px "Trebuchet MS",sans-serif;padding:10px 22px;cursor:pointer}
+.wrap{max-width:1240px;margin:0 auto;padding:10px 16px}
+h1{color:#fff7e6;font-size:26px;margin:2px 0 6px}
+.top{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;-webkit-box-pack:justify;justify-content:space-between}
+.go{background:#ffb238;border:4px solid #1d2b22;border-radius:18px;font:bold 24px "Trebuchet MS",sans-serif;padding:8px 20px;cursor:pointer}
 .grid{display:-webkit-box;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap}
-.box{background:#fff7e6;border:3px solid #1d2b22;border-radius:14px;padding:8px 12px;margin:0 8px 8px 0;width:290px;min-height:86px;box-sizing:border-box}
+.box{background:#fff7e6;border:3px solid #1d2b22;border-radius:14px;padding:8px 12px;margin:0 8px 8px 0;width:296px;box-sizing:border-box}
 .box b{display:block;font-size:16px;margin-bottom:4px}
 .ok{color:#1f7a3a;font-weight:bold}.no{color:#b3261e;font-weight:bold}
 .small{font-size:13px;word-break:break-all}
-.box button{font:bold 18px "Trebuchet MS",sans-serif;border:3px solid #1d2b22;border-radius:12px;background:#fff;padding:4px 12px;margin-top:4px;cursor:pointer}
-.big{font-size:22px;font-weight:bold}
-.wide{width:588px}
-.help{color:#d9f0dc;font-size:16px;margin:4px 0 0}
+button{font:bold 17px "Trebuchet MS",sans-serif;border:3px solid #1d2b22;border-radius:12px;background:#fff;padding:4px 10px;margin:4px 4px 0 0;cursor:pointer}
+.ask{font-size:28px;font-weight:bold;color:#b3261e}
+.wide{width:600px}
+table{border-collapse:collapse;font-size:14px}
+td{border:1px solid #c9bfa6;padding:1px 6px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><h1>Dino Explorateur : test de la Switch</h1><button class="go" id="go">Lancer le jeu</button></div>
-  <p class="help">Appuie sur des boutons des Joy-Con, touche l'écran, essaie « Parler » et « Bip ». Puis fais une capture d'écran (bouton carré du Joy-Con gauche) et envoie-la.</p>
+  <div class="top"><h1>Dino Explorateur : test de la Switch n° 2</h1><button class="go" id="go">Lancer le jeu</button></div>
   <div class="grid">
-    <div class="box wide"><b>Touches et boutons</b><span class="big" id="keys">aucun pour le moment</span><div class="small" id="keylog"></div></div>
-    <div class="box wide"><b>Manette (API Gamepad)</b><span id="pad">...</span><div class="small" id="padlog"></div></div>
-    <div class="box"><b>Écran tactile, souris</b><span id="touch">pas encore touché</span></div>
-    <div class="box"><b>Voix</b><span id="voice">...</span><br><button id="speak">Parler</button></div>
-    <div class="box"><b>Son du jeu</b><span id="audio">...</span><br><button id="beep">Bip</button></div>
+    <div class="box wide"><b>Boutons, un par un</b><span class="ask" id="ask"></span> <button id="skip">Rien ne se passe</button><br><table id="map"></table></div>
     <div class="box"><b>Sauvegarde</b><span id="store">...</span></div>
-    <div class="box"><b>Fluidité</b><span id="fps">...</span><br><canvas id="cv" width="240" height="24"></canvas></div>
-    <div class="box"><b>JavaScript et CSS</b><span id="js">...</span></div>
+    <div class="box"><b>Fichiers son</b><span id="fmt">...</span><br><button id="play">Jouer un son</button><br><span id="audio"></span></div>
+    <div class="box"><b>Écran tactile</b><span id="touch">touche l'écran</span></div>
+    <div class="box"><b>Fluidité</b><span id="fps">...</span></div>
     <div class="box wide"><b>Moteur web</b><span class="small" id="ua"></span></div>
   </div>
 </div>
@@ -42,107 +39,95 @@ h1{color:#fff7e6;font-size:30px;margin:4px 0 8px}
   function $(id) { return document.getElementById(id); }
   function yes(t) { return '<span class="ok">' + t + '</span>'; }
   function no(t) { return '<span class="no">' + t + '</span>'; }
-
   $('go').onclick = function () { location.href = 'index.html'; };
+  $('ua').innerHTML = navigator.userAgent + '<br>Écran ' + window.innerWidth + ' x ' + window.innerHeight + ', window.nx : ' + typeof window.nx;
 
-  // Moteur web
-  var nx = typeof window.nx;
-  $('ua').innerHTML = navigator.userAgent + '<br>Écran ' + window.innerWidth + ' x ' + window.innerHeight + ', densité ' + (window.devicePixelRatio || 1) + ', window.nx : ' + nx;
-
-  // JavaScript moderne et CSS utilisé par le jeu
-  var es6 = false;
-  try { es6 = new Function('"use strict"; const a = () => 1; let b = `x`; return a() === 1;')(); } catch (e) {}
-  var css = [];
-  var sup = window.CSS && CSS.supports;
-  function cs(p, v, name) { var r = false; try { r = !!(sup && CSS.supports(p, v)); } catch (e) {} css.push((r ? yes : no)(name)); }
-  cs('width', 'clamp(1px, 2px, 3px)', 'clamp'); cs('inset', '0', 'inset'); cs('--a', '1', 'variables'); cs('display', 'grid', 'grid'); cs('gap', '1px', 'gap');
-  $('js').innerHTML = 'JavaScript récent : ' + (es6 ? yes('oui') : no('non, ES5 seulement')) + '<br>CSS : ' + css.join(', ');
-
-  // Touches du clavier envoyées par les Joy-Con
-  var keyLines = [];
-  function onKey(e) {
-    var t = (e.type === 'keydown' ? 'appui ' : 'relâché ') + (e.key || '?') + ' (code ' + (e.code || '?') + ', ' + e.keyCode + ')';
-    if (e.type === 'keydown') $('keys').innerHTML = yes(t);
-    keyLines.unshift(t); keyLines = keyLines.slice(0, 4); $('keylog').innerHTML = keyLines.join('<br>');
+  // Boutons, un par un : ce que chaque bouton envoie à la page (touche du clavier, clic ou manette)
+  var ASK = ['A', 'B', 'X', 'Y', 'croix en haut', 'croix en bas', 'croix à gauche', 'croix à droite', 'L', 'R', 'ZL', 'ZR', '+', '−', 'stick gauche vers la droite', 'stick droit vers la droite'];
+  var step = 0, rows = [], lastPad = '';
+  function showAsk() {
+    $('ask').innerHTML = step < ASK.length ? 'Appuie sur ' + ASK[step] : yes('fini, merci !');
+    $('skip').style.display = step < ASK.length ? '' : 'none';
+    var h = '';
+    for (var i = 0; i < rows.length; i += 2) h += '<tr><td>' + rows[i] + '</td><td>' + (rows[i + 1] || '') + '</td></tr>';
+    $('map').innerHTML = h;
   }
-  document.addEventListener('keydown', onKey); document.addEventListener('keyup', onKey);
-
-  // Manettes
-  var hasPad = !!navigator.getGamepads;
+  function got(what) {
+    if (step >= ASK.length) return;
+    rows.push('<b>' + ASK[step] + '</b> : ' + what); step++; showAsk();
+  }
+  $('skip').onclick = function (e) { e.stopPropagation(); got('<span class="no">rien</span>'); };
+  document.addEventListener('keydown', function (e) { e.preventDefault(); got('touche ' + (e.key || '?') + ' / ' + (e.code || '?') + ' / ' + e.keyCode); });
+  document.addEventListener('click', function (e) { if (e.target.tagName !== 'BUTTON') got('clic'); });
+  showAsk();
   function pollPads() {
-    if (!hasPad) { $('pad').innerHTML = no('pas d’API Gamepad'); return; }
-    var pads = navigator.getGamepads(), lines = [], n = 0;
+    if (!navigator.getGamepads) return;
+    var pads = navigator.getGamepads();
     for (var i = 0; i < pads.length; i++) {
-      var p = pads[i]; if (!p) continue; n++;
-      var b = [];
-      for (var j = 0; j < p.buttons.length; j++) if (p.buttons[j].pressed || p.buttons[j].value > .5) b.push(j);
-      var ax = [];
-      for (var k = 0; k < p.axes.length; k++) ax.push(Math.round(p.axes[k] * 10) / 10);
-      lines.push(p.id + ' : boutons [' + b.join(', ') + '] axes [' + ax.join(', ') + ']');
+      var p = pads[i]; if (!p) continue;
+      for (var j = 0; j < p.buttons.length; j++) if (p.buttons[j].pressed) { var k = 'manette bouton ' + j; if (k !== lastPad) { lastPad = k; got(k); } return; }
+      for (var a = 0; a < p.axes.length; a++) if (Math.abs(p.axes[a]) > .6) { var k2 = 'manette axe ' + a + (p.axes[a] > 0 ? ' +' : ' -'); if (k2 !== lastPad) { lastPad = k2; got(k2); } return; }
     }
-    $('pad').innerHTML = n ? yes(n + ' manette(s) vue(s)') : no('API présente, aucune manette vue (appuie sur un bouton)');
-    $('padlog').innerHTML = lines.join('<br>');
+    lastPad = '';
   }
 
-  // Tactile et souris
-  function onTouch(e) {
-    var p = e.touches && e.touches[0] ? e.touches[0] : e;
-    $('touch').innerHTML = yes(e.type + ' en ' + Math.round(p.clientX) + ', ' + Math.round(p.clientY));
-  }
-  ['touchstart', 'pointerdown', 'mousedown'].forEach(function (t) { document.addEventListener(t, onTouch); });
+  // Tactile
+  ['touchstart', 'mousedown'].forEach(function (t) { document.addEventListener(t, function (e) { var p = e.touches && e.touches[0] ? e.touches[0] : e; $('touch').innerHTML = yes(e.type + ' en ' + Math.round(p.clientX) + ', ' + Math.round(p.clientY)); }); });
 
-  // Voix
-  function voiceInfo(extra) {
-    if (!('speechSynthesis' in window)) { $('voice').innerHTML = no('pas de voix (speechSynthesis absent)'); return; }
-    var v = speechSynthesis.getVoices() || [], fr = 0;
-    for (var i = 0; i < v.length; i++) if (/^fr/i.test(v[i].lang)) fr++;
-    $('voice').innerHTML = yes('speechSynthesis présent') + ', ' + v.length + ' voix dont ' + fr + ' en français' + (extra ? '<br>' + extra : '');
-  }
-  voiceInfo();
-  if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = function () { voiceInfo(); };
-  $('speak').onclick = function () {
-    if (!('speechSynthesis' in window)) return;
+  // Fichiers son : formats acceptés, puis un vrai son joué avec la balise audio
+  var A = document.createElement('audio'), fmts = [['wav', 'audio/wav'], ['mp3', 'audio/mpeg'], ['m4a', 'audio/mp4'], ['ogg', 'audio/ogg']], f = [];
+  for (var i = 0; i < fmts.length; i++) { var c = A.canPlayType ? A.canPlayType(fmts[i][1]) : ''; f.push((c ? yes : no)(fmts[i][0] + (c ? ' (' + c + ')' : ''))); }
+  $('fmt').innerHTML = 'Formats : ' + f.join(', ');
+  var snd = null;
+  $('play').onclick = function (e) {
+    e.stopPropagation();
     try {
-      var u = new SpeechSynthesisUtterance('Bonjour ! Je suis la voix du jeu.');
-      u.lang = 'fr-FR';
-      u.onstart = function () { voiceInfo(yes('elle parle')); };
-      u.onend = function () { voiceInfo(yes('fini de parler')); };
-      u.onerror = function (e) { voiceInfo(no('erreur : ' + (e.error || '?'))); };
-      speechSynthesis.speak(u); voiceInfo('demandé...');
-    } catch (e) { voiceInfo(no('erreur : ' + e.message)); }
+      snd = new Audio('bip.wav');
+      ['playing', 'ended', 'error', 'stalled'].forEach(function (t) { snd.addEventListener(t, function () { $('audio').innerHTML = (t === 'error' || t === 'stalled' ? no : yes)(t + (snd.error ? ' code ' + snd.error.code : '')); }); });
+      var p = snd.play();
+      if (p && p.then) p.then(function () { $('audio').innerHTML = yes('lecture lancée'); }, function (err) { $('audio').innerHTML = no('refusé : ' + (err && err.name)); });
+      else $('audio').innerHTML = 'demandé...';
+    } catch (err) { $('audio').innerHTML = no('erreur : ' + err.message); }
   };
 
-  // Son
-  var AC = window.AudioContext || window.webkitAudioContext, actx = null;
-  $('audio').innerHTML = AC ? yes('Web Audio présent') : no('pas de Web Audio');
-  $('beep').onclick = function () {
-    if (!AC) return;
-    try {
-      if (!actx) actx = new AC();
-      if (actx.resume) actx.resume();
-      var o = actx.createOscillator(), g = actx.createGain();
-      o.frequency.value = 660; g.gain.value = .2; o.connect(g); g.connect(actx.destination);
-      o.start(actx.currentTime); o.stop(actx.currentTime + .3);
-      $('audio').innerHTML = yes('bip joué, état : ' + actx.state);
-    } catch (e) { $('audio').innerHTML = no('erreur : ' + e.message); }
-  };
+  // Sauvegarde : toutes les façons possibles, et le pont vers la carte SD (window.nx)
+  var st = [];
+  function tryStore(name, fn) { try { fn(); st.push(yes(name)); } catch (e) { st.push(no(name + ' (' + (e.name || e.message) + ')')); } }
+  tryStore('localStorage', function () { localStorage.setItem('t', '1'); });
+  tryStore('sessionStorage', function () { sessionStorage.setItem('t', '1'); });
+  tryStore('cookie', function () { document.cookie = 't=1'; if (document.cookie.indexOf('t=1') < 0) throw new Error('ignoré'); });
+  st.push(window.indexedDB ? yes('indexedDB présent') : no('indexedDB'));
+  var sd = 'carte SD : ' + (window.nx ? 'connexion...' : no('pas de window.nx'));
+  function showStore() { $('store').innerHTML = st.join(', ') + '<br>' + sd; }
+  showStore();
+  if (window.nx) {
+    var parts = '', asked = false;
+    window.nx.addEventListener('message', function (e) {
+      var m = String(e.data).replace(/\u0000+$/, '');
+      if (m === 'ping') return;
+      if (m.indexOf('load-part:') === 0) { parts += m.slice(10); return; }
+      if (m === 'load-end') {
+        var n = (parseInt(parts, 10) || 0) + 1;
+        sd = 'carte SD : ' + yes('lancement n° ' + n) + '<br><span class="small">Relance l’appli : si le nombre augmente, la sauvegarde marche.</span>';
+        showStore();
+        window.nx.sendMessage('save-begin'); window.nx.sendMessage('save-part:' + n); window.nx.sendMessage('save-end');
+        return;
+      }
+      if (m === 'saved') { sd += '<br>' + yes('enregistré'); showStore(); }
+      if (m === 'save-error') { sd += '<br>' + no('erreur d’écriture'); showStore(); }
+    });
+    var ask = function () { if (!asked) asked = window.nx.sendMessage('load'); if (!asked) setTimeout(ask, 50); };
+    ask();
+  }
 
-  // Sauvegarde : le nombre doit augmenter à chaque lancement du jeu
-  try {
-    var n = (+localStorage.getItem('dino-test-lancements') || 0) + 1;
-    localStorage.setItem('dino-test-lancements', String(n));
-    $('store').innerHTML = yes('lancement n° ' + n) + '<br><span class="small">Relance le jeu : si le nombre augmente, la sauvegarde marche.</span>';
-  } catch (e) { $('store').innerHTML = no('localStorage refusé : ' + e.message); }
-
-  // Fluidité : images par seconde d'un petit dessin animé
-  var cv = $('cv'), cx = cv.getContext('2d'), frames = 0, t0 = Date.now(), x = 0;
+  // Fluidité
+  var frames = 0, t0 = Date.now();
   function loop() {
-    frames++; x = (x + 4) % 240;
-    cx.fillStyle = '#fff7e6'; cx.fillRect(0, 0, 240, 24); cx.fillStyle = '#3f9a4f'; cx.fillRect(x, 4, 16, 16);
+    frames++;
     var t = Date.now();
-    if (t - t0 >= 1000) { var f = Math.round(frames * 1000 / (t - t0)); $('fps').innerHTML = (f >= 50 ? yes : no)(f + ' images par seconde'); frames = 0; t0 = t; }
+    if (t - t0 >= 1000) { var fps = Math.round(frames * 1000 / (t - t0)); $('fps').innerHTML = (fps >= 50 ? yes : no)(fps + ' images par seconde'); frames = 0; t0 = t; }
     pollPads();
-    (window.requestAnimationFrame || function (f) { setTimeout(f, 16); })(loop);
+    (window.requestAnimationFrame || function (cb) { setTimeout(cb, 16); })(loop);
   }
   loop();
 }());
