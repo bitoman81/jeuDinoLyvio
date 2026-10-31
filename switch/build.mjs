@@ -14,6 +14,8 @@ if (/console\./.test(m[1])) throw new Error('Le jeu appelle console : sur nx.js,
 // Le moteur V8 de nx.js est compilé sans tables Unicode (ICU) : \p{...} dans une expression régulière
 // fait refuser tout le fichier (écran noir), et Intl / toLocale... ne sont pas fiables.
 const icu = m[1].match(/\\[pP]\{|\bIntl\.|\.toLocale[A-Za-z]*\(|\.localeCompare\(|\.normalize\(/);
+// arcTo dessine une boucle en trop sur la Switch (coins des pierres et des panneaux) : utiliser arc().
+if (/\.arcTo\(/.test(m[1])) throw new Error('Le jeu utilise arcTo, mal dessiné par nx.js : utiliser arc()');
 if (icu) throw new Error(`Le jeu utilise « ${icu[0]} », absent du moteur de la Switch (pas d’ICU)`);
 
 const part = (name, code) => `\n/* ======== ${name} ======== */\n${code}\n`;
