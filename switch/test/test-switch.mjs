@@ -61,9 +61,49 @@ check('main.js se charge sans erreur', await ev(`typeof dinoEval === 'function' 
 check('écran titre dessiné', JSON.stringify(await pixel(20, 700)) === '[31,91,58]', await pixel(20, 700));
 const title = await shot('switch-titre.png');
 
-// 2. A lance le T-Rex
+// 2. Menu : A ouvre le menu, la croix choisit l'animal, A valide, A lance l'endroit
 await press(1);
-check('A : le niveau du T-Rex commence', await game(`state === 'play' && L.world === 'rex' && L.mode === 'platform'`), await game(`[state, L && L.world]`));
+check('A : le menu des dinos s’ouvre', await game(`SW.screen === 'menu' && SW.row === 0`), await game(`[SW.screen, SW.row]`));
+await sleep(200);
+const menuShot = await shot('switch-menu.png');
+await press(15);
+check('croix à droite : le Tricératops est choisi', await game(`swWorld() === 'trike'`), await game('swWorld()'));
+await press(1);
+check('A : on passe aux endroits du Tricératops', await game(`SW.row === 1 && SW.lvl === 0`), await game(`[SW.row, SW.lvl]`));
+await press(15);
+check('croix à droite sur un endroit fermé', await game(`SW.lvl === 1`));
+await press(1);
+check('A sur un endroit fermé : un message, pas de jeu', await game(`SW.screen === 'menu' && /Pas encore ouvert/.test(SW.toast)`), await game('SW.toast'));
+await press(14); await press(1);
+check('A : le Tricératops joue (vue du ciel)', await game(`state === 'play' && L.world === 'trike' && L.mode === 'topdown'`), await game(`[state, L && L.world, L && L.mode]`));
+// Les 3 autres animaux bougent à la manette
+for (const [wk, mode] of [['trike', 'topdown'], ['ptero', 'shmup'], ['plesio', 'swim']]) {
+  if (wk !== 'trike') await game(`swStart('${wk}', 0); true`);
+  await sleep(1700);
+  const p0 = await game('[player.x, player.y]');
+  await ev(`__pad.axes[1] = 1`); await sleep(500); await ev(`__pad.axes[1] = 0`); await sleep(50);
+  const p1 = await game('[player.x, player.y]');
+  check(`${wk} (${mode}) : le stick vers le bas le fait bouger`, (await game('L.mode')) === mode && Math.abs(p1[1] - p0[1]) > 20, [p0, p1]);
+}
+await shot('switch-plesio.png');
+// − revient au menu, sur l'endroit en cours
+await press(8);
+check('− : retour au menu, sur l’endroit en cours', await game(`SW.screen === 'menu' && state === 'menu' && swWorld() === 'plesio' && SW.row === 1 && SW.lvl === 0`), await game(`[SW.screen, state, swWorld(), SW.row, SW.lvl]`));
+// B remonte aux animaux, B encore revient au titre ; l'île secrète est fermée
+await press(0);
+check('B : retour aux animaux', await game(`SW.row === 0`));
+await press(15); await press(1);
+check('île secrète fermée : un message', await game(`swWorld() === 'final' && SW.row === 0 && /4 morceaux/.test(SW.toast)`), await game(`[swWorld(), SW.toast]`));
+// Au doigt : toucher le T-Rex puis toucher son premier endroit
+const rexCard = await game(`JSON.stringify(SW.hits[0])`);
+const rc = JSON.parse(rexCard);
+await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 1, clientX: ${rc.x + 50}, clientY: ${rc.y + 50} }] }); true`); await sleep(100);
+check('toucher le T-Rex : il est choisi', await game(`swWorld() === 'rex' && SW.row === 0`), await game('[swWorld(), SW.row]'));
+await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 1, clientX: ${rc.x + 50}, clientY: ${rc.y + 50} }] }); true`); await sleep(100);
+const lv = JSON.parse(await game(`JSON.stringify(SW.hits[5])`));
+await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 1, clientX: ${lv.x + 20}, clientY: ${lv.y + 20} }] }); true`); await sleep(100);
+await game(`swTouch('pointerdown', { changedTouches: [{ identifier: 1, clientX: ${lv.x + 20}, clientY: ${lv.y + 20} }] }); true`); await sleep(100);
+check('au doigt : le premier endroit du T-Rex commence', await game(`state === 'play' && L.world === 'rex' && L.i === 0 && L.mode === 'platform'`), await game(`[state, L && L.world, L && L.i]`));
 await sleep(300);
 check('le niveau est dessiné (ciel en haut)', (await pixel(640, 200))[2] > 150, await pixel(640, 200));
 
@@ -110,7 +150,7 @@ for (let k = 0; k < 30 && !(await ev(`Object.keys(__files).some(f => f.includes(
 check('ZL + ZR : capture PNG sur la carte SD', await ev(`Object.keys(__files).some(f => f.startsWith('sdmc:/switch/dino-captures/capture-') && f.endsWith('.png'))`), await ev(`Object.keys(__files)`));
 check('journal sur la carte SD', await ev(`/main.js lanc/.test(__files['sdmc:/switch/dino-journal.txt']) && /jeu : image 60/.test(__files['sdmc:/switch/dino-journal.txt'])`), await ev(`__files['sdmc:/switch/dino-journal.txt']`));
 check('aucune erreur JavaScript', errors.length === 0 && (await ev('__errors.length')) === 0, [errors, await ev('__errors')]);
-console.log('Captures :', title, bravo);
+console.log('Captures :', title, menuShot, bravo);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');
 ws.close(); chrome.kill();
 process.exit(fails ? 1 : 0);
