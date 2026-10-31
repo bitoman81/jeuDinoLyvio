@@ -26,4 +26,7 @@ const main = boot
   + '})();\n} catch (e) { swBoot(\'erreur\', e); }\n';
 mkdirSync(join(here, 'romfs'), { recursive: true });
 writeFileSync(join(here, 'romfs', 'main.js'), main);
+// Réglages du moteur nx.js. JIT coupé : avec le JIT (lancement en gardant R sur un jeu), nx.js 1.0.0-beta
+// plante au démarrage dès qu'il compile une grosse fonction (bug nx.js n° 424), ce qui donne un écran noir.
+writeFileSync(join(here, 'romfs', 'nxjs.ini'), '[v8]\n; JIT coupé : contourne le plantage au démarrage (bug nx.js n° 424)\njit = off\n');
 console.log(`romfs/main.js prêt (${Math.round(main.length / 1024)} Ko)`);
