@@ -1,32 +1,40 @@
-# Dino Explorateur sur Nintendo Switch (Atmosphère)
+# Dino Explorateur sur Nintendo Switch (nx.js)
 
-Version Switch du jeu : un homebrew `.nro`, lancé depuis le menu homebrew.
+Version Switch du jeu : un vrai homebrew `.nro`, sans navigateur, lancé depuis le menu homebrew d'Atmosphère.
 
 ## Comment ça marche
 
-Le jeu est une page web. Le `.nro` contient la page dans sa RomFS (`romfs/webapp`). Au lancement, il la copie sur la carte SD, dans `atmosphere/hbl_html/html-document/dino.htdocs`, où Atmosphère sert les pages des homebrews. Puis il l'ouvre en plein écran dans le moteur web hors ligne de la console. Il n'y a pas de navigateur à installer : le moteur est déjà dans la Switch.
+Le jeu tourne avec [nx.js](https://github.com/TooTallNate/nx.js), un moteur JavaScript fait pour la Switch : dessin sur l'écran (Canvas), Joy-Con et manette Pro, écran tactile, sons (Web Audio) et sauvegarde dans la mémoire de sauvegarde de la Switch (localStorage).
 
-Le moteur web de la console est ancien. `build.mjs` traduit donc le JavaScript du jeu en ES5 (Babel) et ajoute les fonctions récentes qui manquent (core-js).
+On garde un seul code de jeu. `build.mjs` fabrique `romfs/main.js`, un seul module qui contient :
+1. `src/dom.js` : un faux DOM. nx.js n'a pas de HTML ; les éléments du jeu (menus, énigmes) existent mais n'affichent rien ;
+2. le code du jeu, tiré tel quel de `../index.html` ;
+3. `src/switch.js` : la couche Switch (manette, tactile, écrans dessinés sur la console).
 
-Pour cette première version, le jeu s'ouvre sur une **page de test**. Elle montre ce qui marche sur la console : boutons des Joy-Con, manette, écran tactile, voix, son, sauvegarde, fluidité. Le bouton « Lancer le jeu » ouvre ensuite le jeu.
+## État : prototype du T-Rex
+
+- Les 6 endroits du T-Rex se jouent : stick gauche ou croix pour marcher, A ou B pour sauter, + pour quitter.
+- Écran tactile : le pouce gauche fait un joystick, la moitié droite de l'écran fait sauter.
+- Les énigmes ne sont pas encore dessinées : la pierre s'ouvre toute seule.
+- Pas de voix pour l'instant (pas de synthèse vocale sur la console : il faudra des phrases enregistrées).
 
 ## Construire le .nro (sur l'ordinateur)
 
-Il faut Node.js et Docker Desktop (pour les outils devkitPro, sans rien installer d'autre).
+Il faut seulement Node.js.
 
 ```
 cd switch
 npm install
-node build.mjs
-docker run --rm -v "${PWD}:/src" -w /src devkitpro/devkita64:20260219 make
+npm run build
+npm run nro
 ```
 
-Le fichier produit est `switch/DinoExplorateur.nro`.
+Le fichier produit est `switch/dino-explorateur.nro` (environ 54 Mo : il contient le moteur nx.js, il marche donc sans Internet).
+
+Test sur ordinateur, dans Chrome, en imitant nx.js : `node test/test-switch.mjs`.
 
 ## Installer sur la Switch
 
-1. Copier `DinoExplorateur.nro` sur la carte SD, dans le dossier `switch/`.
-2. Lancer le menu homebrew **en mode application** : garder **R** appuyé en lançant un jeu (n'importe lequel), jusqu'à ce que le menu homebrew s'ouvre. Depuis l'album, le moteur web ne s'ouvre pas.
-3. Choisir **Dino Explorateur**.
-
-Il faut Atmosphère 0.8.5 ou plus récent, et le système 7.0.0 ou plus récent.
+1. Copier `dino-explorateur.nro` sur la carte SD, dans le dossier `switch/`.
+2. Lancer le menu homebrew, de préférence en mode application (garder R appuyé en lançant un jeu) : le jeu a alors toute la mémoire.
+3. Choisir **Dino Explorateur**. Au premier lancement, la Switch demande quel profil utiliser : c'est là que la sauvegarde est rangée.

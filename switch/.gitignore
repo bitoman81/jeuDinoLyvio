@@ -1,7 +1,3 @@
-build/
 romfs/
 node_modules/
 *.nro
-*.nacp
-*.elf
-*.map
