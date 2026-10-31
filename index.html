@@ -2896,7 +2896,8 @@ $('pzBack').onclick = () => { if (!pzLocked) { if ('speechSynthesis' in window) 
    les modifie, tous ceux qui ouvrent le jeu les lisent. Sans base (hors claude.ai), on garde
    une copie sur l'appareil. */
 const PKEY = 'dino-explorateur-parents';
-const WORD_RE = /^\p{L}{2,12}$/u;
+// Lettres écrites à la main (pas de classe Unicode) : le moteur de la Switch n'a pas les tables Unicode.
+const WORD_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ]{2,12}$/;
 let custom = { calcs: [], words: [], tables: [2, 3, 4, 5, 10] }, dbDoc = null, canWrite = true, storeMode = 'local', saving = Promise.resolve();
 function parseCalc(s) {
   if (typeof s !== 'string') return null;
@@ -3109,7 +3110,7 @@ $('wordForm').onsubmit = e => {
   e.preventDefault();
   const bad = [];
   $('wordIn').value.split(/[\s,;]+/).filter(Boolean).forEach(s => {
-    const w = s.toLocaleUpperCase('fr-FR');
+    const w = s.toUpperCase();
     if (!WORD_RE.test(w)) bad.push(s); else if (!custom.words.includes(w)) custom.words.push(w);
   });
   $('wordErr').textContent = bad.length ? `Pas compris : ${bad.join(', ')}. Un mot, c'est seulement des lettres, de 2 à 12 lettres.` : '';

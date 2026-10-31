@@ -11,6 +11,10 @@ const html = readFileSync(join(here, '..', 'index.html'), 'utf8');
 const m = html.match(/<script>([\s\S]*)<\/script>/);
 if (!m) throw new Error('Script du jeu introuvable dans index.html');
 if (/console\./.test(m[1])) throw new Error('Le jeu appelle console : sur nx.js, cela repasse l’écran en mode texte');
+// Le moteur V8 de nx.js est compilé sans tables Unicode (ICU) : \p{...} dans une expression régulière
+// fait refuser tout le fichier (écran noir), et Intl / toLocale... ne sont pas fiables.
+const icu = m[1].match(/\\[pP]\{|\bIntl\.|\.toLocale[A-Za-z]*\(|\.localeCompare\(|\.normalize\(/);
+if (icu) throw new Error(`Le jeu utilise « ${icu[0]} », absent du moteur de la Switch (pas d’ICU)`);
 
 const part = (name, code) => `\n/* ======== ${name} ======== */\n${code}\n`;
 // Démarrage : chaque étape s'affiche à l'écran, et une erreur s'écrit en rouge au lieu d'un écran noir.
