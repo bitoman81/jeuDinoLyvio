@@ -354,6 +354,9 @@ globalThis.dinoEval = code => eval(code);
 let swFrames = 0;
 function swLoop() {
   if (++swFrames === 1 || swFrames === 60) swLog('jeu : image ' + swFrames + ', état ' + state);
+  // Fluidité : images par seconde, notées dans le journal toutes les 600 images (10 s si tout va bien).
+  const now = performance.now();
+  if (swFrames % 600 === 1) { if (SW.fpsT) swLog(`fluidité : ${Math.round(600000 / (now - SW.fpsT))} images/s (${SW.screen}, ${L ? L.world + ' ' + L.mode : '-'})`); SW.fpsT = now; }
   try { swPad(); swDraw(); } catch (e) { swToast('Erreur : ' + (e && e.message)); swLog('erreur : ' + (e && (e.stack || e.message))); }
   // Une erreur du jeu reste affichée (sinon l'écran se figerait sans explication).
   if (SWB.err) swBoot(SWB.step, null);

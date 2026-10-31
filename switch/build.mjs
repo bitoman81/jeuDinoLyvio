@@ -41,7 +41,8 @@ mkdirSync(join(here, 'romfs'), { recursive: true });
 // JavaScript), au cas où le moteur lirait mal les accents.
 const ascii = main.replace(/[^\x00-\x7f]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
 writeFileSync(join(here, 'romfs', 'main.js'), ascii);
-// Réglages du moteur nx.js. JIT coupé : avec le JIT (lancement en gardant R sur un jeu), nx.js 1.0.0-beta
-// plante au démarrage dès qu'il compile une grosse fonction (bug nx.js n° 424), ce qui donne un écran noir.
-writeFileSync(join(here, 'romfs', 'nxjs.ini'), '[v8]\n; JIT coupé : contourne le plantage au démarrage (bug nx.js n° 424)\njit = off\n');
+// Réglages du moteur nx.js. JIT automatique (actif en gardant R sur un jeu, coupé depuis l'album), mais
+// sans Sparkplug : avec lui, nx.js 1.0.0-beta plante au démarrage dès qu'il compile une grosse fonction
+// (bug nx.js n° 424). Sans JIT du tout (jit = off), le jeu marche mais saccade.
+writeFileSync(join(here, 'romfs', 'nxjs.ini'), '[v8]\n; JIT sans Sparkplug : contourne le plantage au démarrage (bug nx.js n° 424)\njit = auto\nflags = --no-sparkplug\n');
 console.log(`romfs/main.js prêt (${Math.round(main.length / 1024)} Ko)`);
