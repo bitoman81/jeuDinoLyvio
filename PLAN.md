@@ -188,11 +188,11 @@ Une petite page de test, empaquetée comme nx-spa, qui vérifie :
 
 ### Essais sur la console (31 octobre 2026)
 - **Route A abandonnée.** Le navigateur intégré marche (touches et tactile OK), mais : pas de voix, pas de Web Audio, `localStorage` refusé (SecurityError), et la console garde la main sur certains boutons (X ferme le navigateur). Ce n'est pas un vrai jeu. Le code de cet essai reste dans l'historique Git (branche `etape9-switch`).
-- **Route B choisie : nx.js**, un vrai homebrew sans navigateur. Canvas, Joy-Con, tactile, Web Audio et sauvegarde (localStorage dans la mémoire de sauvegarde de la Switch). Pas de synthèse vocale : il faudra des phrases enregistrées à l'avance (les voix françaises de Windows, Hortense, Julie ou Paul, peuvent les produire).
+- **Route B choisie : nx.js**, un vrai homebrew sans navigateur. Canvas, Joy-Con, tactile, Web Audio et sauvegarde dans un fichier de la carte SD (`switch/dino-explorateur/sauvegarde.json`). Pas de synthèse vocale : il faudra des phrases enregistrées à l'avance (les voix françaises de Windows, Hortense, Julie ou Paul, peuvent les produire).
 - Un seul code de jeu : `switch/build.mjs` met dans un même module un faux DOM (`switch/src/dom.js`), le code du jeu tiré tel quel de `index.html`, et la couche Switch (`switch/src/switch.js`). Le `.nro` se fabrique avec `nxjs-nro --fat`, sans autre outil que Node.js.
 
 ### Étapes de la version Switch (nx.js)
-- [x] 1. Prototype du T-Rex : les 6 endroits, stick ou croix pour marcher, A ou B pour sauter, joystick tactile ; les pierres s'ouvrent seules. Test dans Chrome en imitant nx.js (`switch/test/test-switch.mjs`).
+- [x] 1. Prototype du T-Rex : les 6 endroits, stick ou croix pour marcher, A ou B pour sauter, joystick tactile ; les pierres s'ouvrent seules. Test dans Chrome en imitant nx.js (`switch/test/test-switch.mjs`). Lancé sur la console le 31 octobre 2026, après trois corrections : JIT coupé (`nxjs.ini`, bug nx.js n° 424), sauvegarde dans un fichier au lieu du localStorage de nx.js (son choix du profil bloquait), et plus de `p{L}` ni de `toLocale...` (le moteur n'a pas les tables Unicode ; `build.mjs` les refuse). En cas de souci : `switch/nxjs-debug.log` et `switch/dino-journal.txt` sur la carte SD.
 - [ ] 2. Menu et choix du dino, à la manette.
 - [ ] 3. Énigmes dessinées dans le jeu, à la manette et au doigt.
 - [ ] 4. Voix et sons enregistrés.
