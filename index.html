@@ -40,6 +40,7 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 .slot .ghost{align-self:flex-start}
 .slot input{font:700 20px var(--body);padding:8px 10px;border:4px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);min-width:0}
 .slot.empty{align-items:stretch;justify-content:center;border-style:dashed}
+.incoming{background:var(--sun);border:4px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);padding:12px 16px;margin:0;font:700 19px var(--body)}
 #menu,#parties{background-color:var(--leaf-deep);background-image:
   radial-gradient(circle at 12% 18%,rgba(10,30,18,.35) 0 60px,transparent 61px),
   radial-gradient(circle at 88% 70%,rgba(10,30,18,.3) 0 90px,transparent 91px)}
@@ -473,6 +474,7 @@ body,button{touch-action:manipulation}
     <div class="sheet">
       <h1>Dino <span>Explorateur</span></h1>
       <p class="lead">Choisis ta partie. Chacun peut avoir la sienne, avec son nom : 3 parties au plus.</p>
+      <p class="incoming" id="incomingText" hidden></p>
       <div id="slotList" class="slots"></div>
     </div>
   </div>
@@ -3684,20 +3686,91 @@ $('wordForm').onsubmit = e => {
 /* Code de sauvegarde : la progression en base64, pour passer d'un appareil à l'autre.
    La voix, le son et les commandes sur téléphone restent ceux de l'appareil. */
 const CODE_PREFIX = 'DINO2-';
-function exportCode() {
+// light : code court (DINO3-) pour le QR code de la Switch, voir exportShort.
+function exportCode(light = false) {
+  if (light) return exportShort();
   const { voice: _v, sound: _s, music: _m, touch: _t, ...data } = prog;
   return CODE_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))));
 }
-function importCode(code) {
-  const c = code.replace(/\s+/g, '');
-  if (!c.startsWith(CODE_PREFIX)) return false;
+/* Code court DINO3- : une centaine de caractères, pour un QR code facile à lire.
+   Sans les statistiques ni l'endroit en cours. Des champs séparés par des points, toujours dans le même ordre :
+   animal, niveau et difficulté ; temps ; pour chaque monde, endroits ouverts puis un caractère par endroit
+   (œufs, étoiles, médaille) ; niveau de chaque compétence ; trésors ; fossiles ; couleurs achetées ;
+   couleur choisie ; pouvoirs ; clés et morceaux de carte ; accessoires achetés ; accessoire porté ; nom. */
+const SHORT_PREFIX = 'DINO3-', B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const bitsTo64 = bits => { let o = ''; for (let i = 0; i < bits.length; i += 6) o += B64[parseInt(bits.slice(i, i + 6).padEnd(6, '0'), 2)]; return o; };
+const bitsFrom64 = (str, n) => [...str].map(ch => Math.max(0, B64.indexOf(ch)).toString(2).padStart(6, '0')).join('').padEnd(n, '0').slice(0, n);
+const DIFFS = ['petit', 'grand', 'expert'], WORLD_KEYS = () => Object.keys(WORLDS);
+const fossilKeys = () => WORLD_KEYS().flatMap(k => WORLDS[k].map((d, i) => `${k}-${i}`));
+function exportShort() {
+  const p = prog, b = p.bag, f = [];
+  f.push([Math.max(0, [...ORDER, 'final'].indexOf(p.world)), DIFFS.indexOf(p.diff), p.hard].join(''));
+  f.push(p.time.toString(36));
+  WORLD_KEYS().forEach(k => { const w = p.worlds[k]; f.push(w.unlocked.toString(36) + w.eggs.map((e, i) => B64[e * 16 + w.stars[i] * 4 + w.medals[i]]).join('')); });
+  f.push(Object.keys(SKILLS).map(k => p.skills[k].lvl.toString(36)).join(''));
+  f.push(b.n.toString(36));
+  f.push(bitsTo64(fossilKeys().map(k => b.fossils[k] ? 1 : 0).join('')));
+  f.push(bitsTo64(ORDER.flatMap(w => SKINS[w].map(x => b.owned[`${w}:${x.id}`] ? 1 : 0)).join('')));
+  f.push(ORDER.map(w => Math.max(0, ['base', ...SKINS[w].map(x => x.id)].indexOf(b.skin[w]))).join(''));
+  f.push(Object.keys(POWERS).map(k => B64[Math.min(63, b.power[k])]).join(''));
+  f.push(bitsTo64(ORDER.map(w => b.keys[w] ? 1 : 0).join('') + ORDER.map(w => b.maps[w] ? 1 : 0).join('')));
+  f.push(bitsTo64(ACCESSORIES.map(a => b.accOwned[a.id] ? 1 : 0).join('')));
+  f.push(ORDER.map(w => Math.max(0, ['', ...ACCESSORIES.map(a => a.id)].indexOf(b.acc[w] || ''))).join(''));
+  f.push(encodeURIComponent(slots.names[slots.cur] || ''));
+  return SHORT_PREFIX + f.join('.');
+}
+// Relit un code court ; cleanProg vérifie ensuite chaque valeur.
+function decodeShort(c) {
+  const f = c.slice(SHORT_PREFIX.length).split('.'), wk = WORLD_KEYS();
+  if (f.length < 12 + wk.length) return null;   // 2 + un par monde + 10
+  let i = 0; const nx = () => f[i++] || '';
+  const h = nx(), p = { version: SAVE_VERSION, world: [...ORDER, 'final'][+h[0]] || 'rex', diff: DIFFS[+h[1]] || 'petit', hard: +h[2] || 0, time: parseInt(nx(), 36) || 0, worlds: {}, skills: {}, run: null };
+  wk.forEach(k => {
+    const t = nx(), v = [...t.slice(1)].map(ch => Math.max(0, B64.indexOf(ch)));
+    p.worlds[k] = { unlocked: parseInt(t[0], 36) || 1, eggs: v.map(x => x >> 4), stars: v.map(x => (x >> 2) & 3), medals: v.map(x => x & 3) };
+  });
+  const sk = nx(); Object.keys(SKILLS).forEach((k, j) => { p.skills[k] = { lvl: parseInt(sk[j], 36) || 1 }; });
+  const b = p.bag = { n: parseInt(nx(), 36) || 0, fossils: {}, owned: {}, skin: {}, power: {}, keys: {}, maps: {}, accOwned: {}, acc: {} };
+  const fk = fossilKeys(), fb = bitsFrom64(nx(), fk.length); fk.forEach((k, j) => { if (fb[j] === '1') b.fossils[k] = true; });
+  const sks = ORDER.flatMap(w => SKINS[w].map(x => `${w}:${x.id}`)), ob = bitsFrom64(nx(), sks.length); sks.forEach((k, j) => { if (ob[j] === '1') b.owned[k] = true; });
+  const sc = nx(); ORDER.forEach((w, j) => { b.skin[w] = ['base', ...SKINS[w].map(x => x.id)][+sc[j]] || 'base'; });
+  const pw = nx(); Object.keys(POWERS).forEach((k, j) => { b.power[k] = Math.max(0, B64.indexOf(pw[j] || 'A')); });
+  const km = bitsFrom64(nx(), ORDER.length * 2); ORDER.forEach((w, j) => { if (km[j] === '1') b.keys[w] = true; if (km[ORDER.length + j] === '1') b.maps[w] = true; });
+  const ab = bitsFrom64(nx(), ACCESSORIES.length); ACCESSORIES.forEach((a, j) => { if (ab[j] === '1') b.accOwned[a.id] = true; });
+  const ac = nx(); ORDER.forEach((w, j) => { b.acc[w] = ['', ...ACCESSORIES.map(a => a.id)][+ac[j]] || ''; });
+  let name = f.slice(i).join('.'); try { name = decodeURIComponent(name); } catch (e) {}
+  p.name = name;
+  return p;
+}
+// Lit un code de sauvegarde (complet DINO2- ou court DINO3-) : la partie, ou null s'il n'est pas valide.
+function decodeCode(code) {
+  const c = String(code || '').replace(/\s+/g, '');
+  if (c.startsWith(SHORT_PREFIX)) { try { return decodeShort(c); } catch (e) { return null; } }
+  if (!c.startsWith(CODE_PREFIX)) return null;
   try {
     const bytes = Uint8Array.from(atob(c.slice(CODE_PREFIX.length)), ch => ch.charCodeAt(0));
     const s = JSON.parse(new TextDecoder().decode(bytes));
-    if (!s || typeof s !== 'object' || !s.worlds) return false;
-    prog = cleanProg({ ...s, ...devicePrefs() }); applySkins(); save();
-    return true;
-  } catch (e) { return false; }
+    return s && typeof s === 'object' && s.worlds ? s : null;
+  } catch (e) { return null; }
+}
+function importCode(code) {
+  const s = decodeCode(code);
+  if (!s) return false;
+  prog = cleanProg({ ...s, ...devicePrefs() }); applySkins(); save();
+  return true;
+}
+// Une partie arrive de la Switch : le QR code ouvre ce jeu avec le code après le # de l'adresse.
+let incoming = null;
+// (la Switch n'a pas d'adresse : globalThis.location peut manquer)
+if (typeof location !== 'undefined' && typeof location.hash === 'string' && /^#DINO[23]-/.test(location.hash)) {
+  incoming = decodeCode(location.hash.slice(1));
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+}
+// Mettre la partie de la Switch dans une place (vide, ou à la place d'une partie, après confirmation)
+function slotImport(n, s) {
+  if (slots.names[slots.cur]) save();
+  slots.cur = n; slots.names[n] = String(s.name || '').trim().slice(0, 16) || 'Switch'; writeSlots();
+  prog = cleanProg({ ...s, ...devicePrefs() }); applySkins(); save();
 }
 $('saveCopy').onclick = () => {
   const done = () => { $('loadOk').textContent = 'Code copié.'; $('loadOk').hidden = false; };
@@ -3742,12 +3815,26 @@ function showParties() {
   slotAsk = slotNaming = -1; renderParties();
 }
 function leaveParties() { $('parties').hidden = true; showMenu(); }
+let slotPut = -1;   // place où l'on demande à remplacer une partie par celle de la Switch
 function renderParties() {
   const list = $('slotList'); list.innerHTML = '';
+  $('incomingText').hidden = !incoming;
+  if (incoming) $('incomingText').textContent = `Une partie arrive de la Switch${incoming.name ? ' : ' + incoming.name : ''}. Choisis où la mettre.`;
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const btn = (cls, text, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
   for (let n = 0; n < SLOT_MAX; n++) {
     const sum = slotSummary(n), card = el('div', 'slot');
+    // La partie de la Switch : « Mettre ici » (une place prise demande d'abord)
+    const put = () => { audio(); slotImport(n, incoming); incoming = null; slotPut = -1; leaveParties(); say('La partie de la Switch est arrivée !'); };
+    if (incoming && slotPut === n) {
+      card.appendChild(el('h2', '', sum ? sum.name : 'Place libre'));
+      card.appendChild(el('p', 'err', `Remplacer la partie de ${sum.name} par celle de la Switch ? Elle sera perdue.`));
+      const row = el('div', 'row');
+      row.appendChild(btn('btn', 'Oui, remplacer', put));
+      row.appendChild(btn('btn primary', 'Non', () => { slotPut = -1; renderParties(); }));
+      card.appendChild(row); list.appendChild(card); continue;
+    }
+    if (incoming) card.appendChild(btn('btn primary', 'Mettre ici la partie de la Switch', () => { if (sum) { slotPut = n; renderParties(); } else put(); }));
     if (sum) {
       if (sum.cur) card.classList.add('cur');
       card.appendChild(el('h2', '', sum.name));

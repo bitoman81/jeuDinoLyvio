@@ -18,6 +18,7 @@ node tests/test-ennemis.mjs index.html # étape 11 : ennemis, difficulté des en
 node tests/test-boutique.mjs index.html # étape 12 : accessoires et nouveaux pouvoirs
 node tests/test-musique.mjs index.html # étape 13 : musique
 node tests/test-boss.mjs index.html    # étape 14 : le gardien du nid
+node tests/test-qr.mjs index.html      # étape 15 : partie de la Switch arrivée par QR code
 ```
 
 Il faut Node 22 ou plus récent (WebSocket intégré) et Google Chrome installé dans `C:/Program Files/Google/Chrome/Application/chrome.exe` (constante `CHROME` en haut de chaque fichier). Chaque fichier affiche `Tous les tests passent` ou la liste des échecs.
