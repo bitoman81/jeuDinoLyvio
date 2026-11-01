@@ -3702,8 +3702,8 @@ const bitsTo64 = bits => { let o = ''; for (let i = 0; i < bits.length; i += 6) 
 const bitsFrom64 = (str, n) => [...str].map(ch => Math.max(0, B64.indexOf(ch)).toString(2).padStart(6, '0')).join('').padEnd(n, '0').slice(0, n);
 const DIFFS = ['petit', 'grand', 'expert'], WORLD_KEYS = () => Object.keys(WORLDS);
 const fossilKeys = () => WORLD_KEYS().flatMap(k => WORLDS[k].map((d, i) => `${k}-${i}`));
-function exportShort() {
-  const p = prog, b = p.bag, f = [];
+function exportShort(p = prog, name = slots.names[slots.cur]) {
+  const b = p.bag, f = [];
   f.push([Math.max(0, [...ORDER, 'final'].indexOf(p.world)), DIFFS.indexOf(p.diff), p.hard].join(''));
   f.push(p.time.toString(36));
   WORLD_KEYS().forEach(k => { const w = p.worlds[k]; f.push(w.unlocked.toString(36) + w.eggs.map((e, i) => B64[e * 16 + w.stars[i] * 4 + w.medals[i]]).join('')); });
@@ -3716,7 +3716,7 @@ function exportShort() {
   f.push(bitsTo64(ORDER.map(w => b.keys[w] ? 1 : 0).join('') + ORDER.map(w => b.maps[w] ? 1 : 0).join('')));
   f.push(bitsTo64(ACCESSORIES.map(a => b.accOwned[a.id] ? 1 : 0).join('')));
   f.push(ORDER.map(w => Math.max(0, ['', ...ACCESSORIES.map(a => a.id)].indexOf(b.acc[w] || ''))).join(''));
-  f.push(encodeURIComponent(slots.names[slots.cur] || ''));
+  f.push(encodeURIComponent(name || ''));
   return SHORT_PREFIX + f.join('.');
 }
 // Relit un code court ; cleanProg vérifie ensuite chaque valeur.
@@ -3766,6 +3766,18 @@ if (typeof location !== 'undefined' && typeof location.hash === 'string' && /^#D
   incoming = decodeCode(location.hash.slice(1));
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
 }
+// La Switch attend une partie (QR code « Recevoir du téléphone ») : son adresse sur le Wi-Fi de la maison.
+let sendTo = null;
+if (typeof location !== 'undefined' && typeof location.hash === 'string') {
+  const m = location.hash.match(/^#SEND-(\d{1,3}(?:\.\d{1,3}){3}):(\d{2,5})$/);
+  if (m) { sendTo = m[1] + ':' + m[2]; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+}
+// Envoyer la partie n : on ouvre la petite page de la Switch avec le code après le # ; elle le lui transmet.
+function switchUrl(n) {
+  const p = n === slots.cur ? prog : cleanProg(readSlot(n));
+  return `http://${sendTo}/#${exportShort(p, slots.names[n])}`;
+}
+function sendToSwitch(n) { location.href = switchUrl(n); }
 // Mettre la partie de la Switch dans une place (vide, ou à la place d'une partie, après confirmation)
 function slotImport(n, s) {
   if (slots.names[slots.cur]) save();
@@ -3818,8 +3830,9 @@ function leaveParties() { $('parties').hidden = true; showMenu(); }
 let slotPut = -1;   // place où l'on demande à remplacer une partie par celle de la Switch
 function renderParties() {
   const list = $('slotList'); list.innerHTML = '';
-  $('incomingText').hidden = !incoming;
+  $('incomingText').hidden = !incoming && !sendTo;
   if (incoming) $('incomingText').textContent = `Une partie arrive de la Switch${incoming.name ? ' : ' + incoming.name : ''}. Choisis où la mettre.`;
+  else if (sendTo) $('incomingText').textContent = 'La Switch attend une partie. Choisis celle à lui envoyer (le téléphone et la Switch doivent être sur le même Wi-Fi).';
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const btn = (cls, text, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
   for (let n = 0; n < SLOT_MAX; n++) {
@@ -3835,6 +3848,7 @@ function renderParties() {
       card.appendChild(row); list.appendChild(card); continue;
     }
     if (incoming) card.appendChild(btn('btn primary', 'Mettre ici la partie de la Switch', () => { if (sum) { slotPut = n; renderParties(); } else put(); }));
+    else if (sendTo && sum) card.appendChild(btn('btn primary', 'Envoyer vers la Switch', () => { audio(); sendToSwitch(n); }));
     if (sum) {
       if (sum.cur) card.classList.add('cur');
       card.appendChild(el('h2', '', sum.name));

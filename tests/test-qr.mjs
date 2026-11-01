@@ -88,6 +88,16 @@ await sleep(100); await shot('qr-arrivee.png');
 await ev(`document.querySelectorAll('#slotList .slot')[0].querySelector('.btn.primary').click(); [...document.querySelectorAll('#slotList .slot')[0].querySelectorAll('button')].find(b => b.textContent === 'Oui, remplacer').click(); true`);
 check('« Oui » : la partie de la Switch remplace celle de Papa', await ev(`slots.cur === 0 && slots.names[0] === 'Lyvio' && prog.bag.n === 42`), await ev('[slots, prog.bag.n]'));
 
+// 4. Du téléphone vers la Switch : le QR code « Recevoir » de la Switch ouvre le jeu avec #SEND-adresse:port
+await ev(`slotNew(1, 'Zoé'); prog.bag.n = 13; prog.worlds.trike.eggs[0] = 3; save(); slotPlay(0); true`);
+await go('#SEND-192.168.1.20:8765');
+check('« La Switch attend une partie », adresse nettoyée, un bouton par partie', await ev(`sendTo === '192.168.1.20:8765' && /La Switch attend une partie/.test($('incomingText').textContent) && !location.hash && [...document.querySelectorAll('#slotList button')].filter(b => b.textContent === 'Envoyer vers la Switch').length === 2`), await ev(`[sendTo, $('incomingText').textContent]`));
+const url = await ev(`switchUrl(1)`);
+const sent = await ev(`decodeCode(${JSON.stringify(url)}.split('#')[1])`);
+check('envoyer la partie de Zoé : adresse de la Switch en http, code court de cette partie', url.startsWith('http://192.168.1.20:8765/#DINO3-') && sent.name === 'Zoé' && sent.bag.n === 13 && sent.worlds.trike.eggs[0] === 3, [url.slice(0, 60), sent && sent.name]);
+await go('#SEND-pasuneadresse');
+check('adresse abîmée : rien', await ev(`!sendTo && $('incomingText').hidden`));
+
 // 4. Un code abîmé dans l'adresse : ignoré
 await go('#DINO2-pasbon');
 check('code abîmé : rien n’arrive', await ev(`!incoming && $('incomingText').hidden`));
