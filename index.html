@@ -297,6 +297,16 @@ h1 span{color:var(--sun)}
 .stats td.none{color:#8a8a80}
 .stats .up{color:var(--leaf-deep);font-weight:700}
 .stats .down{color:#a3261b;font-weight:700}
+.week{display:flex;flex-direction:column;gap:10px}
+.week-head{margin:0;font-weight:700}
+.week-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.week-box{border:3px solid var(--ink);border-radius:16px;background:#fff;padding:10px 12px}
+.week-box h4{margin:0 0 6px;font:400 17px var(--display)}
+.week-box ul,.week-box ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.week-box.good h4{color:var(--leaf-deep)}
+.week-box.bad h4{color:#a3261b}
+.week-box .none{color:#8a8a80;margin:0}
+.week-tip{margin:0;font-style:italic}
 .curve-ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .curve-ctl select{flex:1 1 200px;min-width:0;font:700 17px var(--body);padding:8px 10px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink)}
 .curve-ctl .tabs{display:flex;gap:6px;flex-wrap:wrap}
@@ -519,6 +529,8 @@ body,button{touch-action:manipulation}
       <h3>Niveau de chaque compétence</h3>
       <p>Le jeu ajuste ces niveaux tout seul, de 1 à 10 : 3 réussites du premier coup de suite font monter d'un cran, 2 énigmes difficiles de suite font descendre d'un cran. Vous pouvez aussi les régler ici.</p>
       <div class="skills" id="skillList"></div>
+      <h3>Résumé de la semaine</h3>
+      <div class="week" id="weekSum"></div>
       <h3>Les progrès</h3>
       <p>Pour chaque compétence : les énigmes faites depuis le début, la part réussie du premier coup, les erreurs par énigme, et la tendance du niveau sur les 7 derniers jours.</p>
       <div class="stat-wrap"><table class="stats" id="statTable"></table></div>
@@ -972,6 +984,12 @@ const SKILL_START = { petit: 1, grand: 4, expert: 7 }, MAX_LVL = 10;
 const TYPE_SKILL = { count: 'count', add: 'add', sub: 'sub', mult: 'mult', compare: 'compare', sequence: 'suite', first: 'lettres', missing: 'lettres', hangman: 'mots', order: 'mots',
   numseq: 'suite', parity: 'count', coins: 'add', clock: 'heure', intrus: 'logique', wordpic: 'lire',
   maze: 'logique', slide: 'logique', memory: 'logique', sudoku: 'logique', ombres: 'logique', dots: 'count', pieces: 'logique', symetrie: 'logique' };
+// Le nom de chaque énigme pour le résumé de la semaine (parents : les calculs et les mots des parents).
+const TYPE_NAMES = { count: 'Compter les œufs', add: 'Additions', sub: 'Soustractions', mult: 'Multiplications', compare: 'Plus ou moins',
+  sequence: 'Suites de couleurs', first: 'Première lettre', missing: 'Lettre qui manque', hangman: 'Écrire un mot', order: "Lettres dans l'ordre",
+  numseq: 'Suites de nombres', parity: 'Pair ou impair', coins: 'Compter les pièces', clock: "Lire l'heure", intrus: "Trouver l'intrus", wordpic: 'Lire un mot',
+  maze: 'Labyrinthe', slide: 'Taquin', memory: 'Jeu de mémoire', sudoku: 'Sudoku', ombres: 'Les ombres', dots: 'Relier les points', pieces: 'Puzzle',
+  symetrie: 'Miroir', parents: 'Vos calculs et vos mots' };
 
 /* ---------- Sauvegarde ----------
    v2 ajoute la partie en cours (prog.run) pour reprendre là où on s'est arrêté.
@@ -1007,7 +1025,15 @@ function cleanProg(s) {
     // Statistiques : 400 jours au plus, compétences connues seulement.
     if (s.stats && typeof s.stats === 'object') Object.keys(s.stats).filter(d => /^\d{4}-\d\d-\d\d$/.test(d)).sort().slice(-400).forEach(d => {
       const day = {};
-      Object.keys(SKILLS).forEach(k => { const r = s.stats[d] && s.stats[d][k]; if (Array.isArray(r) && r.length === 4 && r.every(v => isInt(v) && v >= 0)) day[k] = [r[0], Math.min(r[1], r[0]), r[2], clamp(r[3], 1, MAX_LVL)]; });
+      const sd = s.stats[d] || {}, ok4 = r => Array.isArray(r) && r.length === 4 && r.every(v => isInt(v) && v >= 0);
+      Object.keys(SKILLS).forEach(k => { const r = sd[k]; if (ok4(r)) day[k] = [r[0], Math.min(r[1], r[0]), r[2], clamp(r[3], 1, MAX_LVL)]; });
+      // Par type d'énigme : [réussies, dont du premier coup, erreurs, abandons] ; et le temps de jeu du jour en secondes.
+      if (sd.types && typeof sd.types === 'object') {
+        const t = {};
+        Object.keys(TYPE_NAMES).forEach(k => { const r = sd.types[k]; if (ok4(r)) t[k] = [r[0], Math.min(r[1], r[0]), r[2], r[3]]; });
+        if (Object.keys(t).length) day.types = t;
+      }
+      if (isInt(sd.sec) && sd.sec > 0) day.sec = Math.min(sd.sec, 86400);
       if (Object.keys(day).length) p.stats[d] = day;
     });
   }
@@ -2958,7 +2984,7 @@ function loop(now) {
   const step = Math.min(100, now - last);
   acc += step; last = now;
   // Temps de jeu : compté dans les endroits et les énigmes, ajouté à la partie chaque seconde.
-  if (L && (state === 'play' || state === 'puzzle')) { playMs += step; if (playMs >= 1000) { prog.time += Math.floor(playMs / 1000); playMs %= 1000; } }
+  if (L && (state === 'play' || state === 'puzzle')) { playMs += step; if (playMs >= 1000) { const n = Math.floor(playMs / 1000), day = statDay(); prog.time += n; day.sec = (day.sec || 0) + n; playMs %= 1000; } }
   if (L && state === 'play' && !rotateMQ.matches) {
     while (acc >= 1000 / 60) {
       time += 1 / 60; if (cooldown > 0) cooldown--;
@@ -2994,7 +3020,7 @@ const TIER = {
 };
 const tier = (key, k) => TIER[key][k - 1];
 const nChoices = k => k <= 3 ? 3 : 4;
-let pzErrs = 0, pzSkill = null, pzStars = 0, pzKey = null, pzId = 0;
+let pzType = null, pzErrs = 0, pzSkill = null, pzStars = 0, pzKey = null, pzId = 0;
 // Énigmes de jeu : les étoiles viennent du nombre de coups (ou des erreurs), calculé par l'énigme.
 function gameDone(errs, win) { pzErrs = errs; solved(win); }
 window.addEventListener('keydown', e => { if (state === 'puzzle' && pzKey && !pzLocked && !pzWaiting() && pzKey(e.code)) e.preventDefault(); });
@@ -3040,16 +3066,24 @@ function learn(k, errs) {
 /* Statistiques pour les parents : un résumé par jour et par compétence,
    [énigmes réussies, dont du premier coup, erreurs, niveau en fin de journée]. */
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const statDay = () => prog.stats[today()] || (prog.stats[today()] = {});
 function record(k, errs) {
   if (!k) return;
-  const day = prog.stats[today()] || (prog.stats[today()] = {}), r = day[k] || (day[k] = [0, 0, 0, 0]);
+  const day = statDay(), r = day[k] || (day[k] = [0, 0, 0, 0]);
   r[0]++; if (!errs) r[1]++; r[2] += errs; r[3] = prog.skills[k].lvl;
+}
+// Par type d'énigme, pour retrouver les énigmes les plus ratées : réussie, ou abandonnée (quit).
+function recordType(t, errs, quit) {
+  if (!t || !TYPE_NAMES[t]) return;
+  const day = statDay(), T = day.types || (day.types = {}), r = T[t] || (T[t] = [0, 0, 0, 0]);
+  if (quit) r[3]++; else { r[0]++; if (!errs) r[1]++; }
+  r[2] += errs;
 }
 function solved(extra = '') {
   pzLocked = true; SFX.yay(); confetti(); $('pzHelp').hidden = true;
   pzStars = pzErrs === 0 ? 3 : pzErrs === 1 ? 2 : 1;
   const up = learn(pzSkill, pzErrs);
-  record(pzSkill, pzErrs);
+  record(pzSkill, pzErrs); recordType(pzType, pzErrs, false); pzType = null;
   const st = document.createElement('div'); st.className = 'pz-stars'; st.innerHTML = starsHtml(pzStars);
   st.setAttribute('role', 'img'); st.setAttribute('aria-label', `${pzStars} étoile${pzStars > 1 ? 's' : ''} sur 3`);
   pz.choices.appendChild(st);
@@ -3666,16 +3700,16 @@ const pzWaiting = () => performance.now() < pzWaitUntil;
 function openPuzzle(g) {
   pzWaitUntil = performance.now() + PZ_WAIT; $('puzzle').classList.add('wait');
   clearTimeout(pzWaitTimer); pzWaitTimer = setTimeout(() => $('puzzle').classList.remove('wait'), PZ_WAIT);
-  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true; clearKeys();
+  state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzType = null; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true; clearKeys();
   $('puzzle').hidden = false;
   let type = g.type;
   if (type === 'order' && lv('mots') <= 2) type = 'first';
   if (isExpert()) {
-    if ((custom.calcs.length || custom.words.length) && Math.random() < .6) { customPuzzle(); return; }
+    if ((custom.calcs.length || custom.words.length) && Math.random() < .6) { pzType = 'parents'; customPuzzle(); return; }
     type = { count: 'mult', compare: 'sub', first: 'missing' }[type] || type;
   }
   type = lastType = varyType(type);
-  pzSkill = TYPE_SKILL[type];
+  pzSkill = TYPE_SKILL[type]; pzType = type;
   PUZZLES[type]();
 }
 function closePuzzle(win) {
@@ -3697,7 +3731,7 @@ function closePuzzle(win) {
 $('pzSpeak').innerHTML = IC.sound;
 $('pzSpeak').onclick = () => say(currentSay);
 pz.visual.addEventListener('click', e => { if (e.target.closest('[data-say]') && currentWord) say(currentWord.toLowerCase()); });
-$('pzBack').onclick = () => { if (!pzLocked) { if ('speechSynthesis' in window) speechSynthesis.cancel(); closePuzzle(false); } };
+$('pzBack').onclick = () => { if (!pzLocked) { if ('speechSynthesis' in window) speechSynthesis.cancel(); recordType(pzType, pzErrs, true); pzType = null; closePuzzle(false); } };
 
 /* ---------- Espace parents ----------
    Les réglages vivent dans la base de la page (document parents/custom) : seul le propriétaire
@@ -3784,6 +3818,7 @@ function renderParents() {
   $('pStatus').textContent = statusText();
   $('saveCode').value = exportCode();
   renderSkills();
+  renderWeek();
   renderStats();
   ['calcIn', 'wordIn'].forEach(id => { $(id).disabled = ro; });
   chips('calcList', custom.calcs.map(k => parseCalc(k).disp + ' = ' + parseCalc(k).ans), i => custom.calcs.splice(i, 1), ro, 'Aucun calcul pour le moment. Ajoutez par exemple 5x5.');
@@ -3835,6 +3870,66 @@ function lastText(d) {
   if (!d) return 'jamais';
   const n = daysAgo(d);
   return n === 0 ? "aujourd'hui" : n === 1 ? 'hier' : n < 7 ? `il y a ${n} jours` : `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+}
+/* Résumé de la semaine : les 7 derniers jours comparés aux 7 d'avant.
+   Ce qui a progressé (niveau monté, ou presque tout réussi du premier coup), ce qui bloque
+   (niveau descendu, moins de la moitié du premier coup, abandons), et les énigmes les plus ratées. */
+function weekTotals(days) {
+  const t = { n: 0, first: 0, errs: 0, quit: 0, sec: 0, days: 0, skills: {}, types: {} };
+  days.forEach(d => {
+    const day = prog.stats[d]; if (!day) return;
+    let played = false;
+    Object.keys(SKILLS).forEach(k => { const r = day[k]; if (!r) return; played = true; const s = t.skills[k] || (t.skills[k] = [0, 0, 0]); s[0] += r[0]; s[1] += r[1]; s[2] += r[2]; t.n += r[0]; t.first += r[1]; t.errs += r[2]; });
+    Object.entries(day.types || {}).forEach(([k, r]) => { played = true; const s = t.types[k] || (t.types[k] = [0, 0, 0, 0]); r.forEach((v, i) => { s[i] += v; }); t.quit += r[3]; });
+    t.sec += day.sec || 0;
+    if (played || day.sec >= 60) t.days++;
+  });
+  return t;
+}
+function weekSummary() {
+  const days = curveDays('7'), start = dayDate(days[0]), prev = [];
+  for (let i = 7; i >= 1; i--) { const x = new Date(start); x.setDate(start.getDate() - i); prev.push(dayKey(x)); }
+  const w = weekTotals(days), p = weekTotals(prev), good = [], bad = [];
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  Object.entries(SKILLS).forEach(([k, sk]) => {
+    const s = w.skills[k], ser = levelSeries(k, days), before = levelSeries(k, prev)[6];
+    const from = before !== null ? before : ser.find(v => v !== null), to = ser[6];
+    const quits = Object.entries(w.types).filter(([t]) => TYPE_SKILL[t] === k).reduce((a, [, r]) => a + r[3], 0);
+    if (!s && !quits) return;
+    if (to > from) good.push({ k, text: `${sk.name} : niveau ${from} → ${to}` });
+    else if (s && s[0] >= 5 && pct(s[1], s[0]) >= 80) good.push({ k, text: `${sk.name} : ${pct(s[1], s[0])} % du premier coup` });
+    if (to < from) bad.push({ k, text: `${sk.name} : niveau ${from} → ${to}` });
+    else if (s && s[0] >= 3 && pct(s[1], s[0]) < 50) bad.push({ k, text: `${sk.name} : ${pct(s[1], s[0])} % du premier coup` });
+    else if (quits >= 2) bad.push({ k, text: `${sk.name} : abandonné ${quits} fois` });
+  });
+  // Les plus ratées : erreurs par énigme, un abandon compte pour 2 erreurs ; au moins 2 énigmes.
+  const missed = Object.entries(w.types).map(([t, r]) => ({ t, n: r[0] + r[3], errs: r[2], quit: r[3], score: (r[2] + 2 * r[3]) / (r[0] + r[3]) }))
+    .filter(x => x.n >= 2 && x.score >= .5).sort((a, b) => b.score - a.score || b.n - a.n).slice(0, 3);
+  return { days, w, p, good, bad, missed };
+}
+const durText = s => { const m = Math.round(s / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`; };
+const plural = (n, one, many = one + 's') => `${n} ${n > 1 ? many : one}`;
+// Le résumé en phrases (repris tel quel par la page parents de la Switch).
+function weekLines() {
+  const S = weekSummary(), { w, p } = S, d0 = S.days[0], since = `${d0.slice(8, 10)}/${d0.slice(5, 7)}`, head = [];
+  if (!w.n && !w.quit && w.sec < 60) head.push(`Pas encore joué du ${since} à aujourd'hui.`);
+  else {
+    head.push(`Du ${since} à aujourd'hui : joué ${plural(w.days, 'jour')} sur 7` + (w.sec >= 60 ? `, ${durText(w.sec)} de jeu` : '')
+      + `, ${plural(w.n, 'énigme réussie', 'énigmes réussies')}` + (w.n ? `, dont ${Math.round(w.first / w.n * 100)} % du premier coup` : '') + '.');
+    if (p.n) head.push(w.n > p.n ? `C'est ${w.n - p.n} de plus que la semaine d'avant (${p.n}).` : w.n < p.n ? `C'est ${p.n - w.n} de moins que la semaine d'avant (${p.n}).` : "Autant que la semaine d'avant.");
+  }
+  const missed = S.missed.map(x => { const e = x.errs / x.n; return `${TYPE_NAMES[x.t]} : ${e.toFixed(1).replace('.', ',')} erreur${e >= 2 ? 's' : ''} par énigme` + (x.quit ? `, ${plural(x.quit, 'abandon')}` : ''); });
+  const b = S.bad[0], tip = b ? `Idée : faire ensemble quelques énigmes « ${SKILLS[b.k].name} », ou baisser ce niveau d'un cran.` : '';
+  return { head, good: S.good.map(x => x.text), bad: S.bad.map(x => x.text), missed, tip };
+}
+function renderWeek() {
+  const W = weekLines(), esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const list = (arr, tag, none) => arr.length ? `<${tag}>${arr.map(t => `<li>${esc(t)}</li>`).join('')}</${tag}>` : `<p class="none">${none}</p>`;
+  $('weekSum').innerHTML = `<p class="week-head">${W.head.map(esc).join(' ')}</p><div class="week-cols">`
+    + `<div class="week-box good"><h4>Ce qui a progressé</h4>${list(W.good, 'ul', 'Rien de marquant cette semaine.')}</div>`
+    + `<div class="week-box bad"><h4>Ce qui bloque</h4>${list(W.bad, 'ul', 'Rien ne bloque.')}</div>`
+    + `<div class="week-box"><h4>Les énigmes les plus ratées</h4>${list(W.missed, 'ol', 'Aucune énigme vraiment ratée.')}</div></div>`
+    + (W.tip ? `<p class="week-tip">${esc(W.tip)}</p>` : '');
 }
 const TREND = { up: ['up', '↗ monte'], down: ['down', '↘ descend'], flat: ['', '→ stable'] };
 function renderStats() {
