@@ -3686,19 +3686,66 @@ $('wordForm').onsubmit = e => {
 /* Code de sauvegarde : la progression en base64, pour passer d'un appareil à l'autre.
    La voix, le son et les commandes sur téléphone restent ceux de l'appareil. */
 const CODE_PREFIX = 'DINO2-';
-// light : version courte pour le QR code de la Switch (sans les statistiques ni la partie en cours,
-// niveaux des compétences seulement), avec le nom de la partie.
+// light : code court (DINO3-) pour le QR code de la Switch, voir exportShort.
 function exportCode(light = false) {
+  if (light) return exportShort();
   const { voice: _v, sound: _s, music: _m, touch: _t, ...data } = prog;
-  if (light) {
-    delete data.stats; delete data.savedAt; data.run = null; data.name = slots.names[slots.cur] || '';
-    data.skills = Object.fromEntries(Object.entries(data.skills).map(([k, v]) => [k, { lvl: v.lvl }]));
-  }
   return CODE_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))));
 }
-// Lit un code de sauvegarde : la partie, ou null s'il n'est pas valide.
+/* Code court DINO3- : une centaine de caractères, pour un QR code facile à lire.
+   Sans les statistiques ni l'endroit en cours. Des champs séparés par des points, toujours dans le même ordre :
+   animal, niveau et difficulté ; temps ; pour chaque monde, endroits ouverts puis un caractère par endroit
+   (œufs, étoiles, médaille) ; niveau de chaque compétence ; trésors ; fossiles ; couleurs achetées ;
+   couleur choisie ; pouvoirs ; clés et morceaux de carte ; accessoires achetés ; accessoire porté ; nom. */
+const SHORT_PREFIX = 'DINO3-', B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const bitsTo64 = bits => { let o = ''; for (let i = 0; i < bits.length; i += 6) o += B64[parseInt(bits.slice(i, i + 6).padEnd(6, '0'), 2)]; return o; };
+const bitsFrom64 = (str, n) => [...str].map(ch => Math.max(0, B64.indexOf(ch)).toString(2).padStart(6, '0')).join('').padEnd(n, '0').slice(0, n);
+const DIFFS = ['petit', 'grand', 'expert'], WORLD_KEYS = () => Object.keys(WORLDS);
+const fossilKeys = () => WORLD_KEYS().flatMap(k => WORLDS[k].map((d, i) => `${k}-${i}`));
+function exportShort() {
+  const p = prog, b = p.bag, f = [];
+  f.push([Math.max(0, [...ORDER, 'final'].indexOf(p.world)), DIFFS.indexOf(p.diff), p.hard].join(''));
+  f.push(p.time.toString(36));
+  WORLD_KEYS().forEach(k => { const w = p.worlds[k]; f.push(w.unlocked.toString(36) + w.eggs.map((e, i) => B64[e * 16 + w.stars[i] * 4 + w.medals[i]]).join('')); });
+  f.push(Object.keys(SKILLS).map(k => p.skills[k].lvl.toString(36)).join(''));
+  f.push(b.n.toString(36));
+  f.push(bitsTo64(fossilKeys().map(k => b.fossils[k] ? 1 : 0).join('')));
+  f.push(bitsTo64(ORDER.flatMap(w => SKINS[w].map(x => b.owned[`${w}:${x.id}`] ? 1 : 0)).join('')));
+  f.push(ORDER.map(w => Math.max(0, ['base', ...SKINS[w].map(x => x.id)].indexOf(b.skin[w]))).join(''));
+  f.push(Object.keys(POWERS).map(k => B64[Math.min(63, b.power[k])]).join(''));
+  f.push(bitsTo64(ORDER.map(w => b.keys[w] ? 1 : 0).join('') + ORDER.map(w => b.maps[w] ? 1 : 0).join('')));
+  f.push(bitsTo64(ACCESSORIES.map(a => b.accOwned[a.id] ? 1 : 0).join('')));
+  f.push(ORDER.map(w => Math.max(0, ['', ...ACCESSORIES.map(a => a.id)].indexOf(b.acc[w] || ''))).join(''));
+  f.push(encodeURIComponent(slots.names[slots.cur] || ''));
+  return SHORT_PREFIX + f.join('.');
+}
+// Relit un code court ; cleanProg vérifie ensuite chaque valeur.
+function decodeShort(c) {
+  const f = c.slice(SHORT_PREFIX.length).split('.'), wk = WORLD_KEYS();
+  if (f.length < 12 + wk.length) return null;   // 2 + un par monde + 10
+  let i = 0; const nx = () => f[i++] || '';
+  const h = nx(), p = { version: SAVE_VERSION, world: [...ORDER, 'final'][+h[0]] || 'rex', diff: DIFFS[+h[1]] || 'petit', hard: +h[2] || 0, time: parseInt(nx(), 36) || 0, worlds: {}, skills: {}, run: null };
+  wk.forEach(k => {
+    const t = nx(), v = [...t.slice(1)].map(ch => Math.max(0, B64.indexOf(ch)));
+    p.worlds[k] = { unlocked: parseInt(t[0], 36) || 1, eggs: v.map(x => x >> 4), stars: v.map(x => (x >> 2) & 3), medals: v.map(x => x & 3) };
+  });
+  const sk = nx(); Object.keys(SKILLS).forEach((k, j) => { p.skills[k] = { lvl: parseInt(sk[j], 36) || 1 }; });
+  const b = p.bag = { n: parseInt(nx(), 36) || 0, fossils: {}, owned: {}, skin: {}, power: {}, keys: {}, maps: {}, accOwned: {}, acc: {} };
+  const fk = fossilKeys(), fb = bitsFrom64(nx(), fk.length); fk.forEach((k, j) => { if (fb[j] === '1') b.fossils[k] = true; });
+  const sks = ORDER.flatMap(w => SKINS[w].map(x => `${w}:${x.id}`)), ob = bitsFrom64(nx(), sks.length); sks.forEach((k, j) => { if (ob[j] === '1') b.owned[k] = true; });
+  const sc = nx(); ORDER.forEach((w, j) => { b.skin[w] = ['base', ...SKINS[w].map(x => x.id)][+sc[j]] || 'base'; });
+  const pw = nx(); Object.keys(POWERS).forEach((k, j) => { b.power[k] = Math.max(0, B64.indexOf(pw[j] || 'A')); });
+  const km = bitsFrom64(nx(), ORDER.length * 2); ORDER.forEach((w, j) => { if (km[j] === '1') b.keys[w] = true; if (km[ORDER.length + j] === '1') b.maps[w] = true; });
+  const ab = bitsFrom64(nx(), ACCESSORIES.length); ACCESSORIES.forEach((a, j) => { if (ab[j] === '1') b.accOwned[a.id] = true; });
+  const ac = nx(); ORDER.forEach((w, j) => { b.acc[w] = ['', ...ACCESSORIES.map(a => a.id)][+ac[j]] || ''; });
+  let name = f.slice(i).join('.'); try { name = decodeURIComponent(name); } catch (e) {}
+  p.name = name;
+  return p;
+}
+// Lit un code de sauvegarde (complet DINO2- ou court DINO3-) : la partie, ou null s'il n'est pas valide.
 function decodeCode(code) {
   const c = String(code || '').replace(/\s+/g, '');
+  if (c.startsWith(SHORT_PREFIX)) { try { return decodeShort(c); } catch (e) { return null; } }
   if (!c.startsWith(CODE_PREFIX)) return null;
   try {
     const bytes = Uint8Array.from(atob(c.slice(CODE_PREFIX.length)), ch => ch.charCodeAt(0));
@@ -3715,8 +3762,8 @@ function importCode(code) {
 // Une partie arrive de la Switch : le QR code ouvre ce jeu avec le code après le # de l'adresse.
 let incoming = null;
 // (la Switch n'a pas d'adresse : globalThis.location peut manquer)
-if (typeof location !== 'undefined' && typeof location.hash === 'string' && location.hash.startsWith('#' + CODE_PREFIX)) {
-  try { incoming = decodeCode(decodeURIComponent(location.hash.slice(1))); } catch (e) {}
+if (typeof location !== 'undefined' && typeof location.hash === 'string' && /^#DINO[23]-/.test(location.hash)) {
+  incoming = decodeCode(location.hash.slice(1));
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
 }
 // Mettre la partie de la Switch dans une place (vide, ou à la place d'une partie, après confirmation)

@@ -60,7 +60,12 @@ await ev(`slotNew(0, 'Lyvio'); prog.bag.n = 42; prog.worlds.rex.eggs[0] = 3; pro
   for (let d = 0; d < 60; d++) prog.stats['2026-0' + (1 + d % 9) + '-' + String(10 + d % 18)] = { add: [5, 3, 2, 6], count: [4, 4, 0, 3] };
   startLevel('rex', 0); autosave(); true`);
 const sizes = await ev(`({ full: exportCode().length, light: exportCode(true).length })`);
-check('code court : bien plus court que le code complet, assez court pour un QR code', sizes.light < 1700 && sizes.light < sizes.full / 2, sizes);
+check('code court (DINO3-) : moins de 200 caractères, bien plus court que le code complet', sizes.light < 200 && sizes.light < sizes.full / 5, sizes);
+// Aller-retour complet : tout ce qui passe revient à l'identique
+const same = await ev(`(() => { const b = prog.bag; b.fossils['rex-0'] = b.fossils['plesio-6'] = b.fossils['final-3'] = true; b.owned['trike:prune'] = true; b.skin.trike = 'prune'; b.power.jump2 = 3; b.power.fin = 2; b.keys.ptero = true; b.maps.rex = true; b.accOwned.couronne = b.accOwned.fleur = true; b.acc.plesio = 'couronne'; prog.world = 'plesio'; prog.diff = 'expert'; prog.hard = 2; prog.time = 98765; prog.worlds.final.unlocked = 3; prog.worlds.ptero.stars[4] = 2; prog.skills.logique.lvl = 10;
+  const back = cleanProg({ ...decodeCode(exportShort()), ...devicePrefs() }), keep = x => JSON.stringify({ world: x.world, diff: x.diff, hard: x.hard, time: x.time, worlds: x.worlds, skills: Object.fromEntries(Object.entries(x.skills).map(([k, v]) => [k, v.lvl])), bag: { ...x.bag, fossils: Object.keys(x.bag.fossils).sort() } });
+  const ref = cleanProg(JSON.parse(JSON.stringify(prog))); return keep(back) === keep(ref) ? true : [keep(back), keep(ref)]; })()`);
+check('code court : œufs, étoiles, médailles, niveaux, sac, couleurs, pouvoirs, clés, accessoires reviennent à l’identique', same === true, same);
 const code = await ev(`exportCode(true)`);
 const dec = await ev(`decodeCode(${JSON.stringify(code)})`);
 check('code court : nom, trésors, œufs, médailles, niveaux ; pas de statistiques ni de partie en cours', dec.name === 'Lyvio' && dec.bag.n === 42 && dec.worlds.rex.eggs[0] === 3 && dec.worlds.rex.medals[0] === 2 && dec.skills.add.lvl === 6 && !dec.stats && dec.run === null, dec);
