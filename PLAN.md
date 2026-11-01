@@ -196,17 +196,33 @@ Le code de la version Switch est maintenant dans son propre dépôt (privé) : h
 
 - [x] 1. Prototype du T-Rex : les 6 endroits, stick ou croix pour marcher, A ou B pour sauter, joystick tactile ; les pierres s'ouvrent seules. Test dans Chrome en imitant nx.js (`switch/test/test-switch.mjs`). Lancé sur la console le 31 octobre 2026, après trois corrections : JIT coupé (`nxjs.ini`, bug nx.js n° 424 ; remplacé à l'étape 2 par le JIT sans Sparkplug), sauvegarde dans un fichier au lieu du localStorage de nx.js (son choix du profil bloquait), et plus de `\p{L}` ni de `toLocale...` (le moteur n'a pas les tables Unicode ; `build.mjs` les refuse). En cas de souci : `switch/nxjs-debug.log` et `switch/dino-journal.txt` sur la carte SD.
 - [x] 2. Menu et choix du dino, à la manette et au doigt : écran titre, les 4 animaux et l'île secrète, les endroits (œufs, étoiles, cadenas, clé dorée), − pour revenir au menu, écran Bravo. Essayé sur la console le 31 octobre 2026. Fluidité : JIT automatique sans Sparkplug (`flags = --no-sparkplug` dans `nxjs.ini`), à lancer en gardant R sur un jeu. Capture d'écran avec ZL + ZR dans `switch/dino-captures/`. Les coins arrondis sont tracés avec `arc` (avec `arcTo`, nx.js dessinait une boucle en trop).
-- [ ] 3. Énigmes dessinées dans le jeu, à la manette et au doigt.
+- [x] 3. Énigmes dessinées dans le jeu, à la manette et au doigt.
   - [x] Énigmes à choix (15 types) : le code des énigmes tourne tel quel, `switch/src/puzzle.js` relit le titre, l'image et les boutons, les dessine (petit lecteur HTML et SVG) et renvoie les choix au jeu. A répondre, X et Y les aides payantes, B retour. Essayé sur la console le 31 octobre 2026.
-  - [ ] Mots à écrire (mot caché, lettres dans l'ordre) et énigmes-jeux (labyrinthe, taquin, mémoire, points, sudoku, puzzle à pièces, miroir) : faits le 31 octobre 2026, à essayer sur la console. Le faux DOM (`switch/src/dom.js`) est devenu un petit DOM : innerHTML construit un arbre d'éléments avec classes, data-*, onclick et querySelectorAll, si bien que le code de ces jeux tourne tel quel. La Switch dessine l'arbre ; la croix va d'une case à la case voisine, A clique, le doigt touche ; dans le labyrinthe, la croix déplace le bébé.
+  - [x] Mots à écrire (mot caché, lettres dans l'ordre) et énigmes-jeux (labyrinthe, taquin, mémoire, points, sudoku, puzzle à pièces, miroir) : faits le 31 octobre 2026, à essayer sur la console. Le faux DOM (`switch/src/dom.js`) est devenu un petit DOM : innerHTML construit un arbre d'éléments avec classes, data-*, onclick et querySelectorAll, si bien que le code de ces jeux tourne tel quel. La Switch dessine l'arbre ; la croix va d'une case à la case voisine, A clique, le doigt touche ; dans le labyrinthe, la croix déplace le bébé.
 - [x] 4. Voix et sons enregistrés. nx.js n'a ni synthèse vocale ni oscillateur : les bruitages sont calculés au démarrage, et la voix est enregistrée à l'avance par Eloise, voix naturelle de Microsoft Edge (les voix de Windows, Hortense, Julie et Paul, étaient trop robotiques). 1266 morceaux en MP3 (phrases entières, morceaux autour des nombres, nombres de 0 à 100), joués à la suite. Voix essayée sur la console le 1er novembre 2026, fusionnée le même jour.
 - [x] 5. Les 4 animaux, sauvegarde, sac et boutique. Le sac s'ouvre avec Y dans le menu (pouvoirs, couleurs de chaque animal avec L / R, fossiles). Icône du menu homebrew : le T-Rex du jeu (`icon.jpg`). Le fichier s'appelle `dino.nro` ; un raccourci sphaira garde l'icône de sa première version (cache de la Switch), d'où un nouveau nom. Essayé sur la console et fusionné le 1er novembre 2026.
-- [ ] 6. Espace parents, avec le clavier de la Switch.
+- [x] 6. Espace parents, avec le clavier de la Switch. X dans le menu, une multiplication à écrire avec le clavier de la console (`navigator.virtualKeyboard` de nx.js), puis 4 pages (L / R) : réglages (niveau, son, tables, remise à zéro des statistiques), calculs et mots, compétences, courbe. Sur la Switch, les calculs des parents restent jusqu'à 100 et leurs mots deviennent des mots à compléter (la voix ne peut pas dire un mot tapé sur la console). Essayé sur la console le 1er novembre 2026.
+- [x] 7. Les parties (étape 10 du jeu web) : écran « Choisis ta partie » après le titre, X pour effacer.
+- [x] 8. Ennemis et difficulté des endroits (étape 11 du jeu web) : L / R dans le menu, médailles sur les endroits.
+
+Fusionné le 1er novembre 2026. Version 1.0.0 publiée : https://github.com/bitoman81/dino-explorateur-switch/releases/tag/v1.0.0 (fichier `dino.nro`).
 
 ### Si la route A ne suffit pas
 Route B avec nx.js, ou Brewser (un moteur web pour Switch construit sur nx.js). Les menus seraient alors redessinés sur le canvas.
 
 Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/TooTallNate/nx.js), documentation libnx du navigateur (switchbrew.github.io/libnx), wiki Switchbrew.
+
+## Étape 10 - Plusieurs parties
+- [x] 3 parties au plus, chacune avec un prénom. L'écran « Choisis ta partie » s'ouvre au lancement (et avec « Changer de partie » dans le menu) : temps de jeu, œufs, trésors, fossiles, animal, dernière date. Nouvelle partie, effacer une partie (avec confirmation).
+- [x] L'ancienne sauvegarde devient la partie 1, sans être effacée. Le son, la voix et les commandes restent ceux de l'appareil.
+- [x] Espace parents : remettre les statistiques de la partie à zéro (œufs, sac et endroits ouverts gardés).
+- Tests : `tests/test-parties.mjs`.
+
+## Étape 11 - Ennemis et difficulté des endroits
+- [x] Un ennemi par animal : vélociraptors (sauter sur leur tête), serpents (foncer dedans), libellules géantes (une graine), poissons (nager vite dedans). Un ennemi battu laisse un fruit ou une perle. Le bouclier protège aussi des ennemis.
+- [x] 3 difficultés pour chaque endroit, choisies dans le menu : Simple (quelques ennemis lents, on est seulement repoussé), Normal (plus d'ennemis, 2 fruits perdus), Compliqué (beaucoup d'ennemis, 5 fruits perdus et retour au dernier œuf).
+- [x] Médailles : bronze, argent, or. Normal s'ouvre pour un endroit après le bronze, Compliqué après l'argent. Un endroit fini avant les médailles compte en Simple.
+- Tests : `tests/test-ennemis.mjs`.
 
 ## Organisation technique
 
@@ -231,4 +247,6 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 6 - Sac, objets utiles et boutique du nid (clé dorée et morceaux de carte avec l'étape 7)
 - [x] Étape 7 - Plus de niveaux, endroits secrets, île secrète et interrupteurs
 - [x] Étape 8 - Statistiques pour les parents : tableau par compétence et courbe du niveau
-- [ ] Étape 9 - Version Nintendo Switch avec Atmosphère (prototype sur la console d'abord)
+- [x] Étape 9 - Version Nintendo Switch avec Atmosphère (version 1.0.0, nx.js)
+- [x] Étape 10 - Plusieurs parties, remise à zéro des statistiques
+- [x] Étape 11 - Ennemis, difficulté des endroits et médailles
