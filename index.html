@@ -31,6 +31,8 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 
 .screen{position:absolute;inset:0;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .screen.dim{background:rgba(16,40,26,.55);align-items:center}
+/* Énigme qui vient de s'ouvrir : on ne peut pas encore toucher (voir PZ_WAIT) */
+.screen.wait{pointer-events:none}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .slot{background:var(--paper);border:4px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:16px;display:flex;flex-direction:column;gap:8px}
 .slot h2{font-size:28px;color:var(--ink);overflow-wrap:anywhere}
@@ -2856,7 +2858,7 @@ const nChoices = k => k <= 3 ? 3 : 4;
 let pzErrs = 0, pzSkill = null, pzStars = 0, pzKey = null, pzId = 0;
 // Énigmes de jeu : les étoiles viennent du nombre de coups (ou des erreurs), calculé par l'énigme.
 function gameDone(errs, win) { pzErrs = errs; solved(win); }
-window.addEventListener('keydown', e => { if (state === 'puzzle' && pzKey && !pzLocked && pzKey(e.code)) e.preventDefault(); });
+window.addEventListener('keydown', e => { if (state === 'puzzle' && pzKey && !pzLocked && !pzWaiting() && pzKey(e.code)) e.preventDefault(); });
 // Un sac de mots par palier : un mot ne revient pas avant que tous les autres soient sortis.
 // Niveaux 1 à 3 : mots courts ; 4 à 6 : jusqu'à 6 lettres ; 7 et plus : tous les mots.
 const wordBags = {};
@@ -3511,7 +3513,15 @@ function varyType(type) {
   const fresh = pool.filter(t => t !== lastType);
   return pick(fresh.length ? fresh : pool);
 }
+/* À l'ouverture d'une énigme, l'enfant appuie souvent encore pour sauter, foncer ou nager : pendant
+   PZ_WAIT millisecondes, l'énigme ne prend ni le doigt ni les touches (sinon une réponse partait
+   au hasard, et la voix du « Oups » coupait le mot de la dictée). */
+const PZ_WAIT = 900;
+let pzWaitUntil = 0, pzWaitTimer = 0;
+const pzWaiting = () => performance.now() < pzWaitUntil;
 function openPuzzle(g) {
+  pzWaitUntil = performance.now() + PZ_WAIT; $('puzzle').classList.add('wait');
+  clearTimeout(pzWaitTimer); pzWaitTimer = setTimeout(() => $('puzzle').classList.remove('wait'), PZ_WAIT);
   state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true; clearKeys();
   $('puzzle').hidden = false;
   let type = g.type;
