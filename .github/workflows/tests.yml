@@ -1,0 +1,25 @@
+# Tests du jeu web à chaque envoi sur GitHub (étape 18 du plan).
+# Les tests pilotent Google Chrome sans fenêtre, déjà installé sur les machines Windows de GitHub.
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  jeu-web:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Chrome est là
+        shell: bash
+        run: |
+          test -f "C:/Program Files/Google/Chrome/Application/chrome.exe" || { echo "Chrome introuvable"; exit 1; }
+          "C:/Program Files/Google/Chrome/Application/chrome.exe" --version || true
+      - name: Tous les tests
+        run: node tests/run-all.mjs index.html
