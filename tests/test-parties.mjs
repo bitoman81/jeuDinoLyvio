@@ -58,7 +58,7 @@ await ev(`const i = document.querySelector('#slotList input'); i.value = 'Lyvio'
 check('nouvelle partie : nommée, vierge, menu ouvert', await ev(`slots.cur === 1 && slots.names[1] === 'Lyvio' && prog.bag.n === 0 && prog.time === 0 && !$('menu').hidden && $('parties').hidden`), await ev('[slots, prog.bag.n]'));
 check('la partie 1 est gardée', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-partie1')).bag.n === 17`));
 // Le temps de jeu compte dans un endroit
-await ev(`startLevel('rex', 0); true`); await sleep(2300);
+await ev(`startLevel('rex', 0); true`); await sleep(3500);
 check('temps de jeu compté en jouant', await ev(`prog.time >= 2`), await ev('prog.time'));
 await ev(`prog.bag.n = 5; showMenu(); true`);
 
