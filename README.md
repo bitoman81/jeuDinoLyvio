@@ -4,6 +4,8 @@ Jeu web pour les enfants d'environ 6 ans : des dinosaures, de l'aventure et des 
 
 **Jouer :** https://bitoman81.github.io/jeuDinoLyvio/
 
+[![Tests](https://github.com/bitoman81/jeuDinoLyvio/actions/workflows/tests.yml/badge.svg)](https://github.com/bitoman81/jeuDinoLyvio/actions/workflows/tests.yml)
+
 ## Les aventures
 
 Chaque animal a sa propre façon de jouer et cherche les œufs de sa famille, gardés par des pierres magiques. Pour ouvrir une pierre, il faut résoudre une énigme.

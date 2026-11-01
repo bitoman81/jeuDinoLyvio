@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const page = pathToFileURL(process.argv[2]).href;
 const port = 9353;
 const prof = mkdtempSync(join(tmpdir(), 'dino-chrome-'));
@@ -16,7 +16,9 @@ const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let tabs;
-for (let k = 0; k < 50; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); break; } catch { await sleep(200); } }
+// Chrome peut mettre longtemps à démarrer (machines de GitHub) : jusqu'à 60 s
+for (let k = 0; k < 300 && !tabs; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(200); } }
+if (!tabs) { console.log('FAIL Chrome ne répond pas'); console.log('1 échec(s)'); chrome.kill(); process.exit(1); }
 const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);
 await new Promise(r => ws.onopen = r);
 let id = 0; const pending = new Map(), errors = [];

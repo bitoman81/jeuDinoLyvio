@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const page = pathToFileURL(process.argv[2]).href;
 const port = 9351;
 const prof = mkdtempSync(join(tmpdir(), 'dino-chrome-'));
@@ -15,7 +15,9 @@ const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let tabs;
-for (let k = 0; k < 50; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); break; } catch { await sleep(200); } }
+// Chrome peut mettre longtemps à démarrer (machines de GitHub) : jusqu'à 60 s
+for (let k = 0; k < 300 && !tabs; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(200); } }
+if (!tabs) { console.log('FAIL Chrome ne répond pas'); console.log('1 échec(s)'); chrome.kill(); process.exit(1); }
 const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);
 await new Promise(r => ws.onopen = r);
 let id = 0; const pending = new Map(), errors = [];
@@ -73,8 +75,10 @@ check('énigme réussie : 2 cœurs, « Encore deux fois »', await ev(`L.bossFoe
 await stomp(); await ev(`closePuzzle(true); true`);
 check('encore une : 1 cœur, « Encore une fois »', await ev(`L.bossFoe.hp === 1 && /une fois/.test(__said.at(-1))`));
 await ev(`(() => { const f = L.bossFoe; f.x = player.x + 200; return true; })()`); await sleep(300); await shot('boss-rex.png');
-await stomp(); const n0 = await ev(`L.items.length`); await ev(`closePuzzle(true); true`);
-check('3e énigme réussie : le gardien s’en va et laisse 5 fruits', await ev(`!!L.bossFoe.gone && L.items.length === ${n0} + 5 && /chemin du nid est libre/.test(__said.at(-1)) && !bossBlocks()`), await ev('[L.bossFoe.gone, L.items.length, __said.at(-1)]'));
+// Fermer l'énigme et vérifier dans le même appel : sinon le jeu peut avancer d'une image et finir l'endroit (le T-Rex est près du nid).
+await stomp();
+const last = await ev(`(() => { const n0 = L.items.length; closePuzzle(true); return { gone: !!L.bossFoe.gone, fruits: L.items.length - n0, said: __said.at(-1), blocks: bossBlocks() }; })()`);
+check('3e énigme réussie : le gardien s’en va et laisse 5 fruits', last.gone && last.fruits === 5 && /chemin du nid est libre/.test(last.said) && !last.blocks, last);
 await ev(`(() => { const p = player; p.x = L.nestX - 10; p.y = GROUND * T - p.h; cooldown = 0; MODES.platform.step(); return true; })()`);
 check('le nid est libre : endroit fini', await ev(`state === 'done'`), await ev('state'));
 // Toucher le gardien de côté : comme un ennemi

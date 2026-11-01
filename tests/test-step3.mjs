@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const page = pathToFileURL(process.argv[2]).href;
 const port = 9333;
 const prof = mkdtempSync(join(tmpdir(), 'dino-chrome-'));
@@ -13,7 +13,9 @@ const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let tabs;
-for (let k = 0; k < 50; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); break; } catch { await sleep(200); } }
+// Chrome peut mettre longtemps à démarrer (machines de GitHub) : jusqu'à 60 s
+for (let k = 0; k < 300 && !tabs; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(200); } }
+if (!tabs) { console.log('FAIL Chrome ne répond pas'); console.log('1 échec(s)'); chrome.kill(); process.exit(1); }
 const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);
 await new Promise(r => ws.onopen = r);
 let id = 0; const pending = new Map(), errors = [];
@@ -67,10 +69,11 @@ await steps(20);
 let x1 = await ev(`player.x`);
 check('T-Rex avance vers la droite', x1 > x0 + 50, { x0, x1 });
 // (au sol : après avoir avancé, il peut être en l'air et ne pas pouvoir sauter)
-await ev(`player.x = 5 * T; player.y = GROUND * T - player.h; player.vy = 0; player.ground = true; player.coy = 8; true`);
-await ptr('pointerdown', 600, 200, 2);
-await steps(1);
-check('moitié droite : le T-Rex saute', await ev(`player.vy < 0`), await ev(`player.vy`));
+// Tout dans le même appel : sinon la vraie boucle du jeu peut jouer une image entre deux (le T-Rex tombe ou retombe).
+const jump = await ev(`(() => { player.x = 5 * T; player.y = GROUND * T - player.h; player.vy = 0; player.ground = true; player.coy = 8;
+  cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: 600, clientY: 200, pointerId: 2, bubbles: true, pointerType: 'touch' }));
+  time += 1 / 60; MODES[L.mode].step(); return player.vy; })()`);
+check('moitié droite : le T-Rex saute', jump < 0, jump);
 await ptr('pointerup', 170, 280, 1);
 check('pouce levé : joystick revient au repos', await ev(`stick.id === null && !$('stick').classList.contains('on') && parseFloat($('stick').style.left) < 120`));
 await steps(60);
