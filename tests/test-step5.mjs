@@ -167,7 +167,7 @@ const st = await ev(`(() => { prog.skills.add.lvl = 3; prog.skills.add.ok = 2; $
 check('statistiques : réussite du premier coup notée avec le nouveau niveau', JSON.stringify(st.a[st.key].add) === '[1,1,0,4]', st);
 check('statistiques : 2e énigme avec 2 erreurs, énigme des parents ignorée', JSON.stringify(st.b) === '[2,1,2,4]' && st.days.length === 1, st);
 await sleep(3200);
-check('statistiques enregistrées et dans le code de sauvegarde', await ev(`save(), JSON.parse(localStorage.getItem('dino-explorateur-v2')).stats[today()].add[0] === 2 && JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(exportCode().slice(6)), c => c.charCodeAt(0)))).stats[today()].add[0] === 2`));
+check('statistiques enregistrées et dans le code de sauvegarde', await ev(`save(), JSON.parse(localStorage.getItem('dino-explorateur-partie1')).stats[today()].add[0] === 2 && JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(exportCode().slice(6)), c => c.charCodeAt(0)))).stats[today()].add[0] === 2`));
 const clean = await ev(`(() => { const st = { 'pas-une-date': { add: [1, 1, 0, 1] }, '2026-10-01': { add: [3, 5, 1, 12], inconnu: [1, 1, 1, 1], count: [1, 'x', 0, 1] } };
   for (let i = 0; i < 450; i++) { const d = new Date(2024, 0, 1 + i); st[d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')] = { add: [1, 0, 1, 2] }; }
   const p = cleanProg({ stats: st }); const days = Object.keys(p.stats);

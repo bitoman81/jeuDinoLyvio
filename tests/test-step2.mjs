@@ -114,7 +114,7 @@ await sleep(300);
 check('étoiles affichées après la réponse', await ev(`pz.choices.querySelectorAll('.pz-stars .star:not(.off)').length === 3`));
 check('message de progrès dit à voix haute', await ev(`window.__said.some(t => t.includes('Tu progresses pour compter'))`), await ev(`window.__said`));
 await sleep(2800);
-let st = await ev(`({ open: L.gates[0].open, stars: L.gates[0].stars, lvl: prog.skills.count.lvl, run: JSON.parse(localStorage.getItem('dino-explorateur-v2')).run.stars, state })`);
+let st = await ev(`({ open: L.gates[0].open, stars: L.gates[0].stars, lvl: prog.skills.count.lvl, run: JSON.parse(localStorage.getItem('dino-explorateur-partie1')).run.stars, state })`);
 check('pierre 1 : ouverte, 3 étoiles, compter passe au niveau 4', st.open && st.stars === 3 && st.lvl === 4 && st.run[0] === 3 && st.state === 'play', st);
 // Pierre 2 : 'first', deux erreurs
 await ev(`openPuzzle(L.gates[1]); true`);
@@ -146,14 +146,14 @@ await ev(`prog.diff = 'grand'; prog.skills.add.lvl = 9; true`);
 await ev(`$('diffGrand').click(); true`);
 check('même niveau recliqué : rien ne change', await ev(`prog.skills.add.lvl === 9`));
 await ev(`$('diffExpert').click(); true`);
-check('Expert : toutes les compétences à 7', await ev(`Object.values(prog.skills).every(s => s.lvl === 7) && JSON.parse(localStorage.getItem('dino-explorateur-v2')).skills.add.lvl === 7`));
+check('Expert : toutes les compétences à 7', await ev(`Object.values(prog.skills).every(s => s.lvl === 7) && JSON.parse(localStorage.getItem('dino-explorateur-partie1')).skills.add.lvl === 7`));
 
 // 6. Espace parents
 await ev(`prog.skills.count.lvl = 1; renderParents(); $('parents').hidden = false; true`);
 let rows = await ev(`[...document.querySelectorAll('#skillList .skill')].map(r => ({ n: r.querySelector('.nm').textContent, v: r.querySelector('b').textContent, minus: r.querySelectorAll('button')[0].disabled }))`);
 check('parents : 11 compétences listées', rows.length === 11 && rows[0].n === 'Compter' && rows[0].v === '1' && rows[0].minus === true, rows);
 await ev(`document.querySelectorAll('#skillList .skill')[0].querySelectorAll('button')[1].click(); true`);
-check('parents : bouton + monte le niveau et enregistre', await ev(`prog.skills.count.lvl === 2 && document.querySelector('#skillList .skill b').textContent === '2' && JSON.parse(localStorage.getItem('dino-explorateur-v2')).skills.count.lvl === 2`));
+check('parents : bouton + monte le niveau et enregistre', await ev(`prog.skills.count.lvl === 2 && document.querySelector('#skillList .skill b').textContent === '2' && JSON.parse(localStorage.getItem('dino-explorateur-partie1')).skills.count.lvl === 2`));
 check('code de sauvegarde contient les compétences', await ev(`JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(exportCode().slice(6)), c => c.charCodeAt(0)))).skills.count.lvl === 2`));
 await ev(`$('parents').hidden = true; true`);
 

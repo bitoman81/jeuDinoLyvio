@@ -115,7 +115,7 @@ check('bouton Vite : nage plus vite', x1 - x0 > swim * 1.3, { swim, dash: x1 - x
 
 // Mode « toucher l'écran »
 await ev(`showMenu(); $('touchTap').click(); true`);
-check('choix enregistré', await ev(`prog.touch === 'tap' && JSON.parse(localStorage.getItem('dino-explorateur-v2')).touch === 'tap'`));
+check('choix enregistré', await ev(`prog.touch === 'tap' && JSON.parse(localStorage.getItem('dino-explorateur-partie1')).touch === 'tap'`));
 await ev(`startLevel('trike', 0); cooldown = 9999; true`);
 check('tricératops en mode toucher : pas de joystick', !(await vis('stick')) && await vis('act'));
 await ptr('pointerdown', 600, 200, 8);

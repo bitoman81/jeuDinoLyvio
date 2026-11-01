@@ -31,7 +31,16 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 
 .screen{position:absolute;inset:0;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .screen.dim{background:rgba(16,40,26,.55);align-items:center}
-#menu{background-color:var(--leaf-deep);background-image:
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.slot{background:var(--paper);border:4px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:16px;display:flex;flex-direction:column;gap:8px}
+.slot h2{font-size:28px;color:var(--ink);overflow-wrap:anywhere}
+.slot.cur{background:#ffe7b8}
+.slot ul{list-style:none;margin:0;padding:0;font:700 17px var(--body);color:#4b5d50;display:flex;flex-direction:column;gap:2px}
+.slot .btn{padding:8px 14px;font-size:22px}
+.slot .ghost{align-self:flex-start}
+.slot input{font:700 20px var(--body);padding:8px 10px;border:4px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);min-width:0}
+.slot.empty{align-items:stretch;justify-content:center;border-style:dashed}
+#menu,#parties{background-color:var(--leaf-deep);background-image:
   radial-gradient(circle at 12% 18%,rgba(10,30,18,.35) 0 60px,transparent 61px),
   radial-gradient(circle at 88% 70%,rgba(10,30,18,.3) 0 90px,transparent 91px)}
 .card{background:var(--paper);border:4px solid var(--ink);border-radius:28px;box-shadow:0 8px 0 var(--ink);padding:20px;width:min(680px,100%);min-width:0;display:flex;flex-direction:column;gap:18px;position:relative;margin:auto 0}
@@ -358,6 +367,7 @@ body,button{touch-action:manipulation}
       <div class="toolbar" style="justify-content:space-between;align-items:center">
         <h1>Dino <span>Explorateur</span></h1>
         <div class="toolbar" style="align-items:center">
+          <button id="partiesBtn" class="parents-btn">Changer de partie</button>
           <button id="parentsBtn" class="parents-btn">Espace parents</button>
           <button id="menuSound" class="round" aria-label="Son"></button>
         </div>
@@ -447,6 +457,14 @@ body,button{touch-action:manipulation}
     </div>
   </div>
 
+  <div id="parties" class="screen" hidden>
+    <div class="sheet">
+      <h1>Dino <span>Explorateur</span></h1>
+      <p class="lead">Choisis ta partie. Chacun peut avoir la sienne, avec son nom : 3 parties au plus.</p>
+      <div id="slotList" class="slots"></div>
+    </div>
+  </div>
+
   <div id="gate" class="screen dim" hidden>
     <form class="card left" id="gateForm">
       <h2>Espace parents</h2>
@@ -495,6 +513,12 @@ body,button{touch-action:manipulation}
       </div>
       <canvas id="curve" role="img"></canvas>
       <div class="legend" id="curveLegend"></div>
+      <h3>Remettre les statistiques à zéro</h3>
+      <p>Efface les progrès et la courbe de cette partie, et remet chaque compétence au départ du niveau choisi. Les œufs, le sac et les endroits ouverts sont gardés.</p>
+      <div class="field">
+        <button class="btn" type="button" id="resetStats">Remettre à zéro</button>
+      </div>
+      <p class="status" id="resetOk" hidden></p>
       <h3>Code de sauvegarde</h3>
       <p>La progression est enregistrée sur cet appareil. Pour la retrouver sur un autre appareil, copiez ce code puis collez-le dans l'espace parents de l'autre appareil. Vos calculs et vos mots ne sont pas dans le code.</p>
       <div class="field">
@@ -867,6 +891,8 @@ function cleanProg(s) {
   });
   if (typeof p.voice !== 'string') p.voice = '';
   if (!isInt(p.savedAt)) p.savedAt = 0;
+  // Temps de jeu en secondes (dans les endroits et les énigmes)
+  p.time = s && isInt(s.time) && s.time >= 0 ? s.time : 0;
   // Le sac : trésors, fossiles trouvés, couleurs achetées et choisies, pouvoirs en réserve.
   const b = s && s.bag && typeof s.bag === 'object' ? s.bag : {};
   p.bag = { n: isInt(b.n) && b.n >= 0 ? b.n : 0, fossils: {}, owned: {}, skin: {}, power: {}, keys: {}, maps: {} };
@@ -878,10 +904,73 @@ function cleanProg(s) {
   Object.keys(POWERS).forEach(k => { const v = b.power && b.power[k]; p.bag.power[k] = isInt(v) ? clamp(v, 0, 99) : 0; });
   return p;
 }
+/* ---------- Les parties : 3 au plus, chacune avec son nom ----------
+   La liste (partie choisie, noms) est dans SLOTS_KEY ; chaque partie dans SLOT_KEY(n).
+   Une ancienne sauvegarde (v2 ou v1) devient la partie 1, sans être effacée.
+   Le son, la voix et les commandes sur téléphone restent ceux de l'appareil. */
+const SLOTS_KEY = 'dino-explorateur-parties', SLOT_MAX = 3, SLOT_KEY = n => `dino-explorateur-partie${n + 1}`;
+let slots = { cur: 0, names: ['', '', ''] };
+try {
+  const s = JSON.parse(localStorage.getItem(SLOTS_KEY));
+  if (s && Array.isArray(s.names)) slots = { cur: isInt(s.cur) ? clamp(s.cur, 0, SLOT_MAX - 1) : 0, names: [0, 1, 2].map(i => typeof s.names[i] === 'string' ? s.names[i].slice(0, 16) : '') };
+  else {
+    const old = localStorage.getItem(KEY) || localStorage.getItem(KEY_V1);
+    if (old) { localStorage.setItem(SLOT_KEY(0), old); slots.names[0] = 'Partie 1'; localStorage.setItem(SLOTS_KEY, JSON.stringify(slots)); }
+  }
+} catch (e) {}
+function writeSlots() { try { localStorage.setItem(SLOTS_KEY, JSON.stringify(slots)); } catch (e) {} }
+function readSlot(n) { try { return JSON.parse(localStorage.getItem(SLOT_KEY(n))); } catch (e) { return null; } }
+const devicePrefs = () => ({ voice: prog.voice, sound: prog.sound, touch: prog.touch });
 let prog;
-try { prog = cleanProg(JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(KEY_V1))); } catch (e) { prog = cleanProg(null); }
+prog = cleanProg(slots.names[slots.cur] ? readSlot(slots.cur) : null);
 applySkins();
-function save() { prog.savedAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
+// Sans nom (première partie jamais nommée), la partie prend le nom « Partie N » à sa première sauvegarde.
+function save() {
+  prog.savedAt = Date.now();
+  if (!slots.names[slots.cur]) { slots.names[slots.cur] = `Partie ${slots.cur + 1}`; writeSlots(); }
+  try { localStorage.setItem(SLOT_KEY(slots.cur), JSON.stringify(prog)); } catch (e) {}
+}
+// Résumé d'une partie pour l'écran des parties : null si la place est libre.
+function slotSummary(n) {
+  if (!slots.names[n]) return null;
+  const p = n === slots.cur ? prog : cleanProg(readSlot(n));
+  let eggs = 0, eggsMax = 0;
+  Object.keys(WORLDS).forEach(k => { eggsMax += WORLDS[k].length * 3; eggs += p.worlds[k].eggs.reduce((a, e) => a + e, 0); });
+  const m = Math.floor(p.time / 60), d = p.savedAt ? new Date(p.savedAt) : null;
+  return {
+    name: slots.names[n], cur: n === slots.cur, eggs, eggsMax, treasures: p.bag.n, fossils: Object.keys(p.bag.fossils).length,
+    animal: p.world === 'final' ? "L'île secrète" : SPECIES[p.world].name,
+    time: m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`,
+    date: d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '',
+  };
+}
+// Jouer une partie existante, en commencer une nouvelle, en effacer une.
+function slotPlay(n) {
+  if (!slots.names[n]) return;
+  if (n !== slots.cur) { save(); slots.cur = n; writeSlots(); prog = cleanProg({ ...readSlot(n), ...devicePrefs() }); applySkins(); }
+}
+function slotNew(n, name) {
+  if (slots.names[slots.cur]) save();
+  slots.cur = n; slots.names[n] = String(name || '').trim().slice(0, 16) || `Partie ${n + 1}`; writeSlots();
+  prog = cleanProg(devicePrefs()); applySkins(); save();
+}
+function slotErase(n) {
+  try { localStorage.removeItem(SLOT_KEY(n)); } catch (e) {}
+  slots.names[n] = '';
+  if (n === slots.cur) {
+    const other = slots.names.findIndex(x => x);
+    if (other >= 0) { slots.cur = other; prog = cleanProg({ ...readSlot(other), ...devicePrefs() }); }
+    else prog = cleanProg(devicePrefs());
+    applySkins();
+  }
+  writeSlots();
+}
+// Remettre à zéro les statistiques de la partie (et le niveau de chaque compétence), sans toucher aux œufs ni au sac.
+function resetStats() {
+  prog.stats = {};
+  Object.values(prog.skills).forEach(sk => { sk.lvl = SKILL_START[prog.diff]; sk.ok = sk.bad = 0; });
+  save();
+}
 
 /* ---------- Son ---------- */
 let actx = null, voice = null;
@@ -2173,8 +2262,12 @@ MODES.swim = {
 let last = performance.now(), acc = 0;
 // Téléphone tenu en portrait : le jeu attend qu'on le tourne.
 const rotateMQ = window.matchMedia ? window.matchMedia('(orientation: portrait) and (pointer: coarse)') : { matches: false };
+let playMs = 0;
 function loop(now) {
-  acc += Math.min(100, now - last); last = now;
+  const step = Math.min(100, now - last);
+  acc += step; last = now;
+  // Temps de jeu : compté dans les endroits et les énigmes, ajouté à la partie chaque seconde.
+  if (L && (state === 'play' || state === 'puzzle')) { playMs += step; if (playMs >= 1000) { prog.time += Math.floor(playMs / 1000); playMs %= 1000; } }
   if (L && state === 'play' && !rotateMQ.matches) {
     while (acc >= 1000 / 60) {
       time += 1 / 60; if (cooldown > 0) cooldown--;
@@ -3172,6 +3265,62 @@ $('gateForm').onsubmit = e => {
 };
 $('gateBack').onclick = () => { $('gate').hidden = true; };
 $('parentsClose').onclick = () => { $('parents').hidden = true; renderMenu(); };
+$('resetStats').onclick = () => {
+  const b = $('resetStats');
+  if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Oui, tout remettre à zéro'; return; }
+  delete b.dataset.sure; b.textContent = 'Remettre à zéro';
+  resetStats(); renderParents();
+  $('resetOk').textContent = 'Statistiques remises à zéro.'; $('resetOk').hidden = false;
+};
+
+/* ---------- L'écran des parties ---------- */
+let slotAsk = -1, slotNaming = -1;   // partie à effacer (on demande confirmation), place libre qu'on nomme
+function showParties() {
+  showMenu(); $('menu').hidden = true; $('parties').hidden = false;
+  slotAsk = slotNaming = -1; renderParties();
+}
+function leaveParties() { $('parties').hidden = true; showMenu(); }
+function renderParties() {
+  const list = $('slotList'); list.innerHTML = '';
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const btn = (cls, text, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
+  for (let n = 0; n < SLOT_MAX; n++) {
+    const sum = slotSummary(n), card = el('div', 'slot');
+    if (sum) {
+      if (sum.cur) card.classList.add('cur');
+      card.appendChild(el('h2', '', sum.name));
+      const ul = el('ul');
+      [`Temps de jeu : ${sum.time}`, `Œufs : ${sum.eggs} sur ${sum.eggsMax}`, `Trésors : ${sum.treasures}`, `Fossiles : ${sum.fossils}`,
+        `Animal : ${sum.animal}`, sum.date ? `Dernière fois : ${sum.date}` : ''].filter(Boolean).forEach(t => ul.appendChild(el('li', '', t)));
+      card.appendChild(ul);
+      if (slotAsk === n) {
+        card.appendChild(el('p', 'err', `Effacer la partie de ${sum.name} ? Tout sera perdu.`));
+        const row = el('div', 'row');
+        row.appendChild(btn('btn', 'Oui, effacer', () => { slotErase(n); slotAsk = -1; renderParties(); }));
+        row.appendChild(btn('btn primary', 'Non', () => { slotAsk = -1; renderParties(); }));
+        card.appendChild(row);
+      } else {
+        card.appendChild(btn('btn primary', 'Jouer', () => { audio(); slotPlay(n); leaveParties(); }));
+        card.appendChild(btn('ghost', 'Effacer cette partie', () => { slotAsk = n; slotNaming = -1; renderParties(); }));
+      }
+    } else if (slotNaming === n) {
+      card.classList.add('empty');
+      card.appendChild(el('h2', '', 'Nouvelle partie'));
+      const f = el('form', 'field'), inp = el('input');
+      inp.maxLength = 16; inp.placeholder = 'Ton prénom'; inp.setAttribute('aria-label', 'Nom de la partie'); inp.autocomplete = 'off';
+      f.appendChild(inp); f.appendChild(el('button', 'btn primary', 'Commencer'));
+      f.onsubmit = e => { e.preventDefault(); audio(); slotNew(n, inp.value); leaveParties(); };
+      card.appendChild(f);
+      card.appendChild(btn('ghost', 'Annuler', () => { slotNaming = -1; renderParties(); }));
+      setTimeout(() => inp.focus && inp.focus(), 0);
+    } else {
+      card.classList.add('empty');
+      card.appendChild(btn('btn', 'Nouvelle partie', () => { slotNaming = n; slotAsk = -1; renderParties(); }));
+    }
+    list.appendChild(card);
+  }
+}
+$('partiesBtn').onclick = () => showParties();
 initStore();
 
 /* ---------- Fin de niveau ---------- */
@@ -3452,7 +3601,7 @@ function startLevel(worldKey, i, run = null) {
 
 resize();
 setTouchUI(touchUI);
-showMenu();
+showParties();
 requestAnimationFrame(loop);
 </script>
 </body>
