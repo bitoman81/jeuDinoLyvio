@@ -66,11 +66,13 @@ for (const w of ['rex', 'trike', 'ptero', 'plesio']) {
     if (L.mode === 'shmup') camX = 900;
     if (L.mode === 'topdown') { outer: for (let c = 0; c < L.cols; c++) for (let r = 0; r < 10; r++) if (L.grid[c][r] === 3) { L.grid[c][r] = 0; L.broken.push([c, r]); break outer; } }
     autosave();
-    return { run: JSON.parse(localStorage.getItem('dino-explorateur-partie1')).run, fruit: fruitCount, px: Math.round(player.x), py: Math.round(player.y), broken: L.broken.slice() };
+    const out = { run: JSON.parse(localStorage.getItem('dino-explorateur-partie1')).run, fruit: fruitCount, px: Math.round(player.x), py: Math.round(player.y), broken: L.broken.slice() };
+    // Menu tout de suite : sinon la boucle du jeu bouge encore le T-Rex ou la caméra, et la page réenregistre en se fermant
+    showMenu();
+    return out;
   })()`);
   const r = before.run;
   check(`${w} : partie enregistrée`, r && r.world === w && r.i === 0 && r.gates.includes(0) && r.taken.includes(0) && r.fruit === before.fruit, r);
-  await ev(`showMenu(); true`);
   check(`${w} : bouton Continuer visible`, await ev(`!$('continueBtn').hidden && $('continueBtn').textContent.includes('Continuer')`));
   await load(); // comme si on fermait la page
   const after = await ev(`(() => { $('continueBtn').click(); return {

@@ -230,7 +230,7 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 ## Étape 12 - Plus de choses à acheter avec les fruits
 - [x] Accessoires, achetés une fois et portés par l'animal de son choix : fleur, casquette, lunettes de soleil, chapeau de pirate, couronne. Visibles dans le menu, dans le jeu (vue de côté) et sur les bébés du nid.
 - [x] Un nouveau pouvoir par animal : double saut (T-Rex), grande charge (tricératops), graine triple (ptérodactyle), super nageoire (plésiosaure). Tests : `tests/test-boutique.mjs`.
-- [ ] Switch : une rangée « accessoires » dans le sac.
+- [x] Switch : une rangée « accessoires » dans le sac.
 
 ## Étape 13 - Musique
 - [x] Une musique douce par animal (et une pour le menu), calculée par le jeu (pas de fichier), avec un bouton pour la couper sans couper la voix. Calculée petit à petit (4 ms par image) pour ne pas saccader. Tests : `tests/test-musique.mjs`.
@@ -277,9 +277,9 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Étape 9 - Version Nintendo Switch avec Atmosphère (version 1.0.0, nx.js)
 - [x] Étape 10 - Plusieurs parties, remise à zéro des statistiques
 - [x] Étape 11 - Ennemis, difficulté des endroits et médailles
-- [ ] Étape 12 - Accessoires et nouveaux pouvoirs
-- [ ] Étape 13 - Musique
-- [ ] Étape 14 - Boss de fin
+- [x] Étape 12 - Accessoires et nouveaux pouvoirs
+- [x] Étape 13 - Musique
+- [x] Étape 14 - Boss de fin
 - [x] Étape 15 - QR code Switch vers téléphone, et Wi-Fi téléphone vers Switch
 - [x] Étape 16 - Dictée avec la vraie voix sur la Switch
 - [x] Étape 17 - Résumé de la semaine
