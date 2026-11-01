@@ -50,7 +50,7 @@ check('v1 reprise : œufs du T-Rex', p.worlds.rex.unlocked === 2 && JSON.stringi
 check('v1 reprise : pas de partie en cours', p.run === null && p.version === 2);
 check('v1 laissée intacte', await ev(`!!localStorage.getItem('dino-explorateur-v1')`));
 await ev(`save(); true`);
-check('v2 écrite', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-v2')).version === 2`));
+check('v2 écrite', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-partie1')).version === 2`));
 
 // 2. Pour chaque animal : pierre ouverte, objet ramassé, position, puis reprise
 for (const w of ['rex', 'trike', 'ptero', 'plesio']) {
@@ -64,7 +64,7 @@ for (const w of ['rex', 'trike', 'ptero', 'plesio']) {
     if (L.mode === 'shmup') camX = 900;
     if (L.mode === 'topdown') { outer: for (let c = 0; c < L.cols; c++) for (let r = 0; r < 10; r++) if (L.grid[c][r] === 3) { L.grid[c][r] = 0; L.broken.push([c, r]); break outer; } }
     autosave();
-    return { run: JSON.parse(localStorage.getItem('dino-explorateur-v2')).run, fruit: fruitCount, px: Math.round(player.x), py: Math.round(player.y), broken: L.broken.slice() };
+    return { run: JSON.parse(localStorage.getItem('dino-explorateur-partie1')).run, fruit: fruitCount, px: Math.round(player.x), py: Math.round(player.y), broken: L.broken.slice() };
   })()`);
   const r = before.run;
   check(`${w} : partie enregistrée`, r && r.world === w && r.i === 0 && r.gates.includes(0) && r.taken.includes(0) && r.fruit === before.fruit, r);
@@ -90,13 +90,13 @@ await ev(`startLevel('plesio', 1); true`);
 await sleep(300);
 await ev(`player.x += 96; lastAutosave = performance.now() - 11000; true`);
 await sleep(400);
-check('sauvegarde toutes les 10 s', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-v2')).run.x === Math.round(player.x)`));
+check('sauvegarde toutes les 10 s', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-partie1')).run.x === Math.round(player.x)`));
 await ev(`player.x += 48; window.dispatchEvent(new Event('pagehide')); true`);
-check('sauvegarde en quittant la page', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-v2')).run.x === Math.round(player.x)`));
+check('sauvegarde en quittant la page', await ev(`JSON.parse(localStorage.getItem('dino-explorateur-partie1')).run.x === Math.round(player.x)`));
 
 // 4. Fin de niveau
 await ev(`levelDone(); true`);
-const done = await ev(`(() => { const s = JSON.parse(localStorage.getItem('dino-explorateur-v2')); return { run: s.run, eggs: s.worlds.plesio.eggs, un: s.worlds.plesio.unlocked }; })()`);
+const done = await ev(`(() => { const s = JSON.parse(localStorage.getItem('dino-explorateur-partie1')); return { run: s.run, eggs: s.worlds.plesio.eggs, un: s.worlds.plesio.unlocked }; })()`);
 check('fin de niveau : partie effacée, œufs et niveau suivant', done.run === null && done.eggs[1] === 3 && done.un === 3, done);
 await ev(`showMenu(); true`);
 check('fin de niveau : plus de bouton Continuer', await ev(`$('continueBtn').hidden`));
@@ -107,12 +107,12 @@ await sleep(200);
 await ev(`currentGate = L.gates[0]; state = 'puzzle'; closePuzzle(true); showMenu(); true`);
 const code = await ev(`exportCode()`);
 check('code : préfixe', code.startsWith('DINO2-'), code.slice(0, 20));
-await wipe(`localStorage.removeItem('dino-explorateur-v2'); localStorage.removeItem('dino-explorateur-v1')`);
+await wipe(`localStorage.clear()`);
 await load();
 check('appareil neuf : rien', await ev(`prog.run === null && prog.worlds.plesio.eggs[1] === 0`));
 check('code invalide refusé', await ev(`importCode('DINO2-pasbon') === false && importCode('bonjour') === false`));
 check('code accepté', await ev(`importCode(${JSON.stringify(code)})`));
-const imp = await ev(`({ run: prog.run, eggs: prog.worlds.plesio.eggs, stored: !!localStorage.getItem('dino-explorateur-v2') })`);
+const imp = await ev(`({ run: prog.run, eggs: prog.worlds.plesio.eggs, stored: !!localStorage.getItem('dino-explorateur-partie1') })`);
 check('code : progression et partie en cours reprises', imp.run && imp.run.world === 'rex' && imp.run.i === 1 && imp.eggs[1] === 3 && imp.stored, imp);
 // Formulaire de l'espace parents
 await ev(`renderParents(); $('loadIn').value = 'nimportequoi'; $('loadForm').requestSubmit(); true`);

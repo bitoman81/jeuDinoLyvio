@@ -13,6 +13,8 @@ node tests/test-step6.mjs index.html   # étape 6 : sac, aide, pouvoirs, fossile
 node tests/test-step7.mjs index.html   # étape 7 : nouveaux endroits, clé dorée, carte, île secrète
 node tests/test-switches.mjs index.html # étape 7 : interrupteurs
 node tests/test-step8.mjs index.html   # étape 8 : statistiques pour les parents
+node tests/test-parties.mjs index.html # étape 10 : les 3 parties, remise à zéro des statistiques
+node tests/test-ennemis.mjs index.html # étape 11 : ennemis, difficulté des endroits, médailles
 ```
 
 Il faut Node 22 ou plus récent (WebSocket intégré) et Google Chrome installé dans `C:/Program Files/Google/Chrome/Application/chrome.exe` (constante `CHROME` en haut de chaque fichier). Chaque fichier affiche `Tous les tests passent` ou la liste des échecs.
