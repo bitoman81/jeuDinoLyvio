@@ -40,6 +40,7 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 .slot .ghost{align-self:flex-start}
 .slot input{font:700 20px var(--body);padding:8px 10px;border:4px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);min-width:0}
 .slot.empty{align-items:stretch;justify-content:center;border-style:dashed}
+.incoming{background:var(--sun);border:4px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);padding:12px 16px;margin:0;font:700 19px var(--body)}
 #menu,#parties{background-color:var(--leaf-deep);background-image:
   radial-gradient(circle at 12% 18%,rgba(10,30,18,.35) 0 60px,transparent 61px),
   radial-gradient(circle at 88% 70%,rgba(10,30,18,.3) 0 90px,transparent 91px)}
@@ -473,6 +474,7 @@ body,button{touch-action:manipulation}
     <div class="sheet">
       <h1>Dino <span>Explorateur</span></h1>
       <p class="lead">Choisis ta partie. Chacun peut avoir la sienne, avec son nom : 3 parties au plus.</p>
+      <p class="incoming" id="incomingText" hidden></p>
       <div id="slotList" class="slots"></div>
     </div>
   </div>
@@ -3684,20 +3686,44 @@ $('wordForm').onsubmit = e => {
 /* Code de sauvegarde : la progression en base64, pour passer d'un appareil à l'autre.
    La voix, le son et les commandes sur téléphone restent ceux de l'appareil. */
 const CODE_PREFIX = 'DINO2-';
-function exportCode() {
+// light : version courte pour le QR code de la Switch (sans les statistiques ni la partie en cours,
+// niveaux des compétences seulement), avec le nom de la partie.
+function exportCode(light = false) {
   const { voice: _v, sound: _s, music: _m, touch: _t, ...data } = prog;
+  if (light) {
+    delete data.stats; delete data.savedAt; data.run = null; data.name = slots.names[slots.cur] || '';
+    data.skills = Object.fromEntries(Object.entries(data.skills).map(([k, v]) => [k, { lvl: v.lvl }]));
+  }
   return CODE_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))));
 }
-function importCode(code) {
-  const c = code.replace(/\s+/g, '');
-  if (!c.startsWith(CODE_PREFIX)) return false;
+// Lit un code de sauvegarde : la partie, ou null s'il n'est pas valide.
+function decodeCode(code) {
+  const c = String(code || '').replace(/\s+/g, '');
+  if (!c.startsWith(CODE_PREFIX)) return null;
   try {
     const bytes = Uint8Array.from(atob(c.slice(CODE_PREFIX.length)), ch => ch.charCodeAt(0));
     const s = JSON.parse(new TextDecoder().decode(bytes));
-    if (!s || typeof s !== 'object' || !s.worlds) return false;
-    prog = cleanProg({ ...s, ...devicePrefs() }); applySkins(); save();
-    return true;
-  } catch (e) { return false; }
+    return s && typeof s === 'object' && s.worlds ? s : null;
+  } catch (e) { return null; }
+}
+function importCode(code) {
+  const s = decodeCode(code);
+  if (!s) return false;
+  prog = cleanProg({ ...s, ...devicePrefs() }); applySkins(); save();
+  return true;
+}
+// Une partie arrive de la Switch : le QR code ouvre ce jeu avec le code après le # de l'adresse.
+let incoming = null;
+// (la Switch n'a pas d'adresse : globalThis.location peut manquer)
+if (typeof location !== 'undefined' && typeof location.hash === 'string' && location.hash.startsWith('#' + CODE_PREFIX)) {
+  try { incoming = decodeCode(decodeURIComponent(location.hash.slice(1))); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+}
+// Mettre la partie de la Switch dans une place (vide, ou à la place d'une partie, après confirmation)
+function slotImport(n, s) {
+  if (slots.names[slots.cur]) save();
+  slots.cur = n; slots.names[n] = String(s.name || '').trim().slice(0, 16) || 'Switch'; writeSlots();
+  prog = cleanProg({ ...s, ...devicePrefs() }); applySkins(); save();
 }
 $('saveCopy').onclick = () => {
   const done = () => { $('loadOk').textContent = 'Code copié.'; $('loadOk').hidden = false; };
@@ -3742,12 +3768,26 @@ function showParties() {
   slotAsk = slotNaming = -1; renderParties();
 }
 function leaveParties() { $('parties').hidden = true; showMenu(); }
+let slotPut = -1;   // place où l'on demande à remplacer une partie par celle de la Switch
 function renderParties() {
   const list = $('slotList'); list.innerHTML = '';
+  $('incomingText').hidden = !incoming;
+  if (incoming) $('incomingText').textContent = `Une partie arrive de la Switch${incoming.name ? ' : ' + incoming.name : ''}. Choisis où la mettre.`;
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const btn = (cls, text, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
   for (let n = 0; n < SLOT_MAX; n++) {
     const sum = slotSummary(n), card = el('div', 'slot');
+    // La partie de la Switch : « Mettre ici » (une place prise demande d'abord)
+    const put = () => { audio(); slotImport(n, incoming); incoming = null; slotPut = -1; leaveParties(); say('La partie de la Switch est arrivée !'); };
+    if (incoming && slotPut === n) {
+      card.appendChild(el('h2', '', sum ? sum.name : 'Place libre'));
+      card.appendChild(el('p', 'err', `Remplacer la partie de ${sum.name} par celle de la Switch ? Elle sera perdue.`));
+      const row = el('div', 'row');
+      row.appendChild(btn('btn', 'Oui, remplacer', put));
+      row.appendChild(btn('btn primary', 'Non', () => { slotPut = -1; renderParties(); }));
+      card.appendChild(row); list.appendChild(card); continue;
+    }
+    if (incoming) card.appendChild(btn('btn primary', 'Mettre ici la partie de la Switch', () => { if (sum) { slotPut = n; renderParties(); } else put(); }));
     if (sum) {
       if (sum.cur) card.classList.add('cur');
       card.appendChild(el('h2', '', sum.name));
