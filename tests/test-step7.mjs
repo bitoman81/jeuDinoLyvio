@@ -163,7 +163,7 @@ await ev(`$('pzBack').click(); true`);
 // 8. Téléphone en paysage, écran large et bas (barre du navigateur) : le ptérodactyle atteint le nid
 await send('Emulation.setDeviceMetricsOverride', { width: 800, height: 300, deviceScaleFactor: 1, mobile: false });
 await sleep(150);
-const nest = await ev(`(() => { openPuzzle = g => { g.open = true; g.anim = 1; eggsRun++; }; setTouchUI(true); startLevel('ptero', 0); resize(); stick.id = 1; let f = 0;
+const nest = await ev(`(() => { openPuzzle = g => { g.open = true; g.anim = 1; eggsRun++; }; setTouchUI(true); startLevel('ptero', 0); if (L.bossFoe) L.bossFoe.gone = 1; resize(); stick.id = 1; let f = 0;
   for (; f < 60 * 400 && state === 'play'; f++) { const g = L.gates.find(q => !q.open), tx = g ? g.x + g.w / 2 : L.nestX + 400, ty = g ? g.y + g.h / 2 : 200, dx = tx - player.x - player.w / 2, dy = ty - player.y - player.h / 2, dl = Math.hypot(dx, dy) || 1; stick.x = dx / dl; stick.y = dy / dl; time += 1 / 60; cooldown = 0; L.oy = MODES.shmup.oy(); MODES.shmup.step(); }
   stick.id = null; setTouchUI(false); return [state, Math.round(viewW)]; })()`);
 check('téléphone 800 x 300 : le ptérodactyle atteint le nid', nest[0] === 'done' && nest[1] > 1200, nest);

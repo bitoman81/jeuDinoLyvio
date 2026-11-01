@@ -1792,7 +1792,7 @@ function stepFoes(p) {
       // Le gardien se montre quand on approche (ptérodactyle : quand tous les œufs sont libérés, au bout du ciel)
       const near = L.mode === 'shmup' ? !L.gates.some(g => !g.open) && camX >= L.nestX + 260 - viewW - 2 : p.x + p.w > f.min - 420;
       if (!near) return;
-      f.on = true; say(BOSS[f.kind].hello);
+      f.on = true; say(BOSS[f.kind].hello[f.big ? 1 : 0]);
       if (L.mode === 'shmup') f.x = camX + viewW + 60;
     }
     if (f.kind === 'bug') {
@@ -1830,7 +1830,7 @@ function drawFoes() {
     const cx = f.x + f.w / 2, cy = f.y + f.h / 2, k = f.s || 1;
     if (f.boss && !f.gone) {
       // Ses cœurs, au-dessus de lui
-      for (let i = 0; i < 3; i++) { c.fillStyle = i < f.hp ? '#e5483b' : 'rgba(255,255,255,.6)'; heart(c, cx + (i - 1) * 22, f.y - 18, 8); c.stroke(); }
+      for (let i = 0; i < f.hpMax; i++) { c.fillStyle = i < f.hp ? '#e5483b' : 'rgba(255,255,255,.6)'; heart(c, cx + (i - (f.hpMax - 1) / 2) * 20, f.y - 18, 8); c.stroke(); }
     }
     if (f.kind === 'raptor') {
       // Vélociraptor vu de côté, il regarde dans le sens de sa marche
@@ -1882,17 +1882,21 @@ function drawFoes() {
 }
 
 /* ---------- Le gardien du nid (boss) ----------
-   À la fin du dernier endroit de chaque animal, un gros ennemi garde le nid. On le touche comme les
-   autres (sauter sur sa tête, foncer, une graine, nager vite) ; chaque fois, une énigme s'ouvre :
-   réussie, il perd un cœur. Après 3 cœurs, il s'en va et le nid est libre. Le toucher autrement
-   fait perdre comme un ennemi (selon la difficulté). */
+   À la fin de chaque endroit, un gros ennemi garde le nid. On le touche comme les autres (sauter sur
+   sa tête, foncer, une graine, nager vite) ; chaque fois, une énigme s'ouvre : réussie, il perd un
+   cœur. Quand il n'a plus de cœur, il s'en va et le nid est libre. Il a 3 cœurs ; le gardien final
+   (dernier endroit de chaque animal, et fin de l'île secrète) en a 6 et il est plus grand.
+   Le toucher autrement fait perdre comme un ennemi (selon la difficulté). */
 const BOSS = {
-  raptor: { hello: 'Le grand vélociraptor garde le nid ! Saute trois fois sur sa tête.' },
-  snake: { hello: 'Le grand serpent garde le nid ! Fonce trois fois dedans.' },
-  bug: { hello: 'La libellule géante garde le nid ! Lance-lui trois graines.' },
-  fish: { hello: 'Le gros poisson garde le nid ! Nage vite trois fois dedans.' },
+  raptor: { hello: ['Le grand vélociraptor garde le nid ! Saute trois fois sur sa tête.', 'Le roi des vélociraptors garde le nid ! Saute six fois sur sa tête.'] },
+  snake: { hello: ['Le grand serpent garde le nid ! Fonce trois fois dedans.', 'Le roi des serpents garde le nid ! Fonce six fois dedans.'] },
+  bug: { hello: ['La libellule géante garde le nid ! Lance-lui trois graines.', 'La reine des libellules garde le nid ! Lance-lui six graines.'] },
+  fish: { hello: ['Le gros poisson garde le nid ! Nage vite trois fois dedans.', 'Le roi des poissons garde le nid ! Nage vite six fois dedans.'] },
 };
-const bossLevel = (wk, i) => ORDER.includes(wk) && i === regularCount(wk) - 1;
+// Ce qu'on dit quand il reste n cœurs au gardien
+const BOSS_LEFT = ['', 'Bravo ! Encore une fois !', 'Bravo ! Encore deux fois !', 'Bravo ! Encore trois fois !', 'Bravo ! Encore quatre fois !', 'Bravo ! Encore cinq fois !'];
+const bossLevel = () => true;
+const bossFinal = (wk, i) => wk === 'final' ? i === WORLDS.final.length - 1 : i === regularCount(wk) - 1;
 const bossBlocks = () => !!(L.bossFoe && !L.bossFoe.gone);
 function heart(c, x, y, r) {
   c.beginPath(); c.moveTo(x, y + r * .9);
@@ -1901,13 +1905,14 @@ function heart(c, x, y, r) {
 }
 function makeBoss(d, hard) {
   const H = HARD[hard], nc = Math.floor(L.nestX / T), mode = L.mode, lastGate = Math.max(...L.gates.map(g => Math.floor(g.x / T)), 0);
-  const b = { boss: true, hp: 3, inv: 0, on: false, s: 2, dir: -1, ph: 0 };
+  const big = bossFinal(L.world, L.i), hp = big ? 6 : 3, k = big ? 2.5 : 2;
+  const b = { boss: true, big, hp, hpMax: hp, inv: 0, on: false, s: k, dir: -1, ph: 0 };
   if (mode === 'platform') {
     // Sur le dernier bout de sol, autour du nid
     let a = nc - 1, e = nc;
     while (a > lastGate + 2 && L.grid[a - 1] && L.grid[a - 1][GROUND] === 1) a--;
     while (e < L.cols - 1 && L.grid[e + 1][GROUND] === 1) e++;
-    return Object.assign(b, { kind: 'raptor', w: 92, h: 80, x: (a + e) / 2 * T, y: GROUND * T - 80, min: a * T, max: (e + 1) * T, sp: 1.5 * H.sp });
+    return Object.assign(b, { kind: 'raptor', w: 46 * k, h: 40 * k, x: (a + e) / 2 * T, y: GROUND * T - 40 * k, min: a * T, max: Math.max((e + 1) * T, a * T + 46 * k + 10), sp: 1.5 * H.sp });
   }
   if (mode === 'topdown') {
     // De haut en bas, dans la colonne libre la plus longue juste avant le nid
@@ -1919,10 +1924,10 @@ function makeBoss(d, hard) {
       }
     }
     const [c, r0, r1] = best || [nc - 3, 1, 9];
-    return Object.assign(b, { kind: 'snake', axis: 'y', w: 84, h: 84, x: c * T + T / 2 - 42, y: r0 * T, min: r0 * T, max: r1 * T, sp: 1.3 * H.sp });
+    return Object.assign(b, { kind: 'snake', axis: 'y', w: 42 * k, h: 42 * k, x: c * T + T / 2 - 21 * k, y: r0 * T, min: r0 * T, max: Math.max(r1 * T, r0 * T + 42 * k + 10), sp: 1.3 * H.sp });
   }
-  if (mode === 'shmup') return Object.assign(b, { kind: 'bug', w: 92, h: 60, x: L.nestX, y0: VIEW_H / 2 - 30, y: VIEW_H / 2 - 30, min: L.nestX });
-  return Object.assign(b, { kind: 'fish', w: 84, h: 48, x: (nc - 5) * T, y: VIEW_H / 2 - 24, y0: VIEW_H / 2 - 24, min: (nc - 9) * T, max: nc * T, sp: 1.6 * H.sp });
+  if (mode === 'shmup') return Object.assign(b, { kind: 'bug', w: 46 * k, h: 30 * k, x: L.nestX, y0: VIEW_H / 2 - 15 * k, y: VIEW_H / 2 - 15 * k, min: L.nestX });
+  return Object.assign(b, { kind: 'fish', w: 42 * k, h: 24 * k, x: (nc - 5) * T, y: VIEW_H / 2 - 12 * k, y0: VIEW_H / 2 - 12 * k, min: (nc - 9) * T, max: nc * T, sp: 1.6 * H.sp });
 }
 // Touché comme il faut : une énigme ; réussie, il perd un cœur (voir closePuzzle).
 function bossHit(f) {
@@ -1934,10 +1939,11 @@ function bossPuzzleDone(f, win) {
   if (!win) return;
   f.hp--;
   for (let i = 0; i < 14; i++) parts.push({ x: f.x + f.w / 2, y: f.y + f.h / 2, vx: (Math.random() - .5) * 8, vy: -Math.random() * 6, life: 40, col: pick(['#ffd23a', '#fff4dc', '#e5483b']), r: 4 });
-  if (f.hp > 0) { say(f.hp === 2 ? 'Bravo ! Encore deux fois !' : 'Bravo ! Encore une fois !'); return; }
+  if (f.hp > 0) { say(BOSS_LEFT[f.hp]); return; }
   // Battu : il s'en va, et laisse 5 fruits (ou perles)
   f.gone = 1; SFX.yay();
-  for (let i = 0; i < 5; i++) L.items.push({ x: f.x + f.w / 2 + (i - 2) * 30, y: f.y + f.h / 2 - 30 - (i % 2) * 24, taken: false, ph: i });
+  const gift = f.big ? 10 : 5;
+  for (let i = 0; i < gift; i++) L.items.push({ x: f.x + f.w / 2 + (i - (gift - 1) / 2) * 26, y: f.y + f.h / 2 - 30 - (i % 2) * 24, taken: false, ph: i });
   say('Bravo ! Le gardien s’en va. Le chemin du nid est libre !');
 }
 // Le nid est gardé : on ne peut pas le rejoindre avant d'avoir battu le gardien.

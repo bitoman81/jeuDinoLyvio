@@ -49,17 +49,18 @@ await wipe(`localStorage.clear()`);
 await load();
 await ev(`slotNew(0, 'Test'); leaveParties(); window.__said = []; say = t => __said.push(t); ORDER.forEach(w => prog.worlds[w].unlocked = 7); true`);
 
-// 1. Un gardien seulement au dernier endroit de chaque animal
+// 1. Un gardien à la fin de chaque endroit : 3 cœurs, 6 au dernier endroit de chaque animal et à la fin de l'île secrète
 const KIND = { rex: 'raptor', trike: 'snake', ptero: 'bug', plesio: 'fish' };
+const hearts = await ev(`(() => { const out = {}; for (const w in WORLDS) out[w] = WORLDS[w].map((d, i) => { startLevel(w, i); return L.bossFoe ? L.bossFoe.kind + L.bossFoe.hp : '-'; }); return out; })()`);
 for (const [w, kind] of Object.entries(KIND)) {
-  const r = await ev(`(() => { const last = regularCount('${w}') - 1; startLevel('${w}', last - 1); const before = !!L.bossFoe; startLevel('${w}', last);
-    return { before, kind: L.bossFoe && L.bossFoe.kind, hp: L.bossFoe && L.bossFoe.hp, inFoes: L.foes.includes(L.bossFoe), w: L.bossFoe && L.bossFoe.w }; })()`);
-  check(`${w} : un gardien (${kind}) au dernier endroit seulement, 3 cœurs, deux fois plus grand`, !r.before && r.kind === kind && r.hp === 3 && r.inFoes && r.w > 80, r);
+  const want = WORLDS_N => Array.from({ length: 7 }, (_, i) => kind + (i === 5 ? 6 : 3)).join();
+  check(`${w} : un gardien (${kind}) à chaque endroit, 6 cœurs au dernier (endroit secret compris : 3)`, hearts[w].join() === want(), hearts[w]);
 }
-check('pas de gardien à l’île secrète ni dans les endroits secrets', await ev(`startLevel('final', 3); const a = !L.bossFoe; startLevel('rex', 6); a && !L.bossFoe`));
+check('île secrète : un gardien à chaque endroit, 6 cœurs au dernier', hearts.final.slice(0, -1).every(h => h.endsWith('3')) && hearts.final.at(-1).endsWith('6'), hearts.final);
+check('gardien final plus grand', await ev(`startLevel('rex', 5); const a = L.bossFoe.w; startLevel('rex', 0); a > L.bossFoe.w`));
 
 // 2. T-Rex : le nid est gardé ; 3 sauts sur la tête, 3 énigmes ; une énigme ratée ne compte pas
-await ev(`startLevel('rex', regularCount('rex') - 1); L.gates.forEach(g => { g.open = true; }); eggsRun = 3; true`);
+await ev(`startLevel('rex', 0); L.gates.forEach(g => { g.open = true; }); eggsRun = 3; true`);
 const guard = await ev(`(() => { const p = player; p.x = L.nestX - 10; p.y = GROUND * T - p.h; p.vy = 0; cooldown = 0; MODES.platform.step(); return { state, x: Math.round(p.x + p.w), nest: L.nestX, said: __said.at(-1) }; })()`);
 check('nid gardé : on ne peut pas l’atteindre, la voix le dit', guard.state === 'play' && guard.x <= guard.nest && /gardé/.test(guard.said), guard);
 const stomp = js => ev(`(() => { const f = L.bossFoe, p = player; f.on = true; f.inv = 0; f.sp = 0; p.x = f.x + 20; p.y = f.y - p.h - 2; p.vy = 6; p.ground = false; stepFoes(p); p.y += 6; stepFoes(p); return { state, boss: !!(currentGate && currentGate.boss), vy: p.vy }; })()`);
@@ -77,12 +78,19 @@ check('3e énigme réussie : le gardien s’en va et laisse 5 fruits', await ev(
 await ev(`(() => { const p = player; p.x = L.nestX - 10; p.y = GROUND * T - p.h; cooldown = 0; MODES.platform.step(); return true; })()`);
 check('le nid est libre : endroit fini', await ev(`state === 'done'`), await ev('state'));
 // Toucher le gardien de côté : comme un ennemi
-await ev(`prog.hard = 0; startLevel('rex', regularCount('rex') - 1); true`);
+// Le gardien final : 6 cœurs, « Encore cinq fois », 10 fruits
+await ev(`startLevel('rex', 5); true`);
+check('gardien final : il se présente quand on approche', await ev(`(() => { const f = L.bossFoe; player.x = f.min - 100; stepFoes(player); return f.on && /roi des vélociraptors/.test(__said.at(-1)); })()`), await ev('__said.at(-1)'));
+await stomp(); await ev(`closePuzzle(true); true`);
+check('gardien final : 5 cœurs restants, « Encore cinq fois »', await ev(`L.bossFoe.hp === 5 && /cinq fois/.test(__said.slice(-3).join())`), await ev('[L.bossFoe.hp, __said.slice(-2)]'));
+await ev(`L.bossFoe.hp = 1; true`); await stomp(); const n1 = await ev(`L.items.length`); await ev(`closePuzzle(true); true`);
+check('gardien final battu : 10 fruits', await ev(`!!L.bossFoe.gone && L.items.length === ${n1} + 10`));
+await ev(`prog.hard = 0; startLevel('rex', 0); true`);
 check('toucher le gardien de côté : repoussé', await ev(`(() => { const f = L.bossFoe, p = player; f.on = true; p.hurt = 0; p.x = f.x + 10; p.y = f.y + 30; p.vy = 0; stepFoes(p); return p.hurt > 0 && state === 'play'; })()`));
 
 // 3. Tricératops (foncer), plésiosaure (nager vite) : une énigme à chaque coup
 for (const [w, mode] of [['trike', 'topdown'], ['plesio', 'swim']]) {
-  await ev(`startLevel('${w}', regularCount('${w}') - 1); true`);
+  await ev(`startLevel('${w}', 1); true`);
   const r = await ev(`(() => { const f = L.bossFoe, p = player; f.on = true; f.inv = 0; p.dash = 10; p.x = f.x + 10; p.y = f.y + 10; stepFoes(p); return { state, boss: !!(currentGate && currentGate.boss) }; })()`);
   check(`${w} : foncer ou nager vite dans le gardien ouvre une énigme`, r.state === 'puzzle' && r.boss, r);
   await ev(`closePuzzle(true); true`);
@@ -90,7 +98,7 @@ for (const [w, mode] of [['trike', 'topdown'], ['plesio', 'swim']]) {
   await ev(`(() => { const f = L.bossFoe; player.x = f.x - 260; player.y = f.y; f.inv = 0; return true; })()`); await sleep(300); await shot(`boss-${w}.png`);
 }
 // Ptérodactyle : le gardien vient quand tous les œufs sont libérés, au bout du ciel ; une graine le touche
-await ev(`startLevel('ptero', regularCount('ptero') - 1); true`);
+await ev(`startLevel('ptero', 1); true`);
 check('ptérodactyle : pas de gardien avant la fin du ciel', await ev(`stepFoes(player); !L.bossFoe.on`));
 await ev(`L.gates.forEach(g => { g.open = true; }); camX = L.nestX + 260 - viewW; stepFoes(player); true`);
 check('ptérodactyle : au bout du ciel, la libellule géante arrive', await ev(`L.bossFoe.on && /libellule géante/.test(__said.at(-1))`), await ev('[L.bossFoe.on, __said.at(-1)]'));
