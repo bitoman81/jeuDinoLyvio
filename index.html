@@ -3056,9 +3056,12 @@ function solved(extra = '') {
   say((extra ? extra + ' ' : '') + pick(BRAVO) + (up ? ' ' + up : ''));
   setTimeout(() => closePuzzle(true), up ? 2800 : 1600);
 }
+const OOPS = ['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !'];
+// Énigmes de mots : après une erreur, on redit le mot (les images ne suffisent pas toujours à un petit).
+const sayWord = w => ` Le mot ${w.toLowerCase()}.`;
 function oops(btn, errs, hintFn, msg) {
   pzErrs++; SFX.no(); btn.classList.add('bad'); btn.disabled = true;
-  say(msg || pick(['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !']));
+  say(msg || pick(OOPS));
   if (hintFn) hintFn(errs);
 }
 /* Aide payée avec les trésors du sac : enlever une mauvaise réponse (2 étoiles au plus),
@@ -3108,7 +3111,7 @@ function choicePuzzle(o) {
     b.onclick = () => {
       if (pzLocked || b.disabled) return;
       if (ch.ok) { b.classList.add('good'); solved(o.win); }
-      else { errs++; oops(b, errs, n => { if (n >= 2) good.forEach(g => g.classList.add('hint')); }); renderHelp(); }
+      else { errs++; oops(b, errs, n => { if (n >= 2) good.forEach(g => g.classList.add('hint')); }, o.again ? pick(OOPS) + o.again : undefined); renderHelp(); }
     };
     pz.choices.appendChild(b); btns.push(b);
   });
@@ -3197,7 +3200,7 @@ const PUZZLES = {
     choicePuzzle({
       title: 'Par quelle lettre ça commence ?', say: `Par quelle lettre commence le mot ${w.toLowerCase()} ?`,
       visual: pic(w),
-      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `${w.toLowerCase()} commence par ${letterName(l)} !`,
+      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `${w.toLowerCase()} commence par ${letterName(l)} !`, again: sayWord(w),
     });
   },
   missing(w = pickWord(lv('lettres'))) {
@@ -3205,7 +3208,7 @@ const PUZZLES = {
     choicePuzzle({
       title: 'Quelle lettre manque ?', say: `Quelle lettre manque dans le mot ${w.toLowerCase()} ?`,
       visual: pic(w) + `<div class="word">${[...w].map((ch, i) => i === idx ? '<span class="gap">?</span>' : `<span>${ch}</span>`).join('')}</div>`,
-      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `Le mot ${w.toLowerCase()} !`,
+      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `Le mot ${w.toLowerCase()} !`, again: sayWord(w),
     });
   },
   hangman(w = pickWord()) {
@@ -3224,7 +3227,7 @@ const PUZZLES = {
       letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
       b.classList.remove('hint'); b.classList.add('good'); b.disabled = true; SFX.key(); draw();
       if (found.every(Boolean)) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
-      say(given ? `Je te donne la lettre ${letterName(l)}.` : letterName(l));
+      say(given ? `Je te donne la lettre ${letterName(l)}.` + sayWord(w) : letterName(l));
       if (pzHelp.hinted) glow();
       renderHelp();
     };
@@ -3236,14 +3239,15 @@ const PUZZLES = {
         if (letters.includes(l)) take(l);
         else {
           errs++; miss++;
-          oops(b, errs, null, miss >= FREE_LETTER ? ' ' : null);
+          oops(b, errs, null, miss >= FREE_LETTER ? ' ' : pick(OOPS) + sayWord(w));
           if (miss >= FREE_LETTER) take(next(), true);
         }
       };
       pz.choices.appendChild(b);
     });
     renderHelp();
-    currentSay = ICON[w] ? "Trouve les lettres du mot caché. Regarde bien l'image !" : `Écris le mot ${w.toLowerCase()}.`; say(currentSay);
+    // Le mot est toujours dit : l'image aide, mais ne suffit pas toujours.
+    currentSay = `Écris le mot ${w.toLowerCase()}.` + (ICON[w] ? " Regarde bien l'image !" : ''); say(currentSay);
   },
   order(w = pickWord()) {
     const letters = [...w];
@@ -3259,7 +3263,7 @@ const PUZZLES = {
     const take = (b, given) => {
       slots[pos] = letters[pos]; pos++; miss = 0; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
       if (pos === letters.length) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
-      if (given) say(`Je te donne la lettre ${letterName(letters[pos - 1])}.`);
+      if (given) say(`Je te donne la lettre ${letterName(letters[pos - 1])}.` + sayWord(w));
       if (pzHelp.hinted) glow();
       renderHelp();
     };
@@ -3272,7 +3276,7 @@ const PUZZLES = {
         else {
           miss++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
           setTimeout(() => b.classList.remove('bad'), 450);
-          if (miss >= FREE_LETTER) take(nextBtn(), true); else say('Essaie une autre lettre.');
+          if (miss >= FREE_LETTER) take(nextBtn(), true); else say('Essaie une autre lettre.' + sayWord(w));
         }
       };
       pz.choices.appendChild(b);

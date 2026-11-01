@@ -66,6 +66,8 @@ check('bouton du joystick suit le pouce', await ev(`$('stickKnob').style.transfo
 await steps(20);
 let x1 = await ev(`player.x`);
 check('T-Rex avance vers la droite', x1 > x0 + 50, { x0, x1 });
+// (au sol : après avoir avancé, il peut être en l'air et ne pas pouvoir sauter)
+await ev(`player.x = 5 * T; player.y = GROUND * T - player.h; player.vy = 0; player.ground = true; player.coy = 8; true`);
 await ptr('pointerdown', 600, 200, 2);
 await steps(1);
 check('moitié droite : le T-Rex saute', await ev(`player.vy < 0`), await ev(`player.vy`));
