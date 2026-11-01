@@ -1224,17 +1224,37 @@ function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.f
    l'écran (R) pour rester net, et refait si l'écran change de taille. */
 const LAYER_COLS = 8, LAYER_M = 48;
 function newLayer(w, h) {
-  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
-  const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+  let c;
+  if (typeof OffscreenCanvas !== 'undefined') c = new OffscreenCanvas(w, h);
+  else { c = document.createElement('canvas'); c.width = w; c.height = h; }
+  c.layerW = w; c.layerH = h;
+  return c;
+}
+/* Les morceaux ne sont pas jetés : ceux qui sortent de l'écran, et ceux de l'endroit qu'on quitte,
+   attendent dans LAYER_POOL pour resservir (effacés). Sur la Switch, un morceau occupe environ 2 Mo
+   de mémoire native que le moteur ne libère pas vite : en recréer à chaque endroit la remplissait. */
+const LAYER_POOL = [], LAYER_POOL_MAX = 16;
+function layerFree(c) { if (c && LAYER_POOL.length < LAYER_POOL_MAX && !LAYER_POOL.includes(c)) LAYER_POOL.push(c); }
+function layerTake(w, h) {
+  const i = LAYER_POOL.findIndex(c => c.layerW === w && c.layerH === h);
+  if (i < 0) return newLayer(w, h);
+  const c = LAYER_POOL.splice(i, 1)[0], g = c.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+  return c;
+}
+// Rend tous les morceaux de l'endroit en cours (on change d'endroit, ou la taille de l'écran change).
+function layerRelease() {
+  if (L && L.layers) for (const n in L.layers) L.layers[n].forEach(layerFree);
+  if (L) L.layers = null;
 }
 function layerGet(name, k, paint) {
   const R = dpr * scale;
-  if (!L.layers || L.layerR !== R) { L.layers = {}; L.layerR = R; }
+  if (!L.layers || L.layerR !== R) { layerRelease(); L.layers = {}; L.layerR = R; }
   const Ls = L.layers[name] || (L.layers[name] = []);
   if (Ls[k]) return Ls[k];
   const W = LAYER_COLS * T, H = VIEW_H + 2 * LAYER_M, x0 = k * W;
   const a = Math.max(0, k * LAYER_COLS - 1), b = Math.min(L.cols - 1, (k + 1) * LAYER_COLS);
-  const cnv = newLayer(Math.ceil(W * R), Math.ceil(H * R)), g = cnv.getContext('2d');
+  const cnv = layerTake(Math.ceil(W * R), Math.ceil(H * R)), g = cnv.getContext('2d');
   g.setTransform(R, 0, 0, R, -x0 * R, LAYER_M * R);
   paint(g, a, b);
   return (Ls[k] = cnv);
@@ -1250,6 +1270,9 @@ function layerDraw(name, c0, c1, cx, oy, paint) {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       try { for (let k = k0; k <= k1; k++) ctx.drawImage(L.layers[name][k], Math.round((k * LAYER_COLS * T - cx) * R), y); }
       finally { ctx.restore(); }
+      // Les morceaux loin de l'écran retournent dans la réserve.
+      const Ls = L.layers[name];
+      Ls.forEach((c, k) => { if (c && (k < k0 - 1 || k > k1 + 1)) { layerFree(c); delete Ls[k]; } });
       return;
     } catch (e) { L.noLayers = true; L.layers = null; }
   }
@@ -1263,6 +1286,7 @@ function sprite(key, w, h, paint) {
   const R = dpr * scale, id = key + '@' + R;
   let c = SPRITES.get(id);
   if (c === undefined) {
+    if (SPRITES.size >= 40) SPRITES.delete(SPRITES.keys().next().value);
     try { c = newLayer(Math.ceil(w * R), Math.ceil(h * R)); const g = c.getContext('2d'); g.setTransform(R, 0, 0, R, 0, 0); paint(g); }
     catch (e) { c = null; }
     SPRITES.set(id, c);
@@ -1273,7 +1297,7 @@ function sprite(key, w, h, paint) {
 function layerDirty(c) {
   if (!L || !L.layers) return;
   const k = Math.floor(c / LAYER_COLS);
-  for (const name in L.layers) for (let q = k - 1; q <= k + 1; q++) delete L.layers[name][q];
+  for (const name in L.layers) for (let q = k - 1; q <= k + 1; q++) { layerFree(L.layers[name][q]); delete L.layers[name][q]; }
 }
 // Rectangle aux coins arrondis, avec arc() (arcTo dessine une boucle en trop sur la Switch).
 function rr(c, x, y, w, h, r) {
@@ -1286,11 +1310,28 @@ function rr(c, x, y, w, h, r) {
   c.closePath();
 }
 const INK = 'rgba(30,24,14,.9)';
-function grad(c, top, bot, pal) {
-  const g = c.createLinearGradient(0, top, 0, bot);
-  g.addColorStop(0, pal.dark); g.addColorStop(.45, pal.body); g.addColorStop(1, pal.belly);
+/* Dégradés gardés, par contexte de dessin et par clé : sur la Switch, chaque dégradé créé occupe de la
+   mémoire native que le moteur JavaScript ne voit pas. En créer des dizaines à chaque image (corps des
+   dinos, ciel, eau) remplissait la mémoire : saccades de plus en plus fortes et son qui crépite. */
+const GRADS = new WeakMap();
+function gradCache(c, key, make) {
+  let m = GRADS.get(c);
+  if (!m) GRADS.set(c, m = new Map());
+  let g = m.get(key);
+  if (!g) { if (m.size > 300) m.clear(); g = make(); m.set(key, g); }
   return g;
 }
+function grad(c, top, bot, pal) {
+  return gradCache(c, `l${top},${bot},${pal.dark},${pal.body},${pal.belly}`, () => {
+    const g = c.createLinearGradient(0, top, 0, bot);
+    g.addColorStop(0, pal.dark); g.addColorStop(.45, pal.body); g.addColorStop(1, pal.belly);
+    return g;
+  });
+}
+// Dégradé vertical de tout l'écran (ciel, eau)
+const screenGrad = (top, bot) => gradCache(ctx, `s${viewH},${top},${bot}`, () => {
+  const g = ctx.createLinearGradient(0, 0, 0, viewH); g.addColorStop(0, top); g.addColorStop(1, bot); return g;
+});
 // Contour puis remplissage : les sous-chemins se fondent en une seule silhouette.
 function shape(c, build, fill, lw = 3) { build(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke(); c.fillStyle = fill; c.fill(); }
 function leg(c, hx, hy, len, w, ang, col) {
@@ -1443,8 +1484,11 @@ function drawTrikeTop(c, x, y, ang, t, moving, p, s = 1) {
   const w = moving ? Math.sin(t * 12) * 4 : 0;
   [[10, -12, w], [10, 12, -w], [-10, -13, -w], [-10, 13, w]].forEach(([lx, ly, o]) => shape(c, () => { c.beginPath(); c.ellipse(lx + o, ly, 5.5, 4.5, 0, 0, Math.PI * 2); }, p.dark, 2));
   shape(c, () => { c.beginPath(); c.moveTo(-14, -6); c.quadraticCurveTo(-28, -2 + w * .5, -35, w * .6); c.quadraticCurveTo(-28, 2 + w * .5, -14, 6); c.closePath(); }, p.body, 2.5);
-  const g = c.createRadialGradient(-3, -3, 2, -2, 0, 20);
-  g.addColorStop(0, p.belly); g.addColorStop(.5, p.body); g.addColorStop(1, p.dark);
+  const g = gradCache(c, `r${p.belly},${p.body},${p.dark}`, () => {
+    const r = c.createRadialGradient(-3, -3, 2, -2, 0, 20);
+    r.addColorStop(0, p.belly); r.addColorStop(.5, p.body); r.addColorStop(1, p.dark);
+    return r;
+  });
   shape(c, () => { c.beginPath(); c.ellipse(-2, 0, 19, 13, 0, 0, Math.PI * 2); }, g);
   marks(c, 'rgba(60,45,25,.5)', [[-13, -3, -13, 3], [-6, -4, -6, 4], [1, -3, 1, 3]]);
   shape(c, () => { c.beginPath(); c.ellipse(13, 0, 7, 16, 0, 0, Math.PI * 2); }, p.frill);
@@ -2230,9 +2274,7 @@ function drawMountains(d, base, f) {
 }
 function drawSkyScene(d, base) {
   setView();
-  const g = ctx.createLinearGradient(0, 0, 0, viewH);
-  g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+  ctx.fillStyle = screenGrad(d.sky[0], d.sky[1]); ctx.fillRect(0, 0, viewW, viewH);
   const top = base - GROUND * T;
   if (d.night) {
     ctx.fillStyle = '#fff8d6';
@@ -2516,9 +2558,7 @@ MODES.shmup = {
   render() {
     const d = L.d, oy = L.oy;
     setView();
-    const g = ctx.createLinearGradient(0, 0, 0, viewH);
-    g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+    ctx.fillStyle = screenGrad(d.sky[0], d.sky[1]); ctx.fillRect(0, 0, viewW, viewH);
     if (!d.storm) { ctx.fillStyle = d.sunset ? 'rgba(255,150,80,.95)' : 'rgba(255,220,120,.9)'; circle(ctx, viewW - 90, oy + (d.sunset ? 300 : 70), d.sunset ? 50 : 34); }
     if (d.rainbow) ['#e5483b', '#ff8a2a', '#f5c518', '#3fa34d', '#2f7fe0', '#8a5ad8'].forEach((c, k) => {
       ctx.strokeStyle = c; ctx.globalAlpha = .45; ctx.lineWidth = 14;
@@ -2586,7 +2626,7 @@ MODES.shmup = {
     const pulse = .5 + .5 * Math.sin(time * 3 + g.k);
     ctx.fillStyle = `rgba(57,201,168,${.2 + pulse * .2})`; circle(ctx, 0, 0, 48);
     ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(28, 0); ctx.lineTo(0, 40); ctx.lineTo(-28, 0); ctx.closePath();
-    const gg = ctx.createLinearGradient(-28, -40, 28, 40); gg.addColorStop(0, '#b9a8ff'); gg.addColorStop(1, '#5a4c9a');
+    const gg = gradCache(ctx, 'cristal', () => { const x = ctx.createLinearGradient(-28, -40, 28, 40); x.addColorStop(0, '#b9a8ff'); x.addColorStop(1, '#5a4c9a'); return x; });
     ctx.fillStyle = gg; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.ellipse(0, 2, 9, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.moveTo(-6, -30); ctx.lineTo(-18, -4); ctx.lineTo(-12, -4); ctx.closePath(); ctx.fill();
@@ -2681,9 +2721,7 @@ MODES.swim = {
   render() {
     const d = L.d, oy = L.oy;
     setView();
-    const g = ctx.createLinearGradient(0, 0, 0, viewH);
-    g.addColorStop(0, d.water[0]); g.addColorStop(1, d.water[1]);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+    ctx.fillStyle = screenGrad(d.water[0], d.water[1]); ctx.fillRect(0, 0, viewW, viewH);
     if (!d.cave) {
       ctx.fillStyle = 'rgba(255,255,255,.07)';
       const sp = 180, s = Math.floor(camX * .3 / sp) - 1;
@@ -2737,9 +2775,10 @@ MODES.swim = {
     ctx.restore();
     if (d.deep) {
       // Grands fonds : il fait noir, sauf autour du plésiosaure
-      const px = p.x + p.w / 2 - Math.round(camX), py = p.y + p.h / 2 + oy, gl = ctx.createRadialGradient(px, py, 70, px, py, 320);
-      gl.addColorStop(0, 'rgba(2,8,20,0)'); gl.addColorStop(1, 'rgba(2,8,20,.6)');
-      ctx.fillStyle = gl; ctx.fillRect(0, 0, viewW, viewH);
+      // (un seul dégradé, centré en 0, 0 : on le déplace avec translate)
+      const px = p.x + p.w / 2 - Math.round(camX), py = p.y + p.h / 2 + oy;
+      ctx.fillStyle = gradCache(ctx, 'fonds', () => { const gl = ctx.createRadialGradient(0, 0, 70, 0, 0, 320); gl.addColorStop(0, 'rgba(2,8,20,0)'); gl.addColorStop(1, 'rgba(2,8,20,.6)'); return gl; });
+      ctx.save(); ctx.translate(px, py); ctx.fillRect(-px, -py, viewW, viewH); ctx.restore();
     }
   },
   current(k) {
@@ -4256,6 +4295,7 @@ function restoreRun(r) {
 }
 let hintTimer = 0;
 function startLevel(worldKey, i, run = null) {
+  layerRelease();
   const sp = levelSp(worldKey, i), d = WORLDS[worldKey][i];
   L = { world: worldKey, sp, mode: sp.mode, i, d, gates: [], items: [], broken: [], oy: 0 };
   parts = []; fruitCount = 0; eggsRun = 0; camX = 0; time = 0; cooldown = run ? 90 : 30;
