@@ -228,8 +228,8 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dépôt dino-explorateur-switch), sur sa propre branche.
 
 ## Étape 12 - Plus de choses à acheter avec les fruits
-- [ ] Accessoires, achetés une fois et portés par l'animal de son choix : fleur, casquette, lunettes de soleil, chapeau de pirate, couronne. Visibles dans le menu, dans le jeu (vue de côté) et sur les bébés du nid.
-- [ ] Un nouveau pouvoir par animal : double saut (T-Rex), grande charge (tricératops), graine triple (ptérodactyle), bulle protectrice (plésiosaure).
+- [x] Accessoires, achetés une fois et portés par l'animal de son choix : fleur, casquette, lunettes de soleil, chapeau de pirate, couronne. Visibles dans le menu, dans le jeu (vue de côté) et sur les bébés du nid.
+- [x] Un nouveau pouvoir par animal : double saut (T-Rex), grande charge (tricératops), graine triple (ptérodactyle), super nageoire (plésiosaure). Tests : `tests/test-boutique.mjs`.
 - [ ] Switch : une rangée « accessoires » dans le sac.
 
 ## Étape 13 - Musique
