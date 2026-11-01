@@ -2284,8 +2284,8 @@ MODES.topdown = {
     const k0 = Math.floor(c0 / LAYER_COLS), k1 = Math.floor(c1 / LAYER_COLS);
     let lay = !L.noLayers;
     if (lay) try { for (let k = k0; k <= k1; k++) this.layer(k); } catch (e) { L.noLayers = true; L.layers = null; lay = false; }
-    if (lay) this.blit('ground', k0, k1, oy);
-    else this.ground(ctx, c0, c1);
+    if (lay) try { this.blit('ground', k0, k1, oy); } catch (e) { L.noLayers = true; L.layers = null; lay = false; }
+    if (!lay) this.ground(ctx, c0, c1);
     for (let c = c0; c <= c1; c++) for (let r = 0; r < ROWS; r++) {
       const v = L.grid[c][r], x = c * T, y = r * T;
       if (v === 4 || v === 5) {
@@ -2309,8 +2309,8 @@ MODES.topdown = {
     const p = player;
     drawFoes();
     if (!(p.hurt > 0 && p.hurt % 8 < 4)) drawTrikeTop(ctx, p.x + p.w / 2, p.y + p.h / 2, p.ang, time, p.moving, world().pal);
-    if (lay) this.blit('trees', k0, k1, oy);
-    else this.trees(ctx, c0, c1);
+    if (lay) try { this.blit('trees', k0, k1, oy); } catch (e) { L.noLayers = true; L.layers = null; lay = false; }
+    if (!lay) this.trees(ctx, c0, c1);
     drawParts();
     ctx.restore();
   },
@@ -2357,8 +2357,8 @@ MODES.topdown = {
   blit(name, k0, k1, oy) {
     const R = L.layerR, y = Math.round((oy - LAYER_M) * R);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (let k = k0; k <= k1; k++) ctx.drawImage(L.layers[k][name], Math.round((k * LAYER_COLS * T - Math.round(camX)) * R), y);
-    ctx.restore();
+    try { for (let k = k0; k <= k1; k++) ctx.drawImage(L.layers[k][name], Math.round((k * LAYER_COLS * T - Math.round(camX)) * R), y); }
+    finally { ctx.restore(); }
   },
   rock(g, x, y, rad, seed, small) {
     g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(x + 4, y + 5, rad, rad * .8, 0, 0, Math.PI * 2); g.fill();
