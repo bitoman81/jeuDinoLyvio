@@ -19,5 +19,7 @@ jobs:
       - name: Chrome est là
         shell: bash
         run: test -f "C:/Program Files/Google/Chrome/Application/chrome.exe" || { echo "Chrome introuvable"; exit 1; }
+      - name: index.html est à jour avec src/
+        run: node build.mjs --check
       - name: Tous les tests
         run: node tests/run-all.mjs index.html

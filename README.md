@@ -72,3 +72,5 @@ Pour passer sur un autre appareil, l'espace parents donne un **code de sauvegard
 - **Action au clavier :** Espace, pour tous les animaux.
 
 Un seul fichier, `index.html`, sans installation.
+
+Pour modifier le jeu : le code est rangé en morceaux dans `src/` (voir `src/README.md`), puis `node build.mjs` fabrique `index.html`. Tests : `node tests/run-all.mjs index.html`.

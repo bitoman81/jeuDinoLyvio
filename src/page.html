@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Dino Explorateur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lilita+One&display=swap">
+<style>
+<!-- inclure css/jeu.css -->
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="Le monde du dino"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hud-l">
+      <div id="hudEggs" class="eggs" aria-label="Œufs trouvés"></div>
+      <div class="fruit"><span id="hudIcon" class="berry"></span><b id="hudFruit">0</b></div>
+      <div id="hudPow" class="hud-pow"></div>
+    </div>
+    <div class="hud-r">
+      <button id="btnSound" class="round" aria-label="Son"></button>
+      <button id="btnHome" class="round" aria-label="Retour au menu"></button>
+    </div>
+  </div>
+  <div id="saved" class="saved" aria-hidden="true">Sauvegardé</div>
+  <div id="keysHint" class="keys" hidden></div>
+  <div id="stick" aria-hidden="true"><i id="stickKnob"></i></div>
+  <button id="act" aria-label="Sauter">Saute</button>
+
+  <div id="menu" class="screen">
+    <div class="sheet">
+      <div class="toolbar" style="justify-content:space-between;align-items:center">
+        <h1>Dino <span>Explorateur</span></h1>
+        <div class="toolbar" style="align-items:center">
+          <button id="partiesBtn" class="parents-btn">Changer de partie</button>
+          <button id="parentsBtn" class="parents-btn">Espace parents</button>
+          <button id="menuMusic" class="round" aria-label="Musique"></button>
+          <button id="menuSound" class="round" aria-label="Son"></button>
+        </div>
+      </div>
+      <p class="lead">Les œufs des familles de dinosaures sont perdus. Choisis ton animal : chacun vit sa propre aventure !</p>
+      <button id="continueBtn" class="continue" hidden></button>
+      <section class="block">
+        <h2>Choisis ton dino</h2>
+        <div id="dinoPick" class="pick"></div>
+      </section>
+      <section class="block">
+        <h2>Choisis ton niveau</h2>
+        <p class="sub">C'est le point de départ. Ensuite, le jeu s'adapte : quand tu réussis du premier coup, ça devient un peu plus dur.</p>
+        <div class="seg">
+          <button id="diffPetit">Petit<span>compter jusqu'à 5, mots de 3 et 4 lettres</span></button>
+          <button id="diffGrand">Grand<span>compter jusqu'à 10, mots de 5 et 6 lettres</span></button>
+          <button id="diffExpert">Expert<span>multiplications, soustractions, et les énigmes des parents</span></button>
+        </div>
+      </section>
+      <section class="block">
+        <h2 id="worldTitle"></h2>
+        <p class="sub">Chaque endroit cache 3 œufs, gardés par des pierres magiques.</p>
+        <div class="seg hard" id="hardSel" role="group" aria-label="Difficulté des endroits"></div>
+        <p class="sub" id="hardText"></p>
+        <div id="levels" class="levels"></div>
+      </section>
+      <section class="block">
+        <h2 id="nestTitle">Le nid</h2>
+        <p class="sub" id="nestText"></p>
+        <div id="nest" class="nest"></div>
+      </section>
+      <section class="block">
+        <h2>Ton sac</h2>
+        <p class="sub" id="bagText"></p>
+        <h3>Les pouvoirs</h3>
+        <p class="sub">Un pouvoir acheté sert pendant tout le prochain endroit.</p>
+        <div class="shop" id="shopPowers"></div>
+        <h3 id="skinTitle"></h3>
+        <div class="shop" id="shopSkins"></div>
+        <h3 id="accTitle">Les accessoires</h3>
+        <p class="sub" id="accText">Un accessoire acheté sert à tous les animaux : choisis celui que chacun porte.</p>
+        <div class="shop" id="shopAcc"></div>
+        <h3>Mes fossiles</h3>
+        <p class="sub" id="fossilText"></p>
+        <div class="fossils" id="fossilList"></div>
+      </section>
+      <section class="block touch-only">
+        <h2>Sur téléphone</h2>
+        <p class="sub">Pour le tricératops, le ptérodactyle et le plésiosaure. Le T-Rex joue toujours avec le joystick.</p>
+        <div class="seg">
+          <button id="touchStick">Joystick<span>le pouce gauche fait bouger, le bouton à droite fait l'action</span></button>
+          <button id="touchTap">Toucher l'écran<span>on touche là où l'animal doit aller, pour les plus petits</span></button>
+        </div>
+      </section>
+      <section class="block">
+        <h2>La voix</h2>
+        <p class="sub">Choisis la voix qui lit les consignes. Les voix marquées « naturelle » sont les plus agréables : le navigateur Microsoft Edge en propose plusieurs. Sur iPad, on peut télécharger une meilleure voix dans Réglages, Accessibilité, Contenu énoncé, Voix.</p>
+        <div class="voice-row">
+          <select id="voiceSel" aria-label="Voix"></select>
+          <button id="voiceTest" class="btn">Écouter</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="puzzle" class="screen dim" hidden>
+    <div class="card" id="pzCard">
+      <div class="pz-head">
+        <button id="pzSpeak" class="round" aria-label="Réécouter la question"></button>
+        <h2 id="pzTitle"></h2>
+      </div>
+      <div id="pzVisual" class="pz-visual"></div>
+      <div id="pzChoices" class="pz-choices"></div>
+      <div id="pzHelp" class="pz-help" hidden>
+        <button id="helpCut" class="help" type="button"></button>
+        <button id="helpHint" class="help" type="button"></button>
+      </div>
+      <button id="pzBack" class="ghost">Retour au jeu</button>
+    </div>
+  </div>
+
+  <div id="done" class="screen dim" hidden>
+    <div class="card">
+      <h2 class="big">Bravo !</h2>
+      <div id="doneStars" class="stars big" role="img"></div>
+      <p id="doneText"></p>
+      <div id="hatch" class="hatch"></div>
+      <div class="row">
+        <button id="doneMenu" class="btn">Retour au menu</button>
+        <button id="doneNext" class="btn primary">Endroit suivant</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="parties" class="screen" hidden>
+    <div class="sheet">
+      <h1>Dino <span>Explorateur</span></h1>
+      <p class="lead">Choisis ta partie. Chacun peut avoir la sienne, avec son nom : 3 parties au plus.</p>
+      <p class="incoming" id="incomingText" hidden></p>
+      <div id="slotList" class="slots"></div>
+    </div>
+  </div>
+
+  <div id="gate" class="screen dim" hidden>
+    <form class="card left" id="gateForm">
+      <h2>Espace parents</h2>
+      <p id="gateQ"></p>
+      <div class="field">
+        <input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="Réponse">
+        <button class="btn primary" type="submit">Entrer</button>
+      </div>
+      <p class="err" id="gateErr"></p>
+      <button type="button" class="ghost" id="gateBack">Retour</button>
+    </form>
+  </div>
+
+  <div id="parents" class="screen dim" hidden>
+    <div class="card left">
+      <h2>Espace parents</h2>
+      <p class="status" id="pStatus"></p>
+      <p>Vos calculs et vos mots sont tirés au sort dans le niveau Expert, mélangés aux énigmes du jeu. Les mots sans image sont lus à voix haute, comme une dictée.</p>
+      <h3>Vos calculs</h3>
+      <form class="field" id="calcForm">
+        <input id="calcIn" placeholder="Exemple : 5x5, 12+8, 20-7, 18:3" autocomplete="off" aria-label="Nouveaux calculs">
+        <button class="btn" type="submit">Ajouter</button>
+      </form>
+      <p class="err" id="calcErr"></p>
+      <div class="chips" id="calcList"></div>
+      <h3>Vos mots</h3>
+      <form class="field" id="wordForm">
+        <input id="wordIn" placeholder="Exemple : maison, école, girafe" autocomplete="off" aria-label="Nouveaux mots">
+        <button class="btn" type="submit">Ajouter</button>
+      </form>
+      <p class="err" id="wordErr"></p>
+      <div class="chips" id="wordList"></div>
+      <h3>Tables de multiplication</h3>
+      <p>Les tables utilisées dans le niveau Expert.</p>
+      <div class="tables" id="tableList"></div>
+      <h3>Niveau de chaque compétence</h3>
+      <p>Le jeu ajuste ces niveaux tout seul, de 1 à 10 : 3 réussites du premier coup de suite font monter d'un cran, 2 énigmes difficiles de suite font descendre d'un cran. Vous pouvez aussi les régler ici.</p>
+      <div class="skills" id="skillList"></div>
+      <h3>Résumé de la semaine</h3>
+      <div class="week" id="weekSum"></div>
+      <h3>Les progrès</h3>
+      <p>Pour chaque compétence : les énigmes faites depuis le début, la part réussie du premier coup, les erreurs par énigme, et la tendance du niveau sur les 7 derniers jours.</p>
+      <div class="stat-wrap"><table class="stats" id="statTable"></table></div>
+      <h3>Évolution du niveau</h3>
+      <div class="curve-ctl">
+        <select id="curveSkill" aria-label="Compétence affichée sur la courbe"></select>
+        <div class="tabs" id="curveRange" role="group" aria-label="Période"></div>
+      </div>
+      <canvas id="curve" role="img"></canvas>
+      <div class="legend" id="curveLegend"></div>
+      <h3>Remettre les statistiques à zéro</h3>
+      <p>Efface les progrès et la courbe de cette partie, et remet chaque compétence au départ du niveau choisi. Les œufs, le sac et les endroits ouverts sont gardés.</p>
+      <div class="field">
+        <button class="btn" type="button" id="resetStats">Remettre à zéro</button>
+      </div>
+      <p class="status" id="resetOk" hidden></p>
+      <h3>Code de sauvegarde</h3>
+      <p>La progression est enregistrée sur cet appareil. Pour la retrouver sur un autre appareil, copiez ce code puis collez-le dans l'espace parents de l'autre appareil. Vos calculs et vos mots ne sont pas dans le code.</p>
+      <div class="field">
+        <input id="saveCode" readonly aria-label="Code de sauvegarde de cet appareil">
+        <button class="btn" type="button" id="saveCopy">Copier</button>
+      </div>
+      <form class="field" id="loadForm">
+        <input id="loadIn" placeholder="Collez ici le code d'un autre appareil" autocomplete="off" aria-label="Code de sauvegarde à charger">
+        <button class="btn" type="submit">Charger</button>
+      </form>
+      <p class="err" id="loadErr"></p>
+      <p class="status" id="loadOk" hidden></p>
+      <button class="btn primary" id="parentsClose" style="align-self:center">Fermer</button>
+    </div>
+  </div>
+
+  <div id="rotate">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18.5" r="1" fill="currentColor"/></svg>
+    Tourne ton téléphone pour jouer
+  </div>
+</div>
+
+<script>
+<!-- inclure js/donnees.js -->
+<!-- inclure js/images-mots.js -->
+<!-- inclure js/sauvegarde.js -->
+<!-- inclure js/son.js -->
+<!-- inclure js/dessin.js -->
+<!-- inclure js/etat.js -->
+<!-- inclure js/ennemis.js -->
+<!-- inclure js/modes/trex.js -->
+<!-- inclure js/modes/trike.js -->
+<!-- inclure js/modes/ptero.js -->
+<!-- inclure js/modes/plesio.js -->
+<!-- inclure js/boucle.js -->
+<!-- inclure js/enigmes.js -->
+<!-- inclure js/parents.js -->
+<!-- inclure js/menus.js -->
+</script>
+</body>
+</html>

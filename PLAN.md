@@ -252,14 +252,11 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Les tests du jeu web et de la Switch tournent à chaque envoi (GitHub Actions, machine Windows ; `node tests/run-all.mjs index.html` pour tout lancer ici).
 
 ## Étape 19 - Découper index.html
-- [ ] Plusieurs fichiers (données, énigmes, modes de jeu) assemblés en un seul pour la publication, sans rien changer pour le joueur.
+- [x] Plusieurs fichiers (données, énigmes, modes de jeu) assemblés en un seul pour la publication, sans rien changer pour le joueur (`src/`, `node build.mjs` ; le premier index.html assemblé est identique octet pour octet à l'ancien).
 
 ## Organisation technique
 
-- Le jeu tient en un seul fichier, `index.html`, d'environ 119 Ko. Avec tout ce contenu, il passera à environ 300 Ko. Deux solutions :
-  - garder un seul fichier, découpé en sections bien commentées (c'est plus simple, et le README le promet : « sans installation ») ;
-  - ou séparer `data/mots.js`, `data/niveaux.js` et `puzzles/*.js`, ce qui fonctionne aussi sur GitHub Pages sans rien installer.
-  Recommandation : garder un seul fichier jusqu'à l'étape 4, puis décider.
+- Le joueur reçoit un seul fichier, `index.html` (environ 350 Ko). Depuis l'étape 19, il est fabriqué par `node build.mjs` à partir des morceaux de `src/` (page, CSS, 15 fichiers JavaScript) : on modifie `src/`, jamais `index.html` directement. Les tests sur GitHub vérifient que `index.html` est à jour.
 - Une branche par étape, fusionnée dans `main` une fois testée sur ordinateur et sur téléphone.
 - À tester à chaque étape :
   - l'ancienne sauvegarde v1 est bien reprise ;
@@ -287,4 +284,4 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Étape 16 - Dictée avec la vraie voix sur la Switch
 - [x] Étape 17 - Résumé de la semaine
 - [x] Étape 18 - Tests automatiques sur GitHub
-- [ ] Étape 19 - Découper index.html
+- [x] Étape 19 - Découper index.html
