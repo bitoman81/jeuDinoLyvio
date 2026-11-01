@@ -31,6 +31,8 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 
 .screen{position:absolute;inset:0;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .screen.dim{background:rgba(16,40,26,.55);align-items:center}
+/* Énigme qui vient de s'ouvrir : on ne peut pas encore toucher (voir PZ_WAIT) */
+.screen.wait{pointer-events:none}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .slot{background:var(--paper);border:4px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:16px;display:flex;flex-direction:column;gap:8px}
 .slot h2{font-size:28px;color:var(--ink);overflow-wrap:anywhere}
@@ -763,6 +765,106 @@ const ICON = {
   BALLON: '<circle cx="50" cy="50" r="38" fill="#fff"/><path d="M50 12C30 30 30 70 50 88" fill="none" stroke="#e5483b" stroke-width="10"/><path d="M50 12C70 30 70 70 50 88" fill="none" stroke="#2f7fe0" stroke-width="10"/><circle cx="50" cy="50" r="38" fill="none" stroke="#1d2b22" stroke-width="4"/>',
   CAROTTE: '<path d="M36 34Q50 26 66 40L32 90Q26 92 26 86Z" fill="#ff8a2a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M40 52l8 4M35 66l8 4" stroke="#c45a10" stroke-width="3" stroke-linecap="round"/><path d="M56 32Q58 12 68 8M60 34Q74 18 86 20M62 38Q80 34 88 40" fill="none" stroke="#3f9a4f" stroke-width="6" stroke-linecap="round"/>',
   VOLCAN: '<circle cx="44" cy="16" r="8" fill="#b9b2ad"/><circle cx="58" cy="10" r="10" fill="#b9b2ad"/><path d="M6 92L36 30h28l30 62Z" fill="#7a5238" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M37 31h26l-6 12-6-4-6 8-6-8-4 4Z" fill="#ff5a1f"/>',
+  // Une image pour chaque mot des énigmes (animaux, à manger, le corps, la maison et l'école, voyager, la nature, les couleurs, les habits)
+  LOUP: '<path d="M24 40L20 10 42 28H58L80 10 76 40Q86 60 70 74L56 90H44L30 74Q14 60 24 40Z" fill="#8d8f94" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M27 16l7 11M73 16l-7 11" stroke="#5f6f86" stroke-width="4" stroke-linecap="round"/><path d="M38 62Q50 56 62 62L56 88H44Z" fill="#e2e2e2" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="38" cy="48" r="4" fill="#1d2b22"/><circle cx="62" cy="48" r="4" fill="#1d2b22"/><ellipse cx="50" cy="82" rx="6" ry="4" fill="#1d2b22"/>',
+  OURS: '<g fill="#8a5a2b" stroke="#1d2b22" stroke-width="4"><circle cx="24" cy="26" r="13"/><circle cx="76" cy="26" r="13"/></g><circle cx="24" cy="26" r="6" fill="#c99a62"/><circle cx="76" cy="26" r="6" fill="#c99a62"/><circle cx="50" cy="54" r="36" fill="#8a5a2b" stroke="#1d2b22" stroke-width="4"/><ellipse cx="50" cy="68" rx="18" ry="14" fill="#e0c39a" stroke="#1d2b22" stroke-width="3"/><circle cx="36" cy="46" r="4.5" fill="#1d2b22"/><circle cx="64" cy="46" r="4.5" fill="#1d2b22"/><ellipse cx="50" cy="62" rx="7" ry="5" fill="#1d2b22"/><path d="M50 67v6M44 75q6 4 12 0" stroke="#1d2b22" stroke-width="3" fill="none" stroke-linecap="round"/>',
+  RAT: '<path d="M22 74Q4 74 6 90Q14 96 26 90" fill="none" stroke="#d48a94" stroke-width="5" stroke-linecap="round"/><path d="M36 78v10M62 78v10" stroke="#1d2b22" stroke-width="4" stroke-linecap="round"/><path d="M20 76Q18 50 46 46Q70 44 86 62L96 68 86 74Q70 82 20 76Z" fill="#8a7a6a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="60" cy="44" r="10" fill="#c8a0a8" stroke="#1d2b22" stroke-width="4"/><circle cx="74" cy="58" r="3.5" fill="#1d2b22"/><circle cx="95" cy="68" r="3" fill="#e5483b"/><path d="M84 66l12-7M84 70l12 4" stroke="#1d2b22" stroke-width="2"/>',
+  COQ: '<path d="M30 60Q8 40 14 16Q26 30 30 40Q32 22 40 14Q40 34 44 44Z" fill="#2f7a3a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M48 86v8M60 86v8M42 94h12M56 94h10" stroke="#ffb238" stroke-width="4" stroke-linecap="round"/><path d="M28 56Q30 86 56 86Q78 84 78 58L72 36Q66 24 58 30L52 50Q40 44 28 56Z" fill="#f2f0e6" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M58 30Q56 14 62 18Q64 8 70 14Q76 10 74 22Q72 30 66 30Z" fill="#e5483b" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M76 36l12 4-12 4Z" fill="#ffb238" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M71 46q5 8-2 12Q66 52 71 46Z" fill="#e5483b" stroke="#1d2b22" stroke-width="2.5"/><circle cx="68" cy="36" r="3" fill="#1d2b22"/>',
+  OIE: '<path d="M40 86v8M56 86v8" stroke="#ff8a2a" stroke-width="5" stroke-linecap="round"/><path d="M14 62Q16 88 48 88Q78 88 82 66Q60 72 48 60Q36 52 14 62Z" fill="#fff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M60 66Q56 40 62 22Q66 12 76 14Q84 18 80 28Q72 36 74 62" fill="#fff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M80 18l14 6-14 6Z" fill="#ff8a2a" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="73" cy="20" r="3" fill="#1d2b22"/><path d="M28 70q12 6 26 2" fill="none" stroke="#c9c2b0" stroke-width="4" stroke-linecap="round"/>',
+  PIE: '<path d="M50 74v14M60 74v14" stroke="#1d2b22" stroke-width="3.5" stroke-linecap="round"/><path d="M6 72L36 56 32 70Z" fill="#1d2b22" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M28 58Q34 38 58 38Q78 38 80 56Q78 74 54 76Q36 76 28 58Z" fill="#fff" stroke="#1d2b22" stroke-width="4"/><path d="M30 56Q40 44 62 50Q52 64 36 66Z" fill="#24324a"/><circle cx="72" cy="36" r="13" fill="#1d2b22"/><path d="M84 33l12 3-12 4Z" fill="#1d2b22"/><circle cx="76" cy="33" r="2.5" fill="#fff"/>',
+  VER: '<path d="M0 88h100" stroke="#8a5a2b" stroke-width="8"/><path d="M12 70Q24 50 38 66T64 66T88 50" fill="none" stroke="#1d2b22" stroke-width="18" stroke-linecap="round"/><path d="M12 70Q24 50 38 66T64 66T88 50" fill="none" stroke="#f29ab8" stroke-width="11" stroke-linecap="round"/><path d="M30 58l-3 8M50 64v8M70 60l3 7" stroke="#c8708a" stroke-width="2.5" stroke-linecap="round"/><circle cx="87" cy="49" r="2.5" fill="#1d2b22"/>',
+  CERF: '<path d="M34 34Q20 22 18 6M24 18L10 14M30 28L18 30M66 34Q80 22 82 6M76 18l14-4M70 28l12 2" fill="none" stroke="#6e4520" stroke-width="5" stroke-linecap="round"/><g fill="#b07a4a" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"><path d="M30 42L10 36Q14 52 32 50Z"/><path d="M70 42l20-6Q86 52 68 50Z"/></g><path d="M30 40Q50 30 70 40L64 78Q58 92 50 92Q42 92 36 78Z" fill="#b07a4a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="40" cy="56" r="4" fill="#1d2b22"/><circle cx="60" cy="56" r="4" fill="#1d2b22"/><ellipse cx="50" cy="84" rx="7" ry="5" fill="#1d2b22"/>',
+  LAPIN: '<g fill="#efe6dc" stroke="#1d2b22" stroke-width="4"><ellipse cx="36" cy="26" rx="9" ry="24"/><ellipse cx="64" cy="26" rx="9" ry="24"/><circle cx="50" cy="64" r="28"/></g><ellipse cx="36" cy="26" rx="4" ry="15" fill="#f29ab8"/><ellipse cx="64" cy="26" rx="4" ry="15" fill="#f29ab8"/><circle cx="40" cy="60" r="4" fill="#1d2b22"/><circle cx="60" cy="60" r="4" fill="#1d2b22"/><path d="M45 69h10l-5 5Z" fill="#f27bb4" stroke="#1d2b22" stroke-width="1.5" stroke-linejoin="round"/><path d="M50 74v5M44 81q6 3 12 0M30 70H14M30 75l-14 5M70 70h16M70 75l14 5" stroke="#1d2b22" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+  CHEVAL: '<path d="M40 14Q70 14 78 44L90 70Q94 82 82 86Q72 88 64 78L56 66Q48 70 44 92H22Q24 60 30 40Q30 24 40 14Z" fill="#a0692e" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M42 16Q28 22 24 40Q22 60 24 90" fill="none" stroke="#3a2a1a" stroke-width="9" stroke-linecap="round"/><path d="M42 18L46 4 54 16Z" fill="#a0692e" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="58" cy="36" r="4" fill="#1d2b22"/><ellipse cx="83" cy="76" rx="3" ry="4" fill="#1d2b22"/>',
+  MOUTON: '<path d="M34 74v18M58 74v18" stroke="#1d2b22" stroke-width="6" stroke-linecap="round"/><g fill="#fff" stroke="#1d2b22" stroke-width="3.5"><circle cx="30" cy="50" r="14"/><circle cx="46" cy="40" r="15"/><circle cx="62" cy="44" r="14"/><circle cx="60" cy="62" r="14"/><circle cx="40" cy="64" r="14"/><circle cx="26" cy="62" r="12"/></g><g fill="#fff"><circle cx="44" cy="54" r="14"/></g><ellipse cx="78" cy="48" rx="12" ry="15" fill="#3a3a3a" stroke="#1d2b22" stroke-width="3"/><ellipse cx="68" cy="38" rx="7" ry="4" fill="#3a3a3a" stroke="#1d2b22" stroke-width="2.5" transform="rotate(-30 68 38)"/><circle cx="82" cy="45" r="2.5" fill="#fff"/>',
+  SOURIS: '<path d="M18 78Q2 70 12 58" fill="none" stroke="#e8a0a8" stroke-width="4" stroke-linecap="round"/><path d="M18 78Q20 54 50 52Q76 52 86 72L94 76 84 82Q60 88 18 78Z" fill="#b8b8c0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="60" cy="40" r="16" fill="#b8b8c0" stroke="#1d2b22" stroke-width="4"/><circle cx="60" cy="40" r="9" fill="#f29ab8"/><circle cx="76" cy="66" r="3.5" fill="#1d2b22"/><circle cx="94" cy="76" r="3" fill="#f27bb4"/><path d="M82 74l12-6M82 78l12 4" stroke="#1d2b22" stroke-width="2"/>',
+  TORTUE: '<path d="M74 60Q84 48 92 54Q96 62 86 66Z" fill="#7ac85a" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><circle cx="89" cy="57" r="2" fill="#1d2b22"/><g fill="#7ac85a" stroke="#1d2b22" stroke-width="3.5"><ellipse cx="28" cy="76" rx="8" ry="6"/><ellipse cx="66" cy="76" rx="8" ry="6"/><path d="M14 66l-10 4 10 3Z"/></g><path d="M12 70Q14 30 48 30Q82 30 82 70Z" fill="#3f8a4c" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M32 38l8 14H56l8-14M40 52L30 70M56 52l10 18" fill="none" stroke="#2a5a30" stroke-width="3"/><path d="M8 70H88" stroke="#1d2b22" stroke-width="4" stroke-linecap="round"/>',
+  CANARD: '<path d="M0 88q12-8 25 0t25 0 25 0 25 0" fill="none" stroke="#2f8fd8" stroke-width="5"/><path d="M8 56Q12 86 50 86Q84 86 86 62Q70 66 60 56Q44 48 28 56L12 48Z" fill="#f5c518" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="38" r="16" fill="#f5c518" stroke="#1d2b22" stroke-width="4"/><path d="M80 40Q96 38 96 46Q90 52 78 48Z" fill="#ff8a2a" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="70" cy="34" r="3" fill="#1d2b22"/><path d="M30 66q14 10 28 0" fill="none" stroke="#e0a526" stroke-width="4" stroke-linecap="round"/>',
+  GIRAFE: '<path d="M24 74v20M34 74v20M50 74v20M60 74v20" stroke="#1d2b22" stroke-width="5" stroke-linecap="round"/><path d="M20 62L10 76" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/><g fill="#f2c03a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"><path d="M18 58Q18 54 24 54H62Q66 54 66 60V72Q66 76 60 76H24Q18 76 18 70Z"/><path d="M50 56L62 14H74L66 58Z"/><path d="M60 14Q62 4 76 6Q90 8 88 18Q84 24 74 22Z"/></g><path d="M64 7V0M72 6V0" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/><circle cx="76" cy="12" r="2.5" fill="#1d2b22"/><g fill="#a0692e"><circle cx="30" cy="64" r="3.5"/><circle cx="44" cy="62" r="3"/><circle cx="56" cy="68" r="3"/><circle cx="38" cy="70" r="2.5"/><circle cx="63" cy="28" r="3"/><circle cx="60" cy="44" r="3"/><circle cx="68" cy="36" r="2.5"/></g>',
+  SINGE: '<g stroke="#1d2b22" stroke-width="4"><circle cx="18" cy="48" r="11" fill="#c98a62"/><circle cx="82" cy="48" r="11" fill="#c98a62"/><circle cx="50" cy="50" r="34" fill="#8a5a2b"/></g><path d="M28 54Q28 36 42 38Q50 42 58 38Q72 36 72 54Q72 84 50 84Q28 84 28 54Z" fill="#e8c39a" stroke="#1d2b22" stroke-width="3"/><circle cx="41" cy="50" r="4" fill="#1d2b22"/><circle cx="59" cy="50" r="4" fill="#1d2b22"/><path d="M46 62h2M52 62h2" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/><path d="M40 70q10 8 20 0" fill="none" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/>',
+  TIGRE: '<g fill="#ff8a2a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"><path d="M20 34L22 10 42 22Z"/><path d="M80 34L78 10 58 22Z"/><circle cx="50" cy="54" r="36"/></g><path d="M50 18v14M38 20l4 12M62 20l-4 12M14 46h14M14 58h12M86 46H72M86 58H74" stroke="#1d2b22" stroke-width="4" stroke-linecap="round"/><ellipse cx="50" cy="70" rx="18" ry="14" fill="#fff" stroke="#1d2b22" stroke-width="3"/><circle cx="38" cy="48" r="4.5" fill="#1d2b22"/><circle cx="62" cy="48" r="4.5" fill="#1d2b22"/><path d="M44 62h12l-6 6Z" fill="#e5483b" stroke="#1d2b22" stroke-width="2" stroke-linejoin="round"/>',
+  REQUIN: '<path d="M0 86q12-8 25 0t25 0 25 0 25 0" fill="none" stroke="#2f8fd8" stroke-width="4"/><path d="M40 38L50 12 62 38Z" fill="#7a8a9a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M4 54Q30 30 66 38L90 20 84 48Q96 52 96 58Q80 72 50 72Q24 72 4 54Z" fill="#7a8a9a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M14 58Q40 68 72 62Q50 72 30 68Z" fill="#e8eef2"/><circle cx="22" cy="48" r="3.5" fill="#1d2b22"/><path d="M9 58l4 4 4-4 4 4 4-4" fill="none" stroke="#1d2b22" stroke-width="2.5"/>',
+  BALEINE: '<path d="M50 30Q46 16 38 12M50 30Q54 16 62 12M50 30V10" fill="none" stroke="#5ab0e8" stroke-width="4" stroke-linecap="round"/><path d="M8 62Q8 34 46 34Q76 34 84 54L96 40Q98 58 90 66Q96 76 96 86Q86 78 80 72Q66 86 40 86Q8 86 8 62Z" fill="#3f72a8" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M14 70Q40 84 74 72" fill="none" stroke="#c8dcef" stroke-width="6" stroke-linecap="round"/><circle cx="26" cy="56" r="4" fill="#1d2b22"/>',
+  DAUPHIN: '<path d="M0 92q12-8 25 0t25 0 25 0 25 0" fill="none" stroke="#2f8fd8" stroke-width="4"/><path d="M46 32L50 16 62 30Z" fill="#5a8fc0" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><path d="M22 78L6 84 14 68Z" fill="#5a8fc0" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><path d="M12 74Q24 30 66 30Q78 30 94 40Q86 46 72 44Q70 50 74 60Q62 56 58 48Q34 52 22 80Z" fill="#5a8fc0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M30 60Q44 44 62 44" fill="none" stroke="#cfe3f6" stroke-width="4" stroke-linecap="round"/><circle cx="74" cy="36" r="3" fill="#1d2b22"/>',
+  PAPILLON: '<g stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"><path d="M48 46Q30 8 10 22Q4 44 46 54Z" fill="#f27bb4"/><path d="M52 46Q70 8 90 22Q96 44 54 54Z" fill="#f27bb4"/><path d="M46 56Q16 60 20 84Q36 90 48 62Z" fill="#b48cff"/><path d="M54 56Q84 60 80 84Q64 90 52 62Z" fill="#b48cff"/></g><path d="M48 36Q44 22 36 18M52 36Q56 22 64 18" fill="none" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/><rect x="45" y="34" width="10" height="46" rx="5" fill="#1d2b22"/><circle cx="26" cy="32" r="5" fill="#fff"/><circle cx="74" cy="32" r="5" fill="#fff"/>',
+  ABEILLE: '<g fill="#e8f6ff" stroke="#1d2b22" stroke-width="3"><ellipse cx="42" cy="28" rx="11" ry="17" transform="rotate(-20 42 28)"/><ellipse cx="62" cy="28" rx="11" ry="17" transform="rotate(20 62 28)"/></g><path d="M82 60h12" stroke="#1d2b22" stroke-width="4" stroke-linecap="round"/><ellipse cx="50" cy="60" rx="32" ry="24" fill="#f5c518"/><path d="M42 38Q38 60 42 82M60 38Q64 60 60 82" fill="none" stroke="#1d2b22" stroke-width="8"/><ellipse cx="50" cy="60" rx="32" ry="24" fill="none" stroke="#1d2b22" stroke-width="4"/><circle cx="26" cy="56" r="4" fill="#1d2b22"/><path d="M22 66q6 4 10 0" fill="none" stroke="#1d2b22" stroke-width="2.5" stroke-linecap="round"/>',
+  OISEAU: '<path d="M44 78v12M56 78v12" stroke="#ffb238" stroke-width="4" stroke-linecap="round"/><path d="M8 40L30 50 14 62Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="48" cy="58" rx="28" ry="22" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><ellipse cx="54" cy="68" rx="15" ry="9" fill="#cfe3f6"/><path d="M30 54Q46 42 58 58Q42 70 30 54Z" fill="#5a9ae8" stroke="#1d2b22" stroke-width="3"/><circle cx="70" cy="36" r="16" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><path d="M84 34l12 4-12 4Z" fill="#ffb238" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="74" cy="32" r="3.5" fill="#1d2b22"/>',
+  ESCARGOT: '<path d="M82 46L78 30M90 46L94 30" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/><circle cx="78" cy="28" r="3" fill="#1d2b22"/><circle cx="94" cy="28" r="3" fill="#1d2b22"/><path d="M6 84Q6 74 20 74H70L80 50Q86 40 92 50L88 76Q86 84 76 84Z" fill="#e0c39a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="44" cy="50" r="26" fill="#c8703a" stroke="#1d2b22" stroke-width="4"/><path d="M41 50a3 3 0 1 1 6 0a8 8 0 1 1-14 0a13 13 0 1 1 24 0a18 18 0 1 1-34 0" fill="none" stroke="#7a3a1a" stroke-width="3.5" stroke-linecap="round"/>',
+  DRAGON: '<path d="M30 82v10M54 82v10" stroke="#1d2b22" stroke-width="5" stroke-linecap="round"/><path d="M18 76Q4 72 10 58Q14 70 24 70Z" fill="#5aa83c" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><g fill="#9ad87a" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"><path d="M38 52L22 14 54 44Z"/><path d="M52 50L64 8 72 46Z"/></g><ellipse cx="44" cy="66" rx="28" ry="18" fill="#5aa83c" stroke="#1d2b22" stroke-width="4"/><path d="M60 58Q64 36 76 32Q90 30 90 42Q88 50 76 48Q72 58 70 66Z" fill="#5aa83c" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="80" cy="38" r="3" fill="#1d2b22"/><path d="M90 44Q98 40 98 46Q96 48 98 52Q92 52 90 48Z" fill="#ff8a2a" stroke="#1d2b22" stroke-width="2" stroke-linejoin="round"/><path d="M24 58l4-6 4 6 4-6 4 6 4-6 4 6" fill="none" stroke="#f5c518" stroke-width="3"/>',
+  LAIT: '<path d="M30 30L38 14H62L70 30V90H30Z" fill="#fff"/><rect x="30" y="46" width="40" height="24" fill="#2f7fe0"/><path d="M40 60q5-8 10 0t10 0" fill="none" stroke="#fff" stroke-width="3"/><path d="M30 30L38 14H62L70 30V90H30ZM30 30H70" fill="none" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><rect x="38" y="6" width="24" height="8" rx="2" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3"/>',
+  RIZ: '<path d="M20 50Q22 34 36 32Q40 22 50 26Q58 20 66 30Q80 32 80 50Z" fill="#fff" stroke="#1d2b22" stroke-width="3"/><g fill="#d9d9d9"><ellipse cx="40" cy="40" rx="3" ry="1.6"/><ellipse cx="54" cy="34" rx="3" ry="1.6"/><ellipse cx="64" cy="42" rx="3" ry="1.6"/></g><path d="M10 50H90Q88 80 60 86H40Q12 80 10 50Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M30 64h40" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M58 42L90 8M66 44L96 14" stroke="#a0692e" stroke-width="4" stroke-linecap="round"/>',
+  JUS: '<path d="M58 34L72 4" stroke="#e5483b" stroke-width="5" stroke-linecap="round"/><path d="M24 24H76L70 90H30Z" fill="#e8f6ff"/><path d="M26 40H74L70 88H30Z" fill="#ff8a2a"/><path d="M24 24H76L70 90H30Z" fill="none" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="66" cy="24" r="12" fill="#ffd23a" stroke="#1d2b22" stroke-width="3"/><path d="M66 14v20M56 24h20" stroke="#ff8a2a" stroke-width="2"/>',
+  MIEL: '<path d="M68 28L90 6" stroke="#a0692e" stroke-width="5" stroke-linecap="round"/><path d="M24 34H76Q86 60 74 84Q62 92 50 92Q38 92 26 84Q14 60 24 34Z" fill="#e0a526" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M26 36q4 14 8 0q4 18 10 0q6 12 10 0q4 16 8 0q4 10 10 0" fill="#ffb238" stroke="#1d2b22" stroke-width="2.5"/><rect x="20" y="24" width="60" height="12" rx="5" fill="#a0692e" stroke="#1d2b22" stroke-width="3"/><path d="M36 66q14 6 28 0" fill="none" stroke="#ffd23a" stroke-width="5" stroke-linecap="round"/>',
+  SEL: '<path d="M32 38Q32 16 50 16Q68 16 68 38Z" fill="#c9c9c9" stroke="#1d2b22" stroke-width="4"/><g fill="#1d2b22"><circle cx="43" cy="28" r="2"/><circle cx="50" cy="23" r="2"/><circle cx="57" cy="28" r="2"/></g><rect x="32" y="38" width="36" height="54" rx="6" fill="#fff" stroke="#1d2b22" stroke-width="4"/><path d="M38 52h24" stroke="#2f7fe0" stroke-width="4"/><g fill="#b8c4cc"><circle cx="20" cy="40" r="2.5"/><circle cx="14" cy="52" r="2.5"/><circle cx="22" cy="60" r="2.5"/><circle cx="16" cy="70" r="2.5"/></g>',
+  ORANGE: '<path d="M50 20Q48 10 54 6" stroke="#6e4520" stroke-width="4" stroke-linecap="round" fill="none"/><circle cx="50" cy="56" r="36" fill="#ff8a2a" stroke="#1d2b22" stroke-width="4"/><path d="M54 14Q70 4 78 14Q66 22 54 14Z" fill="#4caf50" stroke="#1d2b22" stroke-width="3"/><g fill="#e07020"><circle cx="38" cy="46" r="2"/><circle cx="60" cy="40" r="2"/><circle cx="64" cy="62" r="2"/><circle cx="42" cy="70" r="2"/></g><path d="M28 46q4-10 12-12" fill="none" stroke="#ffc080" stroke-width="4" stroke-linecap="round"/>',
+  BANANE: '<path d="M14 30Q22 82 86 74Q92 72 86 64Q40 66 26 26Q22 20 14 30Z" fill="#f5c518" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M14 30L10 18 20 18 24 26" fill="#6e4520" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M30 46Q44 64 70 68" fill="none" stroke="#e0a526" stroke-width="3" stroke-linecap="round"/>',
+  CERISE: '<path d="M30 60Q40 30 66 10M70 58Q70 30 66 10" fill="none" stroke="#3f7a3a" stroke-width="4" stroke-linecap="round"/><path d="M66 10Q82 6 88 20Q74 24 66 10Z" fill="#4caf50" stroke="#1d2b22" stroke-width="3"/><g fill="#c81e3a" stroke="#1d2b22" stroke-width="4"><circle cx="30" cy="72" r="16"/><circle cx="70" cy="70" r="16"/></g><circle cx="24" cy="66" r="4" fill="#ff8a9a"/><circle cx="64" cy="64" r="4" fill="#ff8a9a"/>',
+  FRAISE: '<path d="M14 36Q50 24 86 36Q84 70 50 94Q16 70 14 36Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><g fill="#ffd23a"><ellipse cx="34" cy="50" rx="2" ry="3"/><ellipse cx="50" cy="54" rx="2" ry="3"/><ellipse cx="66" cy="50" rx="2" ry="3"/><ellipse cx="40" cy="66" rx="2" ry="3"/><ellipse cx="60" cy="66" rx="2" ry="3"/><ellipse cx="50" cy="80" rx="2" ry="3"/></g><path d="M22 34L30 18 42 28 50 12 58 28 70 18 78 34Q50 44 22 34Z" fill="#4caf50" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/>',
+  TOMATE: '<path d="M50 24Q86 22 88 54Q88 88 50 88Q12 88 12 54Q14 22 50 24Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4"/><path d="M26 48q4-10 14-12" fill="none" stroke="#ff9a8a" stroke-width="5" stroke-linecap="round"/><path d="M30 26L42 30 50 16 58 30 70 26 62 36 50 32 38 36Z" fill="#3f9a4f" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/>',
+  SALADE: '<g stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"><path d="M10 62Q8 30 30 30Q36 14 50 20Q64 12 72 28Q94 28 90 60Q88 88 50 88Q12 88 10 62Z" fill="#5aa83c"/><path d="M24 62Q24 40 40 42Q50 32 62 42Q78 42 76 62Q74 80 50 80Q26 80 24 62Z" fill="#9ad87a"/><path d="M38 62Q40 52 50 52Q60 52 62 62Q60 72 50 72Q40 72 38 62Z" fill="#cdeea8"/></g><path d="M50 52V80" stroke="#5aa83c" stroke-width="3"/>',
+  BONBON: '<g stroke="#1d2b22" stroke-width="4" stroke-linejoin="round" fill="#f27bb4"><path d="M30 50L6 32 10 50 6 68Z"/><path d="M70 50L94 32 90 50 94 68Z"/></g><circle cx="50" cy="50" r="24" fill="#e5483b"/><path d="M36 34Q50 50 40 70M54 28Q66 48 58 74" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="24" fill="none" stroke="#1d2b22" stroke-width="4"/>',
+  CHOCOLAT: '<rect x="18" y="10" width="64" height="56" rx="4" fill="#6a3a1e" stroke="#1d2b22" stroke-width="4"/><path d="M18 28H82M18 46H82M39 10V60M61 10V60" stroke="#4a2410" stroke-width="3"/><path d="M14 56L86 50V92H14Z" fill="#c81e3a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M14 68L86 62M14 80L86 74" stroke="#ffd23a" stroke-width="4"/>',
+  FROMAGE: '<path d="M8 70V82H92V52Z" fill="#f5c518" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M8 70L70 30 92 52Z" fill="#ffe27a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M8 70L92 52" stroke="#1d2b22" stroke-width="3"/><g fill="#e0a526" stroke="#1d2b22" stroke-width="2"><circle cx="28" cy="77" r="3.5"/><circle cx="56" cy="74" r="3"/><circle cx="80" cy="70" r="4"/><circle cx="66" cy="44" r="4"/><circle cx="46" cy="56" r="3"/></g>',
+  SOUPE: '<path d="M36 26q-6-8 0-14M50 26q-6-8 0-14M64 26q-6-8 0-14" fill="none" stroke="#9aa6b0" stroke-width="3.5" stroke-linecap="round"/><path d="M70 42L92 14" stroke="#c9c9c9" stroke-width="5" stroke-linecap="round"/><path d="M8 44H92Q90 82 56 86H44Q10 82 8 44Z" fill="#fff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><ellipse cx="50" cy="44" rx="42" ry="8" fill="#e5832b" stroke="#1d2b22" stroke-width="4"/><circle cx="36" cy="44" r="3" fill="#4caf50"/><circle cx="58" cy="42" r="3" fill="#ffd23a"/>',
+  NEZ: '<path d="M44 8Q40 50 26 70Q22 80 34 82Q44 84 50 78Q56 84 66 82Q78 80 74 70Q60 50 56 8" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><ellipse cx="38" cy="74" rx="5" ry="3.5" fill="#8a4a3a"/><ellipse cx="62" cy="74" rx="5" ry="3.5" fill="#8a4a3a"/><path d="M56 30q6 18 10 32" fill="none" stroke="#fff3e8" stroke-width="4" stroke-linecap="round"/>',
+  PIED: '<path d="M38 36Q30 60 34 80Q38 94 52 94Q66 94 68 80Q72 60 64 36Q58 26 50 26Q42 26 38 36Z" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4"/><g fill="#f2c4a0" stroke="#1d2b22" stroke-width="3"><ellipse cx="36" cy="20" rx="7" ry="8"/><ellipse cx="49" cy="13" rx="6" ry="7"/><ellipse cx="60" cy="13" rx="5" ry="6"/><ellipse cx="69" cy="19" rx="4.5" ry="5.5"/><ellipse cx="75" cy="27" rx="4" ry="5"/></g>',
+  MAIN: '<g fill="#f2c4a0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"><rect x="34" y="12" width="12" height="44" rx="6"/><rect x="46" y="6" width="12" height="48" rx="6"/><rect x="58" y="10" width="12" height="46" rx="6"/><rect x="70" y="20" width="11" height="38" rx="5.5"/><path d="M34 50L20 36Q14 32 12 38Q12 44 30 66Z"/><path d="M30 46H81V66Q81 92 56 92Q32 92 30 66Z"/></g><path d="M34 46H81" stroke="#f2c4a0" stroke-width="6"/>',
+  DENT: '<path d="M22 22Q22 6 38 8Q50 12 62 8Q78 6 78 22Q78 44 70 62Q66 92 60 92Q54 92 54 70Q52 60 50 60Q46 60 46 70Q46 92 40 92Q34 92 30 62Q22 44 22 22Z" fill="#fff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M32 20q6-5 12 0" fill="none" stroke="#c9d6e0" stroke-width="4" stroke-linecap="round"/>',
+  BRAS: '<path d="M8 92V76Q20 60 40 56Q46 30 60 22Q70 16 80 22Q88 28 80 36Q74 40 66 36Q62 46 66 56Q92 54 92 72Q92 92 66 92Z" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M48 70q10-6 20 0" fill="none" stroke="#c98a62" stroke-width="3" stroke-linecap="round"/><path d="M8 76V92" stroke="#2f7fe0" stroke-width="10"/>',
+  GENOU: '<path d="M24 4H40V48Q40 60 52 64L84 74Q92 78 88 88Q84 94 76 90L42 80Q24 74 24 52Z" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><rect x="22" y="4" width="20" height="14" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3.5"/><rect x="26" y="54" width="18" height="10" rx="3" fill="#f0d0a0" stroke="#1d2b22" stroke-width="2.5" transform="rotate(-30 35 59)"/><path d="M31 58l8-5" stroke="#c8a070" stroke-width="2"/>',
+  OREILLE: '<path d="M64 20Q36 0 24 30Q16 52 34 62Q44 70 40 84Q42 96 54 92Q62 88 62 78Q64 66 72 56Q86 36 64 20Z" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M60 40Q50 26 40 34Q34 42 44 50Q50 56 48 66" fill="none" stroke="#c98a62" stroke-width="4" stroke-linecap="round"/>',
+  BOUCHE: '<path d="M10 50Q30 30 50 40Q70 30 90 50Q70 84 50 84Q30 84 10 50Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M18 53Q50 62 82 53Q70 70 50 70Q30 70 18 53Z" fill="#fff" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M10 50Q50 56 90 50" fill="none" stroke="#1d2b22" stroke-width="3"/>',
+  JAMBE: '<path d="M40 14H60V70H40Z" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4"/><rect x="38" y="4" width="24" height="14" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3.5"/><path d="M38 52H62V74H38Z" fill="#fff" stroke="#1d2b22" stroke-width="3.5"/><path d="M38 60h24M38 66h24" stroke="#2f7fe0" stroke-width="3"/><path d="M36 72H64L84 80Q92 84 90 92H36Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/>',
+  LIT: '<rect x="8" y="30" width="12" height="60" rx="3" fill="#a0692e" stroke="#1d2b22" stroke-width="4"/><rect x="80" y="50" width="12" height="40" rx="3" fill="#a0692e" stroke="#1d2b22" stroke-width="4"/><rect x="18" y="56" width="66" height="20" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><rect x="22" y="44" width="22" height="14" rx="6" fill="#fff" stroke="#1d2b22" stroke-width="3"/><path d="M44 56Q64 44 82 56Z" fill="#5a8fc0" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/>',
+  POT: '<path d="M24 40H76L68 90H32Z" fill="#c8703a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><rect x="18" y="28" width="64" height="14" rx="3" fill="#d9844a" stroke="#1d2b22" stroke-width="4"/><path d="M40 60h20" stroke="#a0552a" stroke-width="4" stroke-linecap="round"/>',
+  SAC: '<path d="M34 38Q34 14 50 14Q66 14 66 38" fill="none" stroke="#1d2b22" stroke-width="5"/><path d="M18 38H82L88 90H12Z" fill="#b23a7a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="52" r="5" fill="#ffd23a" stroke="#1d2b22" stroke-width="2.5"/>',
+  BOL: '<rect x="38" y="80" width="24" height="10" rx="2" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3"/><path d="M8 40H92Q90 80 56 84H44Q10 80 8 40Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><ellipse cx="50" cy="40" rx="42" ry="9" fill="#cfe3f6" stroke="#1d2b22" stroke-width="4"/><g fill="#fff"><circle cx="30" cy="60" r="4"/><circle cx="50" cy="64" r="4"/><circle cx="70" cy="60" r="4"/></g>',
+  MUR: '<rect x="6" y="20" width="88" height="70" fill="#c8603a"/><path d="M6 37H94M6 54H94M6 71H94M28 20V37M60 20V37M44 37V54M76 37V54M22 54V71M56 54V71M88 54V71M38 71V90M70 71V90" stroke="#f0dcc0" stroke-width="3"/><rect x="6" y="20" width="88" height="70" fill="none" stroke="#1d2b22" stroke-width="4"/>',
+  TOIT: '<rect x="62" y="14" width="12" height="26" fill="#a0552a" stroke="#1d2b22" stroke-width="4"/><path d="M4 74L50 22 96 74Z" fill="#e5483b"/><path d="M22 54H78M12 66H88M50 22V74M34 40V54M66 40V54M30 54V66M70 54V66" stroke="#a8301f" stroke-width="2.5"/><rect x="16" y="74" width="68" height="14" fill="#f5c518" stroke="#1d2b22" stroke-width="4"/><path d="M4 74L50 22 96 74Z" fill="none" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/>',
+  GANT: '<g fill="#3fa34d" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"><rect x="30" y="10" width="11" height="40" rx="5.5"/><rect x="41" y="6" width="11" height="44" rx="5.5"/><rect x="52" y="8" width="11" height="42" rx="5.5"/><rect x="63" y="16" width="10" height="34" rx="5"/><path d="M30 48L16 38Q10 36 12 44L28 66Z"/><path d="M28 44H74V70Q74 80 66 80H34Q28 80 28 70Z"/></g><path d="M30 44H72" stroke="#3fa34d" stroke-width="6"/><rect x="26" y="78" width="50" height="16" rx="3" fill="#ffd23a" stroke="#1d2b22" stroke-width="4"/><path d="M34 80v12M42 80v12M50 80v12M58 80v12M66 80v12" stroke="#e0a526" stroke-width="2.5"/>',
+  JARDIN: '<path d="M0 78H100V100H0Z" fill="#6fae55"/><g fill="#fff" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"><path d="M8 80V44l6-8 6 8V80Z"/><path d="M30 80V44l6-8 6 8V80Z"/><path d="M52 80V44l6-8 6 8V80Z"/><path d="M74 80V44l6-8 6 8V80Z"/></g><path d="M4 54H96M4 70H96" stroke="#1d2b22" stroke-width="3"/><path d="M24 94V74M46 94V70M70 94V76" stroke="#2f8a3d" stroke-width="3"/><g stroke="#1d2b22" stroke-width="2.5"><circle cx="24" cy="72" r="6" fill="#f27bb4"/><circle cx="46" cy="68" r="6" fill="#ffd23a"/><circle cx="70" cy="74" r="6" fill="#e5483b"/></g>',
+  CHAISE: '<g stroke="#1d2b22" stroke-width="4" stroke-linejoin="round" fill="#c8703a"><rect x="22" y="60" width="9" height="32" rx="2"/><rect x="69" y="60" width="9" height="32" rx="2"/><path d="M30 20V50M50 20V50M70 20V50" fill="none" stroke-width="6"/><rect x="26" y="8" width="48" height="14" rx="4"/><rect x="18" y="48" width="64" height="12" rx="3"/></g>',
+  TABLE: '<g stroke="#1d2b22" stroke-width="4" stroke-linejoin="round" fill="#a0692e"><rect x="14" y="44" width="10" height="46" rx="2"/><rect x="76" y="44" width="10" height="46" rx="2"/><rect x="6" y="34" width="88" height="12" rx="3"/></g><path d="M40 34V22H56V34" fill="#fff" stroke="#1d2b22" stroke-width="3"/><path d="M56 26q8 0 0 6" fill="none" stroke="#1d2b22" stroke-width="2.5"/>',
+  LIVRE: '<path d="M4 84Q30 80 50 92Q70 80 96 84" fill="none" stroke="#e5483b" stroke-width="6"/><path d="M50 24Q30 14 6 18V82Q30 78 50 88Q70 78 94 82V18Q70 14 50 24Z" fill="#fff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M50 24V88" stroke="#1d2b22" stroke-width="3"/><path d="M14 34q14-4 28 2M14 46q14-4 28 2M14 58q14-4 28 2M58 36q14-6 28-2M58 48q14-6 28-2M58 60q14-6 28-2" fill="none" stroke="#9aa6b0" stroke-width="3" stroke-linecap="round"/>',
+  CRAYON: '<path d="M20 70L70 20 84 34 34 84Z" fill="#f5c518" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M27 77L77 27" stroke="#e0a526" stroke-width="3"/><path d="M20 70L34 84 10 92Z" fill="#f0d0a0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M14 84L18 88 10 92Z" fill="#1d2b22"/><path d="M70 20L84 34 92 26Q94 20 88 14Q82 10 78 12Z" fill="#f27bb4" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/>',
+  CARTABLE: '<path d="M36 22Q36 10 50 10Q64 10 64 22" fill="none" stroke="#1d2b22" stroke-width="5"/><rect x="10" y="22" width="80" height="68" rx="8" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><path d="M10 30Q10 22 18 22H82Q90 22 90 30V54H10Z" fill="#5a9ae8" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><g fill="#ffd23a" stroke="#1d2b22" stroke-width="3"><rect x="28" y="48" width="10" height="14" rx="2"/><rect x="62" y="48" width="10" height="14" rx="2"/></g>',
+  COUSSIN: '<path d="M14 22l-6-4M86 22l6-4M14 78l-6 4M86 78l6 4" stroke="#1d2b22" stroke-width="4" stroke-linecap="round"/><path d="M14 22Q50 30 86 22Q78 50 86 78Q50 70 14 78Q22 50 14 22Z" fill="#b48cff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="50" r="5" fill="#8a5ad8" stroke="#1d2b22" stroke-width="2.5"/>',
+  DOUDOU: '<g stroke="#1d2b22" stroke-width="3.5" fill="#c98a62"><circle cx="30" cy="14" r="8"/><circle cx="70" cy="14" r="8"/><ellipse cx="24" cy="58" rx="9" ry="14" transform="rotate(30 24 58)"/><ellipse cx="76" cy="58" rx="9" ry="14" transform="rotate(-30 76 58)"/><ellipse cx="34" cy="88" rx="12" ry="9"/><ellipse cx="66" cy="88" rx="12" ry="9"/><ellipse cx="50" cy="66" rx="24" ry="26"/><circle cx="50" cy="30" r="22"/></g><ellipse cx="50" cy="70" rx="12" ry="14" fill="#f0d0a0"/><ellipse cx="50" cy="38" rx="9" ry="7" fill="#f0d0a0"/><circle cx="42" cy="26" r="3" fill="#1d2b22"/><circle cx="58" cy="26" r="3" fill="#1d2b22"/><circle cx="50" cy="35" r="3" fill="#1d2b22"/><path d="M38 52l12 6 12-6-12 2Z" fill="#e5483b" stroke="#1d2b22" stroke-width="2.5" stroke-linejoin="round"/>',
+  BOUGIE: '<path d="M50 6Q62 22 56 32Q50 38 44 32Q38 22 50 6Z" fill="#ffb238" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M50 18Q55 26 50 30Q45 26 50 18Z" fill="#ffe27a"/><path d="M50 34V40" stroke="#1d2b22" stroke-width="3"/><ellipse cx="50" cy="90" rx="30" ry="6" fill="#c9c9c9" stroke="#1d2b22" stroke-width="3"/><rect x="36" y="40" width="28" height="48" rx="3" fill="#f27bb4" stroke="#1d2b22" stroke-width="4"/><path d="M44 46v10" stroke="#fbd0e0" stroke-width="5" stroke-linecap="round"/>',
+  CADEAU: '<rect x="12" y="42" width="76" height="48" fill="#e5483b" stroke="#1d2b22" stroke-width="4"/><rect x="8" y="30" width="84" height="16" fill="#e5483b" stroke="#1d2b22" stroke-width="4"/><path d="M44 30H56V90H44Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="3"/><path d="M50 30Q30 6 22 18Q20 28 50 30Q80 28 78 18Q70 6 50 30Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/>',
+  CISEAUX: '<path d="M50 50L86 10M50 50L14 10" stroke="#1d2b22" stroke-width="9" stroke-linecap="round"/><path d="M50 50L86 10M50 50L14 10" stroke="#d9d9d9" stroke-width="5" stroke-linecap="round"/><path d="M50 50L36 62M50 50L64 62" stroke="#e5483b" stroke-width="7" stroke-linecap="round"/><g fill="none"><circle cx="30" cy="72" r="13" stroke="#1d2b22" stroke-width="9"/><circle cx="70" cy="72" r="13" stroke="#1d2b22" stroke-width="9"/><circle cx="30" cy="72" r="13" stroke="#e5483b" stroke-width="5"/><circle cx="70" cy="72" r="13" stroke="#e5483b" stroke-width="5"/></g><circle cx="50" cy="50" r="4" fill="#1d2b22"/>',
+  PINCEAU: '<path d="M84 10L48 52" stroke="#1d2b22" stroke-width="11" stroke-linecap="round"/><path d="M84 10L48 52" stroke="#c8873a" stroke-width="6" stroke-linecap="round"/><path d="M44 48L54 58 48 64 38 54Z" fill="#c9c9c9" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M38 54L48 64Q40 80 20 90Q14 92 16 86Q22 70 38 54Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><path d="M40 96q20-10 40 0" fill="none" stroke="#2f7fe0" stroke-width="5" stroke-linecap="round"/>',
+  MOTO: '<g fill="#fff" stroke="#1d2b22" stroke-width="6"><circle cx="22" cy="70" r="15"/><circle cx="78" cy="70" r="15"/></g><path d="M22 70L42 48H66L78 70" fill="none" stroke="#1d2b22" stroke-width="4"/><path d="M66 46L72 28H84" stroke="#1d2b22" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M34 52Q40 38 56 40L70 46Q66 58 50 60Q38 60 34 52Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><rect x="28" y="36" width="20" height="8" rx="4" fill="#1d2b22"/>',
+  CAMION: '<rect x="6" y="28" width="56" height="42" rx="3" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><path d="M62 40H80L94 56V70H62Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M68 46H78L86 56H68Z" fill="#cfeeff" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><g fill="#1d2b22"><circle cx="24" cy="74" r="10"/><circle cx="78" cy="74" r="10"/></g><g fill="#d9d9d9"><circle cx="24" cy="74" r="4"/><circle cx="78" cy="74" r="4"/></g>',
+  TRAIN: '<path d="M0 90H100" stroke="#6e4520" stroke-width="4"/><circle cx="20" cy="14" r="6" fill="#d9d9d9"/><circle cx="32" cy="7" r="5" fill="#d9d9d9"/><rect x="18" y="22" width="12" height="20" fill="#1d2b22"/><rect x="10" y="40" width="50" height="34" rx="3" fill="#e5483b" stroke="#1d2b22" stroke-width="4"/><rect x="50" y="20" width="32" height="54" rx="3" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><rect x="56" y="28" width="20" height="14" rx="2" fill="#cfeeff" stroke="#1d2b22" stroke-width="3"/><path d="M82 64L96 76H82Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><g fill="#1d2b22"><circle cx="24" cy="78" r="9"/><circle cx="46" cy="78" r="9"/><circle cx="70" cy="78" r="9"/></g>',
+  AVION: '<g fill="#2f7fe0" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"><path d="M40 50L56 12H66L62 50Z"/><path d="M40 54L56 92H66L62 54Z"/></g><path d="M14 46L6 26H16L28 46Z" fill="#e5483b" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><path d="M8 52Q8 44 18 44H78Q92 44 96 52Q92 60 78 60H18Q8 60 8 52Z" fill="#fff" stroke="#1d2b22" stroke-width="4"/><g fill="#5a9ae8"><circle cx="34" cy="52" r="3"/><circle cx="46" cy="52" r="3"/><circle cx="72" cy="52" r="3"/></g><path d="M84 47q6 0 8 5" fill="none" stroke="#5a9ae8" stroke-width="3"/>',
+  ROSE: '<path d="M50 50V94" stroke="#2f8a3d" stroke-width="6"/><path d="M50 74Q34 60 24 68Q36 84 50 74Z" fill="#4caf50" stroke="#1d2b22" stroke-width="3"/><path d="M30 30Q28 54 50 56Q72 54 70 30Q60 38 50 26Q40 38 30 30Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M38 24Q50 8 62 24Q56 34 50 30Q44 34 38 24Z" fill="#f05a5a" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M42 42q8 6 16 0" fill="none" stroke="#a8301f" stroke-width="3" stroke-linecap="round"/>',
+  LAC: '<path d="M0 54Q20 34 40 46Q60 30 100 46V64H0Z" fill="#6fae7c"/><ellipse cx="50" cy="70" rx="44" ry="18" fill="#2f8fd8" stroke="#1d2b22" stroke-width="4"/><path d="M26 70q6-4 12 0M54 78q6-4 12 0M60 64q6-4 12 0" fill="none" stroke="#cfeeff" stroke-width="3" stroke-linecap="round"/><path d="M12 68V48M17 66V42M84 68V50" stroke="#2f8a3d" stroke-width="4" stroke-linecap="round"/><ellipse cx="17" cy="40" rx="2.5" ry="6" fill="#8a5a2b"/>',
+  PONT: '<path d="M22 88q7-6 14 0t14 0 14 0 14 0" fill="none" stroke="#2f8fd8" stroke-width="5"/><path d="M4 38H96V86H80V72Q80 52 50 52Q20 52 20 72V86H4Z" fill="#a39a8a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M4 26V38M24 28V38M44 28V38M64 28V38M84 28V38M96 26V38M4 30H96" stroke="#6e4520" stroke-width="4" stroke-linecap="round"/><path d="M10 46h16M40 44h20M74 46h16" stroke="#8d8578" stroke-width="3"/>',
+  BOIS: '<g stroke="#1d2b22" stroke-width="4"><rect x="20" y="34" width="62" height="22" rx="11" fill="#8a5a2b"/><rect x="10" y="56" width="80" height="22" rx="11" fill="#a0692e"/></g><g stroke="#1d2b22" stroke-width="3"><circle cx="79" cy="67" r="10" fill="#e0b47a"/><circle cx="71" cy="45" r="10" fill="#e0b47a"/></g><path d="M79 63a4 4 0 1 1 0 8M71 41a4 4 0 1 1 0 8" fill="none" stroke="#a0692e" stroke-width="2"/><path d="M24 64h30M30 72h26M28 42h26" stroke="#6e4520" stroke-width="2.5" stroke-linecap="round"/>',
+  MONTAGNE: '<path d="M2 90L38 22 74 90Z" fill="#7a8a9a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M40 90L70 40 98 90Z" fill="#5f6f86" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M38 22L28 41 35 37 41 43 48 40Z" fill="#fff" stroke="#1d2b22" stroke-width="2.5" stroke-linejoin="round"/><path d="M70 40L62 53 69 50 75 54 78 52Z" fill="#fff" stroke="#1d2b22" stroke-width="2.5" stroke-linejoin="round"/>',
+  PLAGE: '<path d="M0 40H100V64H0Z" fill="#2f8fd8"/><circle cx="86" cy="16" r="9" fill="#ffd23a"/><path d="M0 62Q50 52 100 62V100H0Z" fill="#f0dca8"/><path d="M60 92L44 36" stroke="#1d2b22" stroke-width="4" stroke-linecap="round"/><path d="M14 46Q34 6 74 26Q50 26 44 36Q34 32 14 46Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M6 50q6-4 12 0M76 52q6-4 12 0" fill="none" stroke="#cfeeff" stroke-width="3" stroke-linecap="round"/>',
+  SABLE: '<path d="M4 90Q20 60 50 58Q80 60 96 90Z" fill="#f0dca8" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><g fill="#c9a86a"><circle cx="30" cy="80" r="2"/><circle cx="46" cy="72" r="2"/><circle cx="62" cy="84" r="2"/><circle cx="76" cy="78" r="2"/></g><path d="M60 44Q74 24 88 44" fill="none" stroke="#1d2b22" stroke-width="3"/><path d="M58 44H90L84 74H64Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M18 74L36 40" stroke="#2f7fe0" stroke-width="5" stroke-linecap="round"/><path d="M30 38l12-6 2 14-10 4Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/>',
+  PLUIE: '<path d="M24 56a14 14 0 0 1 2-28 20 20 0 0 1 38-6 16 16 0 0 1 10 34Z" fill="#a8b0c0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><g fill="#2f8fd8" stroke="#1d2b22" stroke-width="2.5"><path d="M30 64q-6 10 0 13q6-3 0-13Z"/><path d="M50 70q-6 10 0 13q6-3 0-13Z"/><path d="M70 64q-6 10 0 13q6-3 0-13Z"/><path d="M40 82q-5 8 0 11q5-3 0-11Z"/><path d="M60 82q-5 8 0 11q5-3 0-11Z"/></g>',
+  NEIGE: '<g stroke="#2f7fe0" stroke-width="5" stroke-linecap="round" fill="none"><path d="M50 8V92M14 29L86 71M14 71L86 29"/><path d="M50 22l-8-8M50 22l8-8M50 78l-8 8M50 78l8 8M26 36l-11 3M26 36l-3-11M74 64l11-3M74 64l3 11M26 64l-11-3M26 64l-3 11M74 36l11 3M74 36l3-11"/></g><circle cx="50" cy="50" r="7" fill="#cfeeff" stroke="#2f7fe0" stroke-width="3"/>',
+  ORAGE: '<path d="M22 56a15 15 0 0 1 2-30 22 22 0 0 1 42-6 17 17 0 0 1 10 36Z" fill="#5a6478" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M48 50L34 76H48L40 96 70 64H54L62 50Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/>',
+  ROUGE: '<path d="M50 14Q58 30 66 18Q68 34 84 28Q76 44 92 52Q74 56 82 74Q66 66 62 86Q52 72 40 88Q38 70 20 76Q28 60 10 52Q26 44 16 28Q34 34 36 16Q42 30 50 14Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="90" cy="20" r="4" fill="#e5483b" stroke="#1d2b22" stroke-width="2"/><circle cx="12" cy="86" r="5" fill="#e5483b" stroke="#1d2b22" stroke-width="2"/>',
+  JAUNE: '<path d="M50 14Q58 30 66 18Q68 34 84 28Q76 44 92 52Q74 56 82 74Q66 66 62 86Q52 72 40 88Q38 70 20 76Q28 60 10 52Q26 44 16 28Q34 34 36 16Q42 30 50 14Z" fill="#f5c518" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="90" cy="20" r="4" fill="#f5c518" stroke="#1d2b22" stroke-width="2"/><circle cx="12" cy="86" r="5" fill="#f5c518" stroke="#1d2b22" stroke-width="2"/>',
+  VIOLET: '<path d="M50 14Q58 30 66 18Q68 34 84 28Q76 44 92 52Q74 56 82 74Q66 66 62 86Q52 72 40 88Q38 70 20 76Q28 60 10 52Q26 44 16 28Q34 34 36 16Q42 30 50 14Z" fill="#8a5ad8" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="90" cy="20" r="4" fill="#8a5ad8" stroke="#1d2b22" stroke-width="2"/><circle cx="12" cy="86" r="5" fill="#8a5ad8" stroke="#1d2b22" stroke-width="2"/>',
+  BLANC: '<path d="M50 14Q58 30 66 18Q68 34 84 28Q76 44 92 52Q74 56 82 74Q66 66 62 86Q52 72 40 88Q38 70 20 76Q28 60 10 52Q26 44 16 28Q34 34 36 16Q42 30 50 14Z" fill="#ffffff" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="90" cy="20" r="4" fill="#ffffff" stroke="#1d2b22" stroke-width="2"/><circle cx="12" cy="86" r="5" fill="#ffffff" stroke="#1d2b22" stroke-width="2"/>',
+  CHAPEAU: '<ellipse cx="50" cy="72" rx="44" ry="12" fill="#a0692e" stroke="#1d2b22" stroke-width="4"/><path d="M26 72V40Q26 22 50 22Q74 22 74 40V72Z" fill="#a0692e" stroke="#1d2b22" stroke-width="4"/><rect x="26" y="54" width="48" height="10" fill="#e5483b" stroke="#1d2b22" stroke-width="3"/><path d="M26 72Q50 80 74 72" fill="none" stroke="#1d2b22" stroke-width="3"/>',
+  PANTALON: '<path d="M22 8H78L86 92H58L50 40 42 92H14Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M22 18H78M50 18V40" stroke="#1d2b22" stroke-width="3"/><path d="M30 24q4 6 10 4M70 24q-4 6-10 4" fill="none" stroke="#1a4f9a" stroke-width="3"/>',
+  BOTTE: '<path d="M30 8H62V64L88 72Q96 76 94 88V92H30Z" fill="#f5c518" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M30 84H94V92H30Z" fill="#5a4a3a" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><rect x="26" y="6" width="40" height="12" fill="#e0a526" stroke="#1d2b22" stroke-width="3.5"/>',
+  LUNETTES: '<path d="M46 52Q50 46 54 52M10 52L2 40M90 52l8-12" fill="none" stroke="#1d2b22" stroke-width="5" stroke-linecap="round"/><g fill="#cfeeff" stroke="#1d2b22" stroke-width="5"><circle cx="28" cy="56" r="18"/><circle cx="72" cy="56" r="18"/></g><path d="M20 48l8-6M64 48l8-6" stroke="#fff" stroke-width="4" stroke-linecap="round"/>',
+  ROI: '<circle cx="50" cy="56" r="26" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4"/><path d="M26 62Q30 92 50 92Q70 92 74 62Q62 72 50 72Q38 72 26 62Z" fill="#a0692e" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M24 36L22 10 36 22 50 6 64 22 78 10 76 36Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="24" r="4" fill="#e5483b"/><circle cx="40" cy="52" r="3.5" fill="#1d2b22"/><circle cx="60" cy="52" r="3.5" fill="#1d2b22"/><path d="M42 75q8 4 16 0" fill="none" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/>',
+  PAPA: '<path d="M22 100Q22 74 50 74Q78 74 78 100Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><path d="M44 74L50 92 56 74Z" fill="#e5483b" stroke="#1d2b22" stroke-width="2.5" stroke-linejoin="round"/><circle cx="50" cy="44" r="24" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4"/><path d="M26 40Q26 16 50 16Q74 16 74 40Q66 28 50 30Q34 28 26 40Z" fill="#6e4520" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="41" cy="44" r="3" fill="#1d2b22"/><circle cx="59" cy="44" r="3" fill="#1d2b22"/><path d="M38 56q6-5 12 0q6-5 12 0q-6 5-12 1q-6 4-12-1Z" fill="#6e4520"/>',
+  PRINCE: '<path d="M18 100Q20 72 50 72Q80 72 82 100Z" fill="#2f7fe0" stroke="#1d2b22" stroke-width="4"/><path d="M40 72L50 84 60 72Z" fill="#fff" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><circle cx="50" cy="46" r="22" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4"/><path d="M28 44Q28 26 50 26Q72 26 72 44Q64 34 50 36Q36 34 28 44Z" fill="#f5c518" stroke="#1d2b22" stroke-width="3" stroke-linejoin="round"/><path d="M34 28L32 12 42 20 50 8 58 20 68 12 66 28Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="3.5" stroke-linejoin="round"/><circle cx="42" cy="48" r="3" fill="#1d2b22"/><circle cx="58" cy="48" r="3" fill="#1d2b22"/><path d="M42 58q8 6 16 0" fill="none" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/>',
+  PIRATE: '<path d="M24 74Q50 102 76 74Q62 84 50 84Q38 84 24 74Z" fill="#6e4520"/><circle cx="50" cy="58" r="28" fill="#f2c4a0" stroke="#1d2b22" stroke-width="4"/><path d="M8 40Q50 0 92 40Q50 30 8 40Z" fill="#1d2b22" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="50" cy="26" r="5" fill="#fff"/><path d="M28 46L72 62" stroke="#1d2b22" stroke-width="3"/><ellipse cx="60" cy="56" rx="9" ry="7" fill="#1d2b22"/><circle cx="40" cy="56" r="3.5" fill="#1d2b22"/><path d="M38 72q12 8 24 0" fill="none" stroke="#1d2b22" stroke-width="3" stroke-linecap="round"/>',
+  FOSSILE: '<circle cx="50" cy="50" r="38" fill="#d9c9a3" stroke="#1d2b22" stroke-width="4"/><path d="M47 50a3 3 0 1 1 6 0a8 8 0 1 1-14 0a14 14 0 1 1 26 0a20 20 0 1 1-38 0a26 26 0 1 1 50 0" fill="none" stroke="#6e5a3a" stroke-width="4" stroke-linecap="round"/>',
+  GRIFFE: '<path d="M14 92H62" stroke="#7a5238" stroke-width="9" stroke-linecap="round"/><path d="M20 90Q20 40 60 14Q86 4 84 20Q64 30 56 54Q48 76 50 90Z" fill="#efe6cf" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M70 50l-8 30M82 56l-8 30M94 62l-8 30" stroke="#e5483b" stroke-width="4" stroke-linecap="round"/>',
+  GUITARE: '<path d="M56 42L86 12" stroke="#1d2b22" stroke-width="10" stroke-linecap="round"/><path d="M56 42L86 12" stroke="#a0692e" stroke-width="6" stroke-linecap="round"/><path d="M82 4l12 12" stroke="#1d2b22" stroke-width="7" stroke-linecap="round"/><path d="M40 30Q54 30 56 44Q66 50 64 64Q60 90 34 90Q8 90 10 64Q8 50 22 46Q24 32 40 30Z" fill="#e0882a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><circle cx="36" cy="62" r="8" fill="#1d2b22"/><path d="M24 78L44 58" stroke="#1d2b22" stroke-width="5"/><path d="M36 62L86 12" stroke="#fff" stroke-width="1.5"/>',
+  TAMBOUR: '<path d="M20 6L44 30M80 6L56 30" stroke="#a0692e" stroke-width="5" stroke-linecap="round"/><circle cx="20" cy="6" r="5" fill="#a0692e"/><circle cx="80" cy="6" r="5" fill="#a0692e"/><path d="M14 36V76Q50 94 86 76V36Z" fill="#e5483b" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M14 44L32 84M50 48V88M86 44L68 84M32 46L50 86" stroke="#ffd23a" stroke-width="3"/><ellipse cx="50" cy="36" rx="36" ry="12" fill="#f2ead8" stroke="#1d2b22" stroke-width="4"/>',
+  CLOCHE: '<path d="M50 6V16" stroke="#1d2b22" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="82" r="8" fill="#e0a526" stroke="#1d2b22" stroke-width="3.5"/><path d="M50 16Q24 18 24 50Q24 66 14 76H86Q76 66 76 50Q76 18 50 16Z" fill="#ffd23a" stroke="#1d2b22" stroke-width="4" stroke-linejoin="round"/><path d="M36 30Q30 44 32 62" fill="none" stroke="#fff3a0" stroke-width="4" stroke-linecap="round"/>',
 };
 // Mots sans accents : les touches des énigmes n'en ont pas. Rangés par thème.
 const WORDS_PETIT = [
@@ -1222,17 +1324,37 @@ function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.f
    l'écran (R) pour rester net, et refait si l'écran change de taille. */
 const LAYER_COLS = 8, LAYER_M = 48;
 function newLayer(w, h) {
-  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
-  const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+  let c;
+  if (typeof OffscreenCanvas !== 'undefined') c = new OffscreenCanvas(w, h);
+  else { c = document.createElement('canvas'); c.width = w; c.height = h; }
+  c.layerW = w; c.layerH = h;
+  return c;
+}
+/* Les morceaux ne sont pas jetés : ceux qui sortent de l'écran, et ceux de l'endroit qu'on quitte,
+   attendent dans LAYER_POOL pour resservir (effacés). Sur la Switch, un morceau occupe environ 2 Mo
+   de mémoire native que le moteur ne libère pas vite : en recréer à chaque endroit la remplissait. */
+const LAYER_POOL = [], LAYER_POOL_MAX = 16;
+function layerFree(c) { if (c && LAYER_POOL.length < LAYER_POOL_MAX && !LAYER_POOL.includes(c)) LAYER_POOL.push(c); }
+function layerTake(w, h) {
+  const i = LAYER_POOL.findIndex(c => c.layerW === w && c.layerH === h);
+  if (i < 0) return newLayer(w, h);
+  const c = LAYER_POOL.splice(i, 1)[0], g = c.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+  return c;
+}
+// Rend tous les morceaux de l'endroit en cours (on change d'endroit, ou la taille de l'écran change).
+function layerRelease() {
+  if (L && L.layers) for (const n in L.layers) L.layers[n].forEach(layerFree);
+  if (L) L.layers = null;
 }
 function layerGet(name, k, paint) {
   const R = dpr * scale;
-  if (!L.layers || L.layerR !== R) { L.layers = {}; L.layerR = R; }
+  if (!L.layers || L.layerR !== R) { layerRelease(); L.layers = {}; L.layerR = R; }
   const Ls = L.layers[name] || (L.layers[name] = []);
   if (Ls[k]) return Ls[k];
   const W = LAYER_COLS * T, H = VIEW_H + 2 * LAYER_M, x0 = k * W;
   const a = Math.max(0, k * LAYER_COLS - 1), b = Math.min(L.cols - 1, (k + 1) * LAYER_COLS);
-  const cnv = newLayer(Math.ceil(W * R), Math.ceil(H * R)), g = cnv.getContext('2d');
+  const cnv = layerTake(Math.ceil(W * R), Math.ceil(H * R)), g = cnv.getContext('2d');
   g.setTransform(R, 0, 0, R, -x0 * R, LAYER_M * R);
   paint(g, a, b);
   return (Ls[k] = cnv);
@@ -1248,6 +1370,9 @@ function layerDraw(name, c0, c1, cx, oy, paint) {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       try { for (let k = k0; k <= k1; k++) ctx.drawImage(L.layers[name][k], Math.round((k * LAYER_COLS * T - cx) * R), y); }
       finally { ctx.restore(); }
+      // Les morceaux loin de l'écran retournent dans la réserve.
+      const Ls = L.layers[name];
+      Ls.forEach((c, k) => { if (c && (k < k0 - 1 || k > k1 + 1)) { layerFree(c); delete Ls[k]; } });
       return;
     } catch (e) { L.noLayers = true; L.layers = null; }
   }
@@ -1261,6 +1386,7 @@ function sprite(key, w, h, paint) {
   const R = dpr * scale, id = key + '@' + R;
   let c = SPRITES.get(id);
   if (c === undefined) {
+    if (SPRITES.size >= 40) SPRITES.delete(SPRITES.keys().next().value);
     try { c = newLayer(Math.ceil(w * R), Math.ceil(h * R)); const g = c.getContext('2d'); g.setTransform(R, 0, 0, R, 0, 0); paint(g); }
     catch (e) { c = null; }
     SPRITES.set(id, c);
@@ -1271,7 +1397,7 @@ function sprite(key, w, h, paint) {
 function layerDirty(c) {
   if (!L || !L.layers) return;
   const k = Math.floor(c / LAYER_COLS);
-  for (const name in L.layers) for (let q = k - 1; q <= k + 1; q++) delete L.layers[name][q];
+  for (const name in L.layers) for (let q = k - 1; q <= k + 1; q++) { layerFree(L.layers[name][q]); delete L.layers[name][q]; }
 }
 // Rectangle aux coins arrondis, avec arc() (arcTo dessine une boucle en trop sur la Switch).
 function rr(c, x, y, w, h, r) {
@@ -1284,11 +1410,28 @@ function rr(c, x, y, w, h, r) {
   c.closePath();
 }
 const INK = 'rgba(30,24,14,.9)';
-function grad(c, top, bot, pal) {
-  const g = c.createLinearGradient(0, top, 0, bot);
-  g.addColorStop(0, pal.dark); g.addColorStop(.45, pal.body); g.addColorStop(1, pal.belly);
+/* Dégradés gardés, par contexte de dessin et par clé : sur la Switch, chaque dégradé créé occupe de la
+   mémoire native que le moteur JavaScript ne voit pas. En créer des dizaines à chaque image (corps des
+   dinos, ciel, eau) remplissait la mémoire : saccades de plus en plus fortes et son qui crépite. */
+const GRADS = new WeakMap();
+function gradCache(c, key, make) {
+  let m = GRADS.get(c);
+  if (!m) GRADS.set(c, m = new Map());
+  let g = m.get(key);
+  if (!g) { if (m.size > 300) m.clear(); g = make(); m.set(key, g); }
   return g;
 }
+function grad(c, top, bot, pal) {
+  return gradCache(c, `l${top},${bot},${pal.dark},${pal.body},${pal.belly}`, () => {
+    const g = c.createLinearGradient(0, top, 0, bot);
+    g.addColorStop(0, pal.dark); g.addColorStop(.45, pal.body); g.addColorStop(1, pal.belly);
+    return g;
+  });
+}
+// Dégradé vertical de tout l'écran (ciel, eau)
+const screenGrad = (top, bot) => gradCache(ctx, `s${viewH},${top},${bot}`, () => {
+  const g = ctx.createLinearGradient(0, 0, 0, viewH); g.addColorStop(0, top); g.addColorStop(1, bot); return g;
+});
 // Contour puis remplissage : les sous-chemins se fondent en une seule silhouette.
 function shape(c, build, fill, lw = 3) { build(); c.lineWidth = lw; c.strokeStyle = INK; c.stroke(); c.fillStyle = fill; c.fill(); }
 function leg(c, hx, hy, len, w, ang, col) {
@@ -1441,8 +1584,11 @@ function drawTrikeTop(c, x, y, ang, t, moving, p, s = 1) {
   const w = moving ? Math.sin(t * 12) * 4 : 0;
   [[10, -12, w], [10, 12, -w], [-10, -13, -w], [-10, 13, w]].forEach(([lx, ly, o]) => shape(c, () => { c.beginPath(); c.ellipse(lx + o, ly, 5.5, 4.5, 0, 0, Math.PI * 2); }, p.dark, 2));
   shape(c, () => { c.beginPath(); c.moveTo(-14, -6); c.quadraticCurveTo(-28, -2 + w * .5, -35, w * .6); c.quadraticCurveTo(-28, 2 + w * .5, -14, 6); c.closePath(); }, p.body, 2.5);
-  const g = c.createRadialGradient(-3, -3, 2, -2, 0, 20);
-  g.addColorStop(0, p.belly); g.addColorStop(.5, p.body); g.addColorStop(1, p.dark);
+  const g = gradCache(c, `r${p.belly},${p.body},${p.dark}`, () => {
+    const r = c.createRadialGradient(-3, -3, 2, -2, 0, 20);
+    r.addColorStop(0, p.belly); r.addColorStop(.5, p.body); r.addColorStop(1, p.dark);
+    return r;
+  });
   shape(c, () => { c.beginPath(); c.ellipse(-2, 0, 19, 13, 0, 0, Math.PI * 2); }, g);
   marks(c, 'rgba(60,45,25,.5)', [[-13, -3, -13, 3], [-6, -4, -6, 4], [1, -3, 1, 3]]);
   shape(c, () => { c.beginPath(); c.ellipse(13, 0, 7, 16, 0, 0, Math.PI * 2); }, p.frill);
@@ -2228,9 +2374,7 @@ function drawMountains(d, base, f) {
 }
 function drawSkyScene(d, base) {
   setView();
-  const g = ctx.createLinearGradient(0, 0, 0, viewH);
-  g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+  ctx.fillStyle = screenGrad(d.sky[0], d.sky[1]); ctx.fillRect(0, 0, viewW, viewH);
   const top = base - GROUND * T;
   if (d.night) {
     ctx.fillStyle = '#fff8d6';
@@ -2514,9 +2658,7 @@ MODES.shmup = {
   render() {
     const d = L.d, oy = L.oy;
     setView();
-    const g = ctx.createLinearGradient(0, 0, 0, viewH);
-    g.addColorStop(0, d.sky[0]); g.addColorStop(1, d.sky[1]);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+    ctx.fillStyle = screenGrad(d.sky[0], d.sky[1]); ctx.fillRect(0, 0, viewW, viewH);
     if (!d.storm) { ctx.fillStyle = d.sunset ? 'rgba(255,150,80,.95)' : 'rgba(255,220,120,.9)'; circle(ctx, viewW - 90, oy + (d.sunset ? 300 : 70), d.sunset ? 50 : 34); }
     if (d.rainbow) ['#e5483b', '#ff8a2a', '#f5c518', '#3fa34d', '#2f7fe0', '#8a5ad8'].forEach((c, k) => {
       ctx.strokeStyle = c; ctx.globalAlpha = .45; ctx.lineWidth = 14;
@@ -2584,7 +2726,7 @@ MODES.shmup = {
     const pulse = .5 + .5 * Math.sin(time * 3 + g.k);
     ctx.fillStyle = `rgba(57,201,168,${.2 + pulse * .2})`; circle(ctx, 0, 0, 48);
     ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(28, 0); ctx.lineTo(0, 40); ctx.lineTo(-28, 0); ctx.closePath();
-    const gg = ctx.createLinearGradient(-28, -40, 28, 40); gg.addColorStop(0, '#b9a8ff'); gg.addColorStop(1, '#5a4c9a');
+    const gg = gradCache(ctx, 'cristal', () => { const x = ctx.createLinearGradient(-28, -40, 28, 40); x.addColorStop(0, '#b9a8ff'); x.addColorStop(1, '#5a4c9a'); return x; });
     ctx.fillStyle = gg; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.ellipse(0, 2, 9, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.moveTo(-6, -30); ctx.lineTo(-18, -4); ctx.lineTo(-12, -4); ctx.closePath(); ctx.fill();
@@ -2679,9 +2821,7 @@ MODES.swim = {
   render() {
     const d = L.d, oy = L.oy;
     setView();
-    const g = ctx.createLinearGradient(0, 0, 0, viewH);
-    g.addColorStop(0, d.water[0]); g.addColorStop(1, d.water[1]);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, viewW, viewH);
+    ctx.fillStyle = screenGrad(d.water[0], d.water[1]); ctx.fillRect(0, 0, viewW, viewH);
     if (!d.cave) {
       ctx.fillStyle = 'rgba(255,255,255,.07)';
       const sp = 180, s = Math.floor(camX * .3 / sp) - 1;
@@ -2735,9 +2875,10 @@ MODES.swim = {
     ctx.restore();
     if (d.deep) {
       // Grands fonds : il fait noir, sauf autour du plésiosaure
-      const px = p.x + p.w / 2 - Math.round(camX), py = p.y + p.h / 2 + oy, gl = ctx.createRadialGradient(px, py, 70, px, py, 320);
-      gl.addColorStop(0, 'rgba(2,8,20,0)'); gl.addColorStop(1, 'rgba(2,8,20,.6)');
-      ctx.fillStyle = gl; ctx.fillRect(0, 0, viewW, viewH);
+      // (un seul dégradé, centré en 0, 0 : on le déplace avec translate)
+      const px = p.x + p.w / 2 - Math.round(camX), py = p.y + p.h / 2 + oy;
+      ctx.fillStyle = gradCache(ctx, 'fonds', () => { const gl = ctx.createRadialGradient(0, 0, 70, 0, 0, 320); gl.addColorStop(0, 'rgba(2,8,20,0)'); gl.addColorStop(1, 'rgba(2,8,20,.6)'); return gl; });
+      ctx.save(); ctx.translate(px, py); ctx.fillRect(-px, -py, viewW, viewH); ctx.restore();
     }
   },
   current(k) {
@@ -2856,7 +2997,7 @@ const nChoices = k => k <= 3 ? 3 : 4;
 let pzErrs = 0, pzSkill = null, pzStars = 0, pzKey = null, pzId = 0;
 // Énigmes de jeu : les étoiles viennent du nombre de coups (ou des erreurs), calculé par l'énigme.
 function gameDone(errs, win) { pzErrs = errs; solved(win); }
-window.addEventListener('keydown', e => { if (state === 'puzzle' && pzKey && !pzLocked && pzKey(e.code)) e.preventDefault(); });
+window.addEventListener('keydown', e => { if (state === 'puzzle' && pzKey && !pzLocked && !pzWaiting() && pzKey(e.code)) e.preventDefault(); });
 // Un sac de mots par palier : un mot ne revient pas avant que tous les autres soient sortis.
 // Niveaux 1 à 3 : mots courts ; 4 à 6 : jusqu'à 6 lettres ; 7 et plus : tous les mots.
 const wordBags = {};
@@ -2915,9 +3056,12 @@ function solved(extra = '') {
   say((extra ? extra + ' ' : '') + pick(BRAVO) + (up ? ' ' + up : ''));
   setTimeout(() => closePuzzle(true), up ? 2800 : 1600);
 }
+const OOPS = ['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !'];
+// Énigmes de mots : après une erreur, on redit le mot (les images ne suffisent pas toujours à un petit).
+const sayWord = w => ` Le mot ${w.toLowerCase()}.`;
 function oops(btn, errs, hintFn, msg) {
   pzErrs++; SFX.no(); btn.classList.add('bad'); btn.disabled = true;
-  say(msg || pick(['Presque ! Essaie encore.', 'Oups, essaie encore !', 'Regarde bien, tu vas trouver !']));
+  say(msg || pick(OOPS));
   if (hintFn) hintFn(errs);
 }
 /* Aide payée avec les trésors du sac : enlever une mauvaise réponse (2 étoiles au plus),
@@ -2967,7 +3111,7 @@ function choicePuzzle(o) {
     b.onclick = () => {
       if (pzLocked || b.disabled) return;
       if (ch.ok) { b.classList.add('good'); solved(o.win); }
-      else { errs++; oops(b, errs, n => { if (n >= 2) good.forEach(g => g.classList.add('hint')); }); renderHelp(); }
+      else { errs++; oops(b, errs, n => { if (n >= 2) good.forEach(g => g.classList.add('hint')); }, o.again ? pick(OOPS) + o.again : undefined); renderHelp(); }
     };
     pz.choices.appendChild(b); btns.push(b);
   });
@@ -3056,7 +3200,7 @@ const PUZZLES = {
     choicePuzzle({
       title: 'Par quelle lettre ça commence ?', say: `Par quelle lettre commence le mot ${w.toLowerCase()} ?`,
       visual: pic(w),
-      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `${w.toLowerCase()} commence par ${letterName(l)} !`,
+      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `${w.toLowerCase()} commence par ${letterName(l)} !`, again: sayWord(w),
     });
   },
   missing(w = pickWord(lv('lettres'))) {
@@ -3064,7 +3208,7 @@ const PUZZLES = {
     choicePuzzle({
       title: 'Quelle lettre manque ?', say: `Quelle lettre manque dans le mot ${w.toLowerCase()} ?`,
       visual: pic(w) + `<div class="word">${[...w].map((ch, i) => i === idx ? '<span class="gap">?</span>' : `<span>${ch}</span>`).join('')}</div>`,
-      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `Le mot ${w.toLowerCase()} !`,
+      choices: shuffle([l, ...otherLetters(w, n - 1)]).map(v => ({ html: v, ok: v === l })), win: `Le mot ${w.toLowerCase()} !`, again: sayWord(w),
     });
   },
   hangman(w = pickWord()) {
@@ -3083,7 +3227,7 @@ const PUZZLES = {
       letters.forEach((ch, i) => { if (ch === l) found[i] = true; });
       b.classList.remove('hint'); b.classList.add('good'); b.disabled = true; SFX.key(); draw();
       if (found.every(Boolean)) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
-      say(given ? `Je te donne la lettre ${letterName(l)}.` : letterName(l));
+      say(given ? `Je te donne la lettre ${letterName(l)}.` + sayWord(w) : letterName(l));
       if (pzHelp.hinted) glow();
       renderHelp();
     };
@@ -3095,14 +3239,15 @@ const PUZZLES = {
         if (letters.includes(l)) take(l);
         else {
           errs++; miss++;
-          oops(b, errs, null, miss >= FREE_LETTER ? ' ' : null);
+          oops(b, errs, null, miss >= FREE_LETTER ? ' ' : pick(OOPS) + sayWord(w));
           if (miss >= FREE_LETTER) take(next(), true);
         }
       };
       pz.choices.appendChild(b);
     });
     renderHelp();
-    currentSay = ICON[w] ? "Trouve les lettres du mot caché. Regarde bien l'image !" : `Écris le mot ${w.toLowerCase()}.`; say(currentSay);
+    // Le mot est toujours dit : l'image aide, mais ne suffit pas toujours.
+    currentSay = `Écris le mot ${w.toLowerCase()}.` + (ICON[w] ? " Regarde bien l'image !" : ''); say(currentSay);
   },
   order(w = pickWord()) {
     const letters = [...w];
@@ -3118,7 +3263,7 @@ const PUZZLES = {
     const take = (b, given) => {
       slots[pos] = letters[pos]; pos++; miss = 0; b.classList.add('gone'); btns.forEach(x => x.classList.remove('hint')); SFX.key(); draw();
       if (pos === letters.length) { solved(`Tu as écrit ${w.toLowerCase()} !`); return; }
-      if (given) say(`Je te donne la lettre ${letterName(letters[pos - 1])}.`);
+      if (given) say(`Je te donne la lettre ${letterName(letters[pos - 1])}.` + sayWord(w));
       if (pzHelp.hinted) glow();
       renderHelp();
     };
@@ -3131,7 +3276,7 @@ const PUZZLES = {
         else {
           miss++; pzErrs++; SFX.no(); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad');
           setTimeout(() => b.classList.remove('bad'), 450);
-          if (miss >= FREE_LETTER) take(nextBtn(), true); else say('Essaie une autre lettre.');
+          if (miss >= FREE_LETTER) take(nextBtn(), true); else say('Essaie une autre lettre.' + sayWord(w));
         }
       };
       pz.choices.appendChild(b);
@@ -3386,7 +3531,8 @@ const PUZZLES = {
   },
   // Ombres : quelle ombre va avec l'image ? Plus loin, certaines ombres sont retournées.
   ombres() {
-    const k = lv('logique'), all = Object.keys(ICON), w = pick(all), n = nChoices(k);
+    // (les 4 couleurs sont la même tache de peinture : leurs ombres seraient pareilles)
+    const k = lv('logique'), all = Object.keys(ICON).filter(w => !['ROUGE', 'JAUNE', 'VIOLET', 'BLANC'].includes(w)), w = pick(all), n = nChoices(k);
     choicePuzzle({
       title: 'Quelle est son ombre ?', say: "Trouve l'ombre de l'image.",
       visual: `<svg viewBox="0 0 100 100" class="pic" aria-hidden="true">${ICON[w]}</svg>`,
@@ -3511,7 +3657,15 @@ function varyType(type) {
   const fresh = pool.filter(t => t !== lastType);
   return pick(fresh.length ? fresh : pool);
 }
+/* À l'ouverture d'une énigme, l'enfant appuie souvent encore pour sauter, foncer ou nager : pendant
+   PZ_WAIT millisecondes, l'énigme ne prend ni le doigt ni les touches (sinon une réponse partait
+   au hasard, et la voix du « Oups » coupait le mot de la dictée). */
+const PZ_WAIT = 900;
+let pzWaitUntil = 0, pzWaitTimer = 0;
+const pzWaiting = () => performance.now() < pzWaitUntil;
 function openPuzzle(g) {
+  pzWaitUntil = performance.now() + PZ_WAIT; $('puzzle').classList.add('wait');
+  clearTimeout(pzWaitTimer); pzWaitTimer = setTimeout(() => $('puzzle').classList.remove('wait'), PZ_WAIT);
   state = 'puzzle'; currentGate = g; pzLocked = false; currentWord = null; pzErrs = 0; pzSkill = null; pzKey = null; pzId++; pzHelp = null; $('pzHelp').hidden = true; clearKeys();
   $('puzzle').hidden = false;
   let type = g.type;
@@ -4246,6 +4400,7 @@ function restoreRun(r) {
 }
 let hintTimer = 0;
 function startLevel(worldKey, i, run = null) {
+  layerRelease();
   const sp = levelSp(worldKey, i), d = WORLDS[worldKey][i];
   L = { world: worldKey, sp, mode: sp.mode, i, d, gates: [], items: [], broken: [], oy: 0 };
   parts = []; fruitCount = 0; eggsRun = 0; camX = 0; time = 0; cooldown = run ? 90 : 30;

@@ -116,6 +116,30 @@ const cull = await ev(`(() => {
 })()`);
 check('fruit loin de l’écran : pas dessiné', cull.far > 0 && cull.after === 0, cull);
 
+// 6. Mémoire (Switch) : plus de dégradé créé à chaque image, et des morceaux de décor réutilisés
+const mem = await ev(`(() => {
+  const P = CanvasRenderingContext2D.prototype, O = OffscreenCanvasRenderingContext2D.prototype, back = [];
+  let grads = 0, made = 0;
+  for (const Q of [P, O]) for (const k of ['createLinearGradient', 'createRadialGradient']) { const f = Q[k]; Q[k] = function (...a) { grads++; return f.apply(this, a); }; back.push(() => Q[k] = f); }
+  const OC = OffscreenCanvas; window.OffscreenCanvas = function (w, h) { made++; return new OC(w, h); };
+  const perLevel = [];
+  try {
+    for (const k of Object.keys(WORLDS)) WORLDS[k].forEach((d, i) => {
+      startLevel(k, i); cooldown = 99999;
+      for (let f = 0; f < 3; f++) MODES[L.mode].render();      // premières images : les dégradés se créent
+      grads = 0;
+      for (let f = 0; f < 120; f++) { keys.right = true; time += 1 / 60; MODES[L.mode].step(); if (state !== 'play') state = 'play'; MODES[L.mode].render(); }
+      keys.right = false;
+      perLevel.push(grads);
+    });
+    // Deux tours de tous les endroits : au 2e tour, presque plus de morceau neuf
+    const made1 = made;
+    for (const k of Object.keys(WORLDS)) WORLDS[k].forEach((d, i) => { startLevel(k, i); for (let f = 0; f < 60; f++) { keys.right = true; time += 1 / 60; MODES[L.mode].step(); if (state !== 'play') state = 'play'; MODES[L.mode].render(); } keys.right = false; });
+    return { maxGrads: Math.max(...perLevel), made1, made2: made - made1, pool: LAYER_POOL.length };
+  } finally { back.forEach(f => f()); window.OffscreenCanvas = OC; }
+})()`);
+check(`dégradés : aucun créé pendant le jeu (120 images par endroit, au pire ${mem.maxGrads})`, mem.maxGrads === 0, mem);
+check(`morceaux de décor réutilisés : ${mem.made1} créés au 1er tour, ${mem.made2} au 2e, réserve ${mem.pool}`, mem.made2 <= 4 && mem.pool <= 16, mem);
 check('aucune erreur JavaScript', errors.length === 0, errors);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');
 ws.close(); chrome.kill();
