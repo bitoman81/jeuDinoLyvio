@@ -224,6 +224,35 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Médailles : bronze, argent, or. Normal s'ouvre pour un endroit après le bronze, Compliqué après l'argent. Un endroit fini avant les médailles compte en Simple.
 - Tests : `tests/test-ennemis.mjs`.
 
+## Étapes suivantes (proposées le 1er novembre 2026)
+Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dépôt dino-explorateur-switch), sur sa propre branche.
+
+## Étape 12 - Plus de choses à acheter avec les fruits
+- [x] Accessoires, achetés une fois et portés par l'animal de son choix : fleur, casquette, lunettes de soleil, chapeau de pirate, couronne. Visibles dans le menu, dans le jeu (vue de côté) et sur les bébés du nid.
+- [x] Un nouveau pouvoir par animal : double saut (T-Rex), grande charge (tricératops), graine triple (ptérodactyle), super nageoire (plésiosaure). Tests : `tests/test-boutique.mjs`.
+- [ ] Switch : une rangée « accessoires » dans le sac.
+
+## Étape 13 - Musique
+- [ ] Une musique douce par animal (et une pour le menu), calculée par le jeu (pas de fichier), avec un réglage pour la couper sans couper la voix.
+
+## Étape 14 - Un « boss » gentil à la fin de chaque animal
+- [ ] À la fin du dernier endroit : un gros ennemi à battre en 3 fois (sauter dessus, foncer, graines, nager vite), avec une énigme entre chaque fois.
+
+## Étape 15 - Passer une partie de la Switch au téléphone
+- [ ] La Switch affiche un QR code (code de sauvegarde DINO2-) ; on le scanne avec le téléphone pour ouvrir la partie dans le jeu web.
+
+## Étape 16 - Dictée avec la vraie voix sur la Switch
+- [ ] Un outil sur l'ordinateur lit les mots des parents sur la carte SD et les fait dire par Eloise.
+
+## Étape 17 - Résumé de la semaine pour les parents
+- [ ] Ce qui a progressé, ce qui bloque, les énigmes les plus ratées.
+
+## Étape 18 - Tests automatiques sur GitHub
+- [ ] Les tests du jeu web et de la Switch tournent à chaque envoi (GitHub Actions).
+
+## Étape 19 - Découper index.html
+- [ ] Plusieurs fichiers (données, énigmes, modes de jeu) assemblés en un seul pour la publication, sans rien changer pour le joueur.
+
 ## Organisation technique
 
 - Le jeu tient en un seul fichier, `index.html`, d'environ 119 Ko. Avec tout ce contenu, il passera à environ 300 Ko. Deux solutions :
@@ -250,3 +279,11 @@ Sources : projet nx-spa (github.com/BernardoGiordano/nx-spa), nx.js (github.com/
 - [x] Étape 9 - Version Nintendo Switch avec Atmosphère (version 1.0.0, nx.js)
 - [x] Étape 10 - Plusieurs parties, remise à zéro des statistiques
 - [x] Étape 11 - Ennemis, difficulté des endroits et médailles
+- [ ] Étape 12 - Accessoires et nouveaux pouvoirs
+- [ ] Étape 13 - Musique
+- [ ] Étape 14 - Boss de fin
+- [ ] Étape 15 - QR code Switch vers téléphone
+- [ ] Étape 16 - Dictée avec la vraie voix sur la Switch
+- [ ] Étape 17 - Résumé de la semaine
+- [ ] Étape 18 - Tests automatiques sur GitHub
+- [ ] Étape 19 - Découper index.html

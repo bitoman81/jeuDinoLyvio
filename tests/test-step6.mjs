@@ -91,7 +91,7 @@ await ev(`$('pzBack').click(); true`);
 // 4. Pouvoirs
 await ev(`showMenu(); prog.bag.n = 30; renderMenu(); true`);
 const shop = await ev(`[...document.querySelectorAll('#shopPowers .it')].map(b => b.disabled)`);
-check('boutique : 2 pouvoirs achetables', shop.length === 2 && shop.every(d => !d), shop);
+check('boutique : 6 pouvoirs achetables', shop.length === 6 && shop.every(d => !d), shop);
 await ev(`document.querySelectorAll('#shopPowers .it')[0].click(); document.querySelectorAll('#shopPowers .it')[1].click(); true`);
 check('achat : 24 trésors dépensés', await ev(`prog.bag.n === 6 && prog.bag.power.magnet === 1 && prog.bag.power.shield === 1`));
 check('plus assez : pouvoirs grisés', await ev(`[...document.querySelectorAll('#shopPowers .it')].every(b => b.disabled)`));
