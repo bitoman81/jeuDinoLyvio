@@ -246,7 +246,7 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Un outil sur l'ordinateur (`outils/mots.mjs` du dépôt Switch) lit les mots des parents sur la carte SD et les fait dire par Eloise ; la Switch ajoute ces sons à sa voix, et ces mots deviennent une vraie dictée.
 
 ## Étape 17 - Résumé de la semaine pour les parents
-- [ ] Ce qui a progressé, ce qui bloque, les énigmes les plus ratées.
+- [x] Ce qui a progressé, ce qui bloque, les énigmes les plus ratées (web : section « Résumé de la semaine » ; Switch : page « Semaine »).
 
 ## Étape 18 - Tests automatiques sur GitHub
 - [ ] Les tests du jeu web et de la Switch tournent à chaque envoi (GitHub Actions).
@@ -285,6 +285,6 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [ ] Étape 14 - Boss de fin
 - [x] Étape 15 - QR code Switch vers téléphone, et Wi-Fi téléphone vers Switch
 - [x] Étape 16 - Dictée avec la vraie voix sur la Switch
-- [ ] Étape 17 - Résumé de la semaine
+- [x] Étape 17 - Résumé de la semaine
 - [ ] Étape 18 - Tests automatiques sur GitHub
 - [ ] Étape 19 - Découper index.html
