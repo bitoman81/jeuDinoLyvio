@@ -236,7 +236,7 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Une musique douce par animal (et une pour le menu), calculée par le jeu (pas de fichier), avec un bouton pour la couper sans couper la voix. Calculée petit à petit (4 ms par image) pour ne pas saccader. Tests : `tests/test-musique.mjs`.
 
 ## Étape 14 - Un « boss » gentil à la fin de chaque animal
-- [ ] À la fin du dernier endroit : un gros ennemi à battre en 3 fois (sauter dessus, foncer, graines, nager vite), avec une énigme entre chaque fois.
+- [x] À la fin du dernier endroit de chaque animal, un gardien garde le nid (grand vélociraptor, grand serpent, libellule géante, gros poisson) : on le touche comme les autres ennemis, chaque coup ouvre une énigme, réussie il perd un cœur sur 3. Battu, il laisse 5 fruits et le nid est libre. Tests : `tests/test-boss.mjs`.
 
 ## Étape 15 - Passer une partie de la Switch au téléphone
 - [ ] La Switch affiche un QR code (code de sauvegarde DINO2-) ; on le scanne avec le téléphone pour ouvrir la partie dans le jeu web.
