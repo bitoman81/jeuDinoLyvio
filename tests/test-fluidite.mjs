@@ -1,4 +1,5 @@
-// Fluidité de la plaine vue du ciel : le décor fixe est dessiné une fois par morceaux (layers), puis recopié.
+// Fluidité : le décor fixe (plaine, tuiles du T-Rex et du plésiosaure) est dessiné une fois par morceaux
+// (layers), puis recopié ; fruits, perles et ennemis hors de l'écran ne sont pas dessinés.
 // On vérifie que l'image est la même qu'avant (dessin direct), qu'un caillou cassé disparaît bien,
 // et que le dessin est plus rapide.
 import { spawn } from 'node:child_process';
@@ -54,22 +55,23 @@ window.diff = (a, b) => {
   }
   return n / (W * H);
 };
-window.both = () => { L.noLayers = false; MODES.topdown.render(); const a = shot(); L.noLayers = true; MODES.topdown.render(); const b = shot(); L.noLayers = false; return diff(a, b); };
+window.both = () => { L.noLayers = false; MODES[L.mode].render(); const a = shot(); L.noLayers = true; L.layers = null; MODES[L.mode].render(); const b = shot(); L.noLayers = false; return diff(a, b); };
 true`);
 
-// 1. Même image qu'avant, dans tous les endroits vus du ciel, au début, au milieu et à la fin
+// 1. Même image qu'avant, dans tous les endroits, au début, au milieu et à la fin
 const same = await ev(`(() => {
   const out = [];
   for (const k of Object.keys(WORLDS)) WORLDS[k].forEach((d, i) => {
-    startLevel(k, i); if (L.mode !== 'topdown') return;
+    startLevel(k, i);
     cooldown = 99999; parts = [];
     for (const f of [0, .5, 1]) { camX = Math.max(0, (L.cols * T - viewW) * f); out.push([k + i + '@' + f, +both().toFixed(4)]); }
   });
   return out;
 })()`);
 const worst = same.reduce((m, x) => x[1] > m[1] ? x : m, ['', 0]);
-check(`${same.length / 3} endroits vus du ciel : même image qu'avant (moins de 1 % de pixels différents : fines rayures de la glace)`, same.length >= 9 && worst[1] < .01, { n: same.length, worst });
-check('les morceaux sont bien utilisés', await ev(`startLevel('trike', 0); MODES.topdown.render(); !L.noLayers && L.layers.filter(Boolean).length > 0 && L.layerR === dpr * scale`));
+check(`${same.length / 3} endroits : même image qu'avant (moins de 1 % de pixels différents : fines rayures de la glace)`, same.length >= 90 && worst[1] < .01, { n: same.length, worst });
+for (const [w, names] of [['trike', 'ground,trees'], ['rex', 'tiles'], ['plesio', 'tiles']])
+  check(`${w} : les morceaux sont bien utilisés (${names})`, await ev(`startLevel('${w}', 0); MODES[L.mode].render(); !L.noLayers && L.layerR === dpr * scale && '${names}'.split(',').every(n => L.layers[n].filter(Boolean).length > 0)`));
 
 // 2. Un caillou cassé disparaît du morceau déjà dessiné
 const rock = await ev(`(() => {
@@ -80,7 +82,7 @@ const rock = await ev(`(() => {
   const [c, r] = cell; camX = Math.max(0, c * T - viewW / 2);
   MODES.topdown.render(); const before = shot();
   L.grid[c][r] = 0; layerDirty(c);
-  const rebuilt = !L.layers[Math.floor(c / LAYER_COLS)];
+  const rebuilt = !L.layers.ground[Math.floor(c / LAYER_COLS)] && !L.layers.trees[Math.floor(c / LAYER_COLS)];
   const d = both(); MODES.topdown.render(); const changed = diff(before, shot());
   return { cell, rebuilt, d, changed };
 })()`);
@@ -90,15 +92,29 @@ check('caillou cassé : son morceau est refait et l’image suit', !rock.none &&
 const rs = await ev(`(() => { startLevel('trike', 1); MODES.topdown.render(); const r0 = L.layerR; scale *= 1.25; MODES.topdown.render(); const r1 = L.layerR; scale /= 1.25; MODES.topdown.render(); return { r0, r1, back: L.layerR === r0 }; })()`);
 check('nouvelle taille d’écran : morceaux refaits', rs.r1 !== rs.r0 && rs.back, rs);
 
-// 4. Plus rapide (dans Chrome ; sur la Switch l'écart est bien plus grand)
-const speed = await ev(`(() => {
-  startLevel('trike', 2); camX = 300;
-  const t = noL => { L.noLayers = noL; MODES.topdown.render(); const t0 = performance.now(); for (let k = 0; k < 150; k++) MODES.topdown.render(); return (performance.now() - t0) / 150; };
-  const old = t(true), now = t(false); L.noLayers = false;
-  return { avant: +old.toFixed(2), après: +now.toFixed(2) };
+// 4. Moins d'ordres de dessin par image : sur la Switch, c'est leur nombre qui coûte (environ 8 µs chacun)
+await ev(`window.orders = () => {
+  const P = CanvasRenderingContext2D.prototype, back = []; let n = 0;
+  for (const k of Object.getOwnPropertyNames(P)) { const d = Object.getOwnPropertyDescriptor(P, k); if (typeof d.value === 'function' && k !== 'constructor') { P[k] = function (...a) { n++; return d.value.apply(this, a); }; back.push(() => P[k] = d.value); } }
+  try { for (let k = 0; k < 10; k++) MODES[L.mode].render(); } finally { back.forEach(f => f()); }
+  return Math.round(n / 10);
+}; true`);
+for (const w of ['trike', 'rex', 'plesio']) {
+  const o = await ev(`(() => {
+    startLevel('${w}', 0); cooldown = 99999; for (let s = 0; s < 200; s++) { keys.right = true; time += 1 / 60; MODES[L.mode].step(); } keys.right = false;
+    L.noLayers = true; L.layers = null; const avant = orders(); L.noLayers = false; const après = orders();
+    return { avant, après };
+  })()`);
+  check(`${w} : ordres de dessin par image ${o.avant} -> ${o.après} (moins de 1000, comme le ptéranodon fluide)`, o.après < 1000 && o.après < o.avant * .8, o);
+}
+// 5. Fruits, perles et ennemis loin de l'écran : rien n'est dessiné pour eux
+const cull = await ev(`(() => {
+  startLevel('rex', 0); camX = 0; let n = 0; const f0 = ctx.arc; ctx.arc = function (...a) { n++; return f0.apply(this, a); };
+  const far = L.items.filter(f => f.x > viewW + 200).length;
+  drawFruit(L.items.find(f => f.x > viewW + 200)); const after = n; delete ctx.arc;
+  return { far, after };
 })()`);
-check('dessin de la plaine plus rapide', speed.après < speed.avant * .8, speed);
-console.log('temps par image (ms) :', JSON.stringify(speed));
+check('fruit loin de l’écran : pas dessiné', cull.far > 0 && cull.after === 0, cull);
 
 check('aucune erreur JavaScript', errors.length === 0, errors);
 console.log(fails ? `${fails} échec(s)` : 'Tous les tests passent');

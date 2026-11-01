@@ -1213,18 +1213,65 @@ function toggleSound() { prog.sound = !prog.sound; save(); setSoundIcons(); if (
 
 /* ---------- Dessin : outils ---------- */
 function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
-// Morceaux de décor dessinés une seule fois (layers) : la plaine vue du ciel en a besoin pour rester
-// fluide sur la Switch, où redessiner chaque arbre à chaque image prend plus de temps qu'une image.
+/* Morceaux de décor fixe (layers) : le sol, les arbres, les tuiles ne bougent pas ; on les dessine une
+   seule fois par morceaux de LAYER_COLS colonnes, puis on les recopie à chaque image. Sur la Switch,
+   chaque ordre de dessin coûte cher (environ 8 µs) : redessiner tout le décor prenait plus d'une image.
+   paint(g, a, b) dessine les colonnes a à b dans le contexte g (un morceau, ou l'écran si les morceaux
+   sont impossibles). Chaque morceau a une marge de LAYER_M en haut et en bas, et contient aussi les
+   colonnes voisines (ombres et feuillages qui dépassent). Il est dessiné à la taille des pixels de
+   l'écran (R) pour rester net, et refait si l'écran change de taille. */
 const LAYER_COLS = 8, LAYER_M = 48;
 function newLayer(w, h) {
   if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
   const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
 }
+function layerGet(name, k, paint) {
+  const R = dpr * scale;
+  if (!L.layers || L.layerR !== R) { L.layers = {}; L.layerR = R; }
+  const Ls = L.layers[name] || (L.layers[name] = []);
+  if (Ls[k]) return Ls[k];
+  const W = LAYER_COLS * T, H = VIEW_H + 2 * LAYER_M, x0 = k * W;
+  const a = Math.max(0, k * LAYER_COLS - 1), b = Math.min(L.cols - 1, (k + 1) * LAYER_COLS);
+  const cnv = newLayer(Math.ceil(W * R), Math.ceil(H * R)), g = cnv.getContext('2d');
+  g.setTransform(R, 0, 0, R, -x0 * R, LAYER_M * R);
+  paint(g, a, b);
+  return (Ls[k] = cnv);
+}
+// Décor fixe des colonnes c0 à c1, l'écran étant décalé de (-cx, oy) : recopié au pixel près, sans
+// agrandissement ; en cas d'échec, retour pour de bon au dessin direct.
+function layerDraw(name, c0, c1, cx, oy, paint) {
+  if (!L.noLayers) {
+    try {
+      const k0 = Math.floor(c0 / LAYER_COLS), k1 = Math.floor(c1 / LAYER_COLS);
+      for (let k = k0; k <= k1; k++) layerGet(name, k, paint);
+      const R = L.layerR, y = Math.round((oy - LAYER_M) * R);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      try { for (let k = k0; k <= k1; k++) ctx.drawImage(L.layers[name][k], Math.round((k * LAYER_COLS * T - cx) * R), y); }
+      finally { ctx.restore(); }
+      return;
+    } catch (e) { L.noLayers = true; L.layers = null; }
+  }
+  paint(ctx, c0, c1);
+}
+// Petite image toute faite (w x h, en unités du jeu), dessinée une fois par paint(g) à la taille des
+// pixels de l'écran ; null si c'est impossible (on dessine alors directement).
+const SPRITES = new Map();
+function sprite(key, w, h, paint) {
+  if (L && L.noLayers) return null;   // retour au dessin direct (voir layerDraw)
+  const R = dpr * scale, id = key + '@' + R;
+  let c = SPRITES.get(id);
+  if (c === undefined) {
+    try { c = newLayer(Math.ceil(w * R), Math.ceil(h * R)); const g = c.getContext('2d'); g.setTransform(R, 0, 0, R, 0, 0); paint(g); }
+    catch (e) { c = null; }
+    SPRITES.set(id, c);
+  }
+  return c;
+}
 // Une case de la colonne c a changé : ses morceaux (et les voisins, qui la dessinent aussi) sont à refaire.
 function layerDirty(c) {
   if (!L || !L.layers) return;
   const k = Math.floor(c / LAYER_COLS);
-  for (let q = k - 1; q <= k + 1; q++) delete L.layers[q];
+  for (const name in L.layers) for (let q = k - 1; q <= k + 1; q++) delete L.layers[name][q];
 }
 // Rectangle aux coins arrondis, avec arc() (arcTo dessine une boucle en trop sur la Switch).
 function rr(c, x, y, w, h, r) {
@@ -1586,8 +1633,10 @@ function drawKey(f) {
   ctx.fillStyle = '#a0692e'; circle(ctx, -9, 0, 3);
   ctx.restore();
 }
+// Visible à l'écran (avec une marge) ? Sinon, rien à dessiner.
+const onScreen = (x, m = 80) => x > camX - m && x < camX + viewW + m;
 function drawFruit(f) {
-  if (f.taken) return;
+  if (f.taken || !onScreen(f.x)) return;
   if (f.fossil) { drawFossil(f); return; }
   if (f.key) { drawKey(f); return; }
   const y = f.y + Math.sin(time * 3 + f.ph) * 4;
@@ -1597,7 +1646,7 @@ function drawFruit(f) {
   ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(f.x + 5, y - 12, 7, 3.5, -.5, 0, Math.PI * 2); ctx.fill();
 }
 function drawPearl(f) {
-  if (f.taken) return;
+  if (f.taken || !onScreen(f.x)) return;
   if (f.fossil) { drawFossil(f); return; }
   if (f.key) { drawKey(f); return; }
   const y = f.y + Math.sin(time * 2 + f.ph) * 3;
@@ -1838,6 +1887,7 @@ function drawFoes() {
   const c = ctx;
   L.foes.forEach(f => {
     if (f.boss && !f.on) return;
+    if (!onScreen(f.x, 160 + f.w)) return;
     c.save();
     if (f.gone) c.globalAlpha = Math.max(0, 1 - f.gone / 36);
     else if (f.inv > 0 && f.inv % 10 < 5) c.globalAlpha = .45;
@@ -2051,7 +2101,8 @@ MODES.platform = {
     ctx.strokeStyle = '#9fd8ff'; ctx.lineWidth = 4; ctx.beginPath();
     for (let x = Math.floor(camX / 40) * 40 - 40; x < camX + viewW + 40; x += 40) { const wy = GROUND * T + 32 + Math.sin(time * 2 + x * .05) * 3; ctx.moveTo(x, wy); ctx.quadraticCurveTo(x + 10, wy - 6, x + 20, wy); }
     ctx.stroke();
-    this.tiles(d);
+    const c0 = Math.max(0, Math.floor(camX / T) - 1), c1 = Math.min(L.cols - 1, Math.floor((camX + viewW) / T) + 1);
+    layerDraw('tiles', c0, c1, Math.round(camX * 2) / 2, oy, (g, a, b) => this.tiles(g, d, a, b));
     L.movers.forEach(m => {
       ctx.fillStyle = '#9b6a3a'; ctx.strokeStyle = '#1d2b22'; ctx.lineWidth = 3;
       rr(ctx, m.x, m.y, m.w, m.h, 9); ctx.fill(); ctx.stroke();
@@ -2077,7 +2128,7 @@ MODES.platform = {
     });
     L.items.forEach(drawFruit);
     this.nest();
-    L.gates.forEach(g => this.stone(g, oy));
+    L.gates.forEach(g => { if (onScreen(g.c * T + T / 2)) this.stone(g, oy); });
     drawSwitches();
     const p = player;
     drawFoes();
@@ -2085,25 +2136,24 @@ MODES.platform = {
     drawParts();
     ctx.restore();
   },
-  tiles(d) {
-    const c0 = Math.max(0, Math.floor(camX / T) - 1), c1 = Math.min(L.cols - 1, Math.floor((camX + viewW) / T) + 1);
-    for (let c = c0; c <= c1; c++) for (let r = 0; r < ROWS; r++) {
+  tiles(g, d, a, b) {
+    for (let c = a; c <= b; c++) for (let r = 0; r < ROWS; r++) {
       if (!isSolid(c, r)) continue;
       const x = c * T, y = r * T, floating = r < GROUND && !isSolid(c, r + 1);
-      ctx.fillStyle = d.dirt;
-      if (floating) { rr(ctx, x, y, T + .5, T - 10, 10); ctx.fill(); } else ctx.fillRect(x, y, T + .5, T + .5);
-      ctx.fillStyle = d.dirtDark; const s = srand(c * 7 + r * 13);
-      circle(ctx, x + 10 + s * 24, y + 22 + s * 8, 4); circle(ctx, x + 34 - s * 10, y + (floating ? 26 : 38), 3);
+      g.fillStyle = d.dirt;
+      if (floating) { rr(g, x, y, T + .5, T - 10, 10); g.fill(); } else g.fillRect(x, y, T + .5, T + .5);
+      g.fillStyle = d.dirtDark; const s = srand(c * 7 + r * 13);
+      circle(g, x + 10 + s * 24, y + 22 + s * 8, 4); circle(g, x + 34 - s * 10, y + (floating ? 26 : 38), 3);
       if (!isSolid(c, r - 1)) {
-        ctx.fillStyle = d.grassDark; ctx.fillRect(x, y - 2, T + .5, 14);
-        ctx.fillStyle = d.grass; ctx.fillRect(x, y - 4, T + .5, 12);
-        for (let k = 0; k < 4; k++) circle(ctx, x + 6 + k * 12, y + 8, 6);
+        g.fillStyle = d.grassDark; g.fillRect(x, y - 2, T + .5, 14);
+        g.fillStyle = d.grass; g.fillRect(x, y - 4, T + .5, 12);
+        for (let k = 0; k < 4; k++) circle(g, x + 6 + k * 12, y + 8, 6);
       }
     }
-    for (let c = c0; c <= c1; c++) if (isSolid(c, GROUND) && !isSolid(c, GROUND - 1) && srand(c + 40) > .7) {
+    for (let c = a; c <= b; c++) if (isSolid(c, GROUND) && !isSolid(c, GROUND - 1) && srand(c + 40) > .7) {
       const x = c * T + 24, y = GROUND * T - 2;
-      ctx.strokeStyle = d.grassDark; ctx.lineWidth = 4; ctx.lineCap = 'round';
-      for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + k * 8, y - 16, x + k * 14, y - 22 + Math.abs(k) * 4); ctx.stroke(); }
+      g.strokeStyle = d.grassDark; g.lineWidth = 4; g.lineCap = 'round';
+      for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + k * 8, y - 16, x + k * 14, y - 22 + Math.abs(k) * 4); g.stroke(); }
     }
   },
   stone(g, oy) {
@@ -2138,7 +2188,13 @@ MODES.platform = {
 };
 
 /* Décor de ciel partagé : soleil, montagnes, collines, palmiers */
+// Palmier du fond : une image toute faite par hauteur (arrondie à 10) et par couleur.
 function drawPalm(x, base, h, col) {
+  h = Math.round(h / 10) * 10;
+  const spr = sprite('palmier' + h + col, 130, h + 40, g => paintPalm(g, 56, h + 32, h, col));
+  if (spr) ctx.drawImage(spr, x - 56, base - h - 32, 130, h + 40); else paintPalm(ctx, x, base, h, col);
+}
+function paintPalm(ctx, x, base, h, col) {
   ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(x, base); ctx.quadraticCurveTo(x + 18, base - h / 2, x + 8, base - h); ctx.stroke();
   ctx.fillStyle = col;
@@ -2279,13 +2335,8 @@ MODES.topdown = {
     setView(); ctx.fillStyle = d.edge; ctx.fillRect(0, 0, viewW, viewH);
     ctx.save(); ctx.translate(-Math.round(camX), oy);
     const c0 = Math.max(0, Math.floor(camX / T) - 1), c1 = Math.min(L.cols - 1, Math.floor((camX + viewW) / T) + 1);
-    // Le décor fixe (herbe, fleurs, glace, cailloux, arbres) vient des morceaux déjà dessinés (layer) ;
-    // si ces morceaux sont impossibles, on le dessine comme avant à chaque image.
-    const k0 = Math.floor(c0 / LAYER_COLS), k1 = Math.floor(c1 / LAYER_COLS);
-    let lay = !L.noLayers;
-    if (lay) try { for (let k = k0; k <= k1; k++) this.layer(k); } catch (e) { L.noLayers = true; L.layers = null; lay = false; }
-    if (lay) try { this.blit('ground', k0, k1, oy); } catch (e) { L.noLayers = true; L.layers = null; lay = false; }
-    if (!lay) this.ground(ctx, c0, c1);
+    // Décor fixe (herbe, fleurs, glace, cailloux ; les arbres plus bas, par-dessus l'animal) : layerDraw
+    layerDraw('ground', c0, c1, Math.round(camX), oy, (g, a, b) => this.ground(g, a, b));
     for (let c = c0; c <= c1; c++) for (let r = 0; r < ROWS; r++) {
       const v = L.grid[c][r], x = c * T, y = r * T;
       if (v === 4 || v === 5) {
@@ -2304,13 +2355,12 @@ MODES.topdown = {
     }
     L.items.forEach(drawFruit);
     this.nest();
-    L.gates.forEach(g => this.gate(g));
+    L.gates.forEach(g => { if (onScreen(g.c * T + T / 2)) this.gate(g); });
     drawSwitches();
     const p = player;
     drawFoes();
     if (!(p.hurt > 0 && p.hurt % 8 < 4)) drawTrikeTop(ctx, p.x + p.w / 2, p.y + p.h / 2, p.ang, time, p.moving, world().pal);
-    if (lay) try { this.blit('trees', k0, k1, oy); } catch (e) { L.noLayers = true; L.layers = null; lay = false; }
-    if (!lay) this.trees(ctx, c0, c1);
+    layerDraw('trees', c0, c1, Math.round(camX), oy, (g, a, b) => this.trees(g, a, b));
     drawParts();
     ctx.restore();
   },
@@ -2335,30 +2385,6 @@ MODES.topdown = {
   },
   trees(g, a, b) {
     for (let c = a; c <= b; c++) for (let r = 0; r < ROWS; r++) if (L.grid[c][r] === 1) this.tree(g, c * T + T / 2, r * T + T / 2, c * 17 + r);
-  },
-  // Morceau k du décor (LAYER_COLS colonnes) : sol et arbres dessinés une seule fois, avec une marge
-  // de LAYER_M en haut et en bas, et les colonnes voisines (ombres et feuillages qui dépassent).
-  // Les morceaux sont dessinés à la taille des pixels de l'écran (R), pour rester nets ; si l'écran
-  // change de taille, on les refait.
-  layer(k) {
-    const R = dpr * scale;
-    if (!L.layers || L.layerR !== R) { L.layers = []; L.layerR = R; }
-    const Ls = L.layers;
-    if (Ls[k]) return Ls[k];
-    const W = LAYER_COLS * T, H = VIEW_H + 2 * LAYER_M, x0 = k * W;
-    const a = Math.max(0, k * LAYER_COLS - 1), b = Math.min(L.cols - 1, (k + 1) * LAYER_COLS);
-    const ground = newLayer(Math.ceil(W * R), Math.ceil(H * R)), trees = newLayer(Math.ceil(W * R), Math.ceil(H * R));
-    const g = ground.getContext('2d'), t = trees.getContext('2d');
-    g.setTransform(R, 0, 0, R, -x0 * R, LAYER_M * R); t.setTransform(R, 0, 0, R, -x0 * R, LAYER_M * R);
-    this.ground(g, a, b); this.trees(t, a, b);
-    return (Ls[k] = { ground, trees });
-  },
-  // Recopie les morceaux k0 à k1 (sol ou arbres), au pixel près, sans agrandissement.
-  blit(name, k0, k1, oy) {
-    const R = L.layerR, y = Math.round((oy - LAYER_M) * R);
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    try { for (let k = k0; k <= k1; k++) ctx.drawImage(L.layers[k][name], Math.round((k * LAYER_COLS * T - Math.round(camX)) * R), y); }
-    finally { ctx.restore(); }
   },
   rock(g, x, y, rad, seed, small) {
     g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(x + 4, y + 5, rad, rad * .8, 0, 0, Math.PI * 2); g.fill();
@@ -2664,12 +2690,17 @@ MODES.swim = {
     ctx.fillStyle = 'rgba(10,40,70,.35)';
     const sp2 = 300, s2 = Math.floor(camX * .2 / sp2) - 1;
     for (let i = s2; i < s2 + viewW / sp2 + 3; i++) { const x = i * sp2 - camX * .2; ctx.beginPath(); ctx.ellipse(x + 150, oy + VIEW_H, 160, 90 + srand(i) * 60, 0, Math.PI, 0); ctx.fill(); }
+    // Bancs de poissons du fond : 6 poissons, dessinés une fois (sprite) puis recopiés
+    const school = (g, bx, by) => { for (let k = 0; k < 6; k++) { const fx = bx + (k % 3) * 18, fy = by + Math.floor(k / 3) * 14 + (k % 2) * 5; g.beginPath(); g.ellipse(fx, fy, 7, 3.5, 0, 0, Math.PI * 2); g.moveTo(fx - 6, fy); g.lineTo(fx - 11, fy - 4); g.lineTo(fx - 11, fy + 4); g.fill(); } };
+    const fish = sprite('poissons', 56, 30, g => { g.fillStyle = '#fff'; school(g, 12, 5); });
     ctx.fillStyle = 'rgba(255,255,255,.18)';
     const sp3 = 420, s3 = Math.floor(camX * .5 / sp3) - 1;
+    if (fish) ctx.globalAlpha = .18;
     for (let i = s3; i < s3 + viewW / sp3 + 3; i++) {
       const bx = i * sp3 - camX * .5 + Math.sin(time * .5 + i) * 20, by = oy + 80 + srand(i + 4) * 260;
-      for (let k = 0; k < 6; k++) { const fx = bx + (k % 3) * 18, fy = by + Math.floor(k / 3) * 14 + (k % 2) * 5; ctx.beginPath(); ctx.ellipse(fx, fy, 7, 3.5, 0, 0, Math.PI * 2); ctx.moveTo(fx - 6, fy); ctx.lineTo(fx - 11, fy - 4); ctx.lineTo(fx - 11, fy + 4); ctx.fill(); }
+      if (fish) ctx.drawImage(fish, bx - 12, by - 5, 56, 30); else school(ctx, bx, by);
     }
+    ctx.globalAlpha = 1;
     ctx.save(); ctx.translate(-Math.round(camX), oy);
     if (d.cave) { ctx.fillStyle = d.rock; ctx.fillRect(camX - 10, -oy - 10, viewW + 20, oy + 10); }
     else {
@@ -2687,11 +2718,14 @@ MODES.swim = {
       for (let k = 1; k <= 4; k++) ctx.lineTo(w.x + Math.sin(time * 1.5 + w.ph + k) * 6, w.base - w.h * k / 4);
       ctx.stroke();
     });
-    this.tiles(d);
+    {
+      const c0 = Math.max(0, Math.floor(camX / T) - 1), c1 = Math.min(L.cols - 1, Math.floor((camX + viewW) / T) + 1);
+      layerDraw('tiles', c0, c1, Math.round(camX), oy, (g, a, b) => this.tiles(g, d, a, b));
+    }
     L.items.forEach(drawPearl);
-    L.jellies.forEach(j => this.jelly(j));
+    L.jellies.forEach(j => { if (onScreen(j.x)) this.jelly(j); });
     this.nest();
-    L.gates.forEach(g2 => this.gate(g2));
+    L.gates.forEach(g2 => { if (onScreen(g2.c * T + T / 2)) this.gate(g2); });
     drawSwitches();
     const p = player;
     drawFoes();
@@ -2731,18 +2765,17 @@ MODES.swim = {
     ctx.fillStyle = '#3f9a5f'; circle(ctx, -150, -78, 8); circle(ctx, 120, -82, 6);
     ctx.restore();
   },
-  tiles(d) {
-    const c0 = Math.max(0, Math.floor(camX / T) - 1), c1 = Math.min(L.cols - 1, Math.floor((camX + viewW) / T) + 1);
-    for (let c = c0; c <= c1; c++) for (let r = 0; r < ROWS; r++) {
+  tiles(g, d, a, b) {
+    for (let c = a; c <= b; c++) for (let r = 0; r < ROWS; r++) {
       if (!isSolid(c, r)) continue;
       const x = c * T, y = r * T;
-      ctx.fillStyle = d.rock; ctx.fillRect(x, y, T + .5, T + .5);
-      ctx.fillStyle = 'rgba(0,0,0,.18)'; const s = srand(c * 5 + r * 11); circle(ctx, x + 12 + s * 20, y + 20, 5); circle(ctx, x + 34 - s * 8, y + 36, 4);
+      g.fillStyle = d.rock; g.fillRect(x, y, T + .5, T + .5);
+      g.fillStyle = 'rgba(0,0,0,.18)'; const s = srand(c * 5 + r * 11); circle(g, x + 12 + s * 20, y + 20, 5); circle(g, x + 34 - s * 8, y + 36, 4);
       if (!isSolid(c, r - 1) && r > 0) {
-        ctx.fillStyle = d.sand; ctx.fillRect(x, y - 2, T + .5, 10);
-        if (r < L.floor[c] && srand(c + r) > .4) { const col = pick2(['#f27bb4', '#ff8a5c', '#ffd23a', '#b48cff'], c * 3 + r); ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.lineCap = 'round'; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x + 24, y); ctx.lineTo(x + 24 + k * 10, y - 14 - Math.abs(k) * -4); ctx.stroke(); } }
+        g.fillStyle = d.sand; g.fillRect(x, y - 2, T + .5, 10);
+        if (r < L.floor[c] && srand(c + r) > .4) { const col = pick2(['#f27bb4', '#ff8a5c', '#ffd23a', '#b48cff'], c * 3 + r); g.strokeStyle = col; g.lineWidth = 4; g.lineCap = 'round'; for (let k = -1; k <= 1; k++) { g.beginPath(); g.moveTo(x + 24, y); g.lineTo(x + 24 + k * 10, y - 14 - Math.abs(k) * -4); g.stroke(); } }
       }
-      if (!isSolid(c, r + 1) && r < ROWS - 1) { ctx.fillStyle = d.rock; ctx.beginPath(); ctx.moveTo(x + 10, y + T); ctx.lineTo(x + 16, y + T + 12); ctx.lineTo(x + 22, y + T); ctx.moveTo(x + 30, y + T); ctx.lineTo(x + 35, y + T + 8); ctx.lineTo(x + 40, y + T); ctx.fill(); }
+      if (!isSolid(c, r + 1) && r < ROWS - 1) { g.fillStyle = d.rock; g.beginPath(); g.moveTo(x + 10, y + T); g.lineTo(x + 16, y + T + 12); g.lineTo(x + 22, y + T); g.moveTo(x + 30, y + T); g.lineTo(x + 35, y + T + 8); g.lineTo(x + 40, y + T); g.fill(); }
     }
   },
   jelly(j) {
