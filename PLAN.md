@@ -233,7 +233,7 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [ ] Switch : une rangée « accessoires » dans le sac.
 
 ## Étape 13 - Musique
-- [ ] Une musique douce par animal (et une pour le menu), calculée par le jeu (pas de fichier), avec un réglage pour la couper sans couper la voix.
+- [x] Une musique douce par animal (et une pour le menu), calculée par le jeu (pas de fichier), avec un bouton pour la couper sans couper la voix. Calculée petit à petit (4 ms par image) pour ne pas saccader. Tests : `tests/test-musique.mjs`.
 
 ## Étape 14 - Un « boss » gentil à la fin de chaque animal
 - [ ] À la fin du dernier endroit : un gros ennemi à battre en 3 fois (sauter dessus, foncer, graines, nager vite), avec une énigme entre chaque fois.

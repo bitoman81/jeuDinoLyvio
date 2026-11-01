@@ -16,6 +16,7 @@ node tests/test-step8.mjs index.html   # étape 8 : statistiques pour les parent
 node tests/test-parties.mjs index.html # étape 10 : les 3 parties, remise à zéro des statistiques
 node tests/test-ennemis.mjs index.html # étape 11 : ennemis, difficulté des endroits, médailles
 node tests/test-boutique.mjs index.html # étape 12 : accessoires et nouveaux pouvoirs
+node tests/test-musique.mjs index.html # étape 13 : musique
 ```
 
 Il faut Node 22 ou plus récent (WebSocket intégré) et Google Chrome installé dans `C:/Program Files/Google/Chrome/Application/chrome.exe` (constante `CHROME` en haut de chaque fichier). Chaque fichier affiche `Tous les tests passent` ou la liste des échecs.
