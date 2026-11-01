@@ -249,7 +249,7 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Ce qui a progressé, ce qui bloque, les énigmes les plus ratées (web : section « Résumé de la semaine » ; Switch : page « Semaine »).
 
 ## Étape 18 - Tests automatiques sur GitHub
-- [ ] Les tests du jeu web et de la Switch tournent à chaque envoi (GitHub Actions).
+- [x] Les tests du jeu web et de la Switch tournent à chaque envoi (GitHub Actions, machine Windows ; `node tests/run-all.mjs index.html` pour tout lancer ici).
 
 ## Étape 19 - Découper index.html
 - [ ] Plusieurs fichiers (données, énigmes, modes de jeu) assemblés en un seul pour la publication, sans rien changer pour le joueur.
@@ -286,5 +286,5 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] Étape 15 - QR code Switch vers téléphone, et Wi-Fi téléphone vers Switch
 - [x] Étape 16 - Dictée avec la vraie voix sur la Switch
 - [x] Étape 17 - Résumé de la semaine
-- [ ] Étape 18 - Tests automatiques sur GitHub
+- [x] Étape 18 - Tests automatiques sur GitHub
 - [ ] Étape 19 - Découper index.html
