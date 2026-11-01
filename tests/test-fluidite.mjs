@@ -16,7 +16,9 @@ const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let tabs;
-for (let k = 0; k < 50; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); break; } catch { await sleep(200); } }
+// Chrome peut mettre longtemps à démarrer (machines de GitHub) : jusqu'à 60 s
+for (let k = 0; k < 300 && !tabs; k++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(200); } }
+if (!tabs) { console.log('FAIL Chrome ne répond pas'); console.log('1 échec(s)'); chrome.kill(); process.exit(1); }
 const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);
 await new Promise(r => ws.onopen = r);
 let id = 0; const pending = new Map(), errors = [];
