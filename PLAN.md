@@ -239,7 +239,8 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [x] À la fin de chaque endroit (endroits secrets et île secrète compris), un gardien à 3 cœurs garde le nid ; au dernier endroit de chaque animal et à la fin de l'île secrète, le gardien final a 6 cœurs, il est plus grand et laisse 10 fruits. Première version : seulement au dernier endroit de chaque animal (grand vélociraptor, grand serpent, libellule géante, gros poisson) : on le touche comme les autres ennemis, chaque coup ouvre une énigme, réussie il perd un cœur sur 3. Battu, il laisse 5 fruits et le nid est libre. Tests : `tests/test-boss.mjs`.
 
 ## Étape 15 - Passer une partie de la Switch au téléphone
-- [ ] La Switch affiche un QR code (code de sauvegarde DINO2-) ; on le scanne avec le téléphone pour ouvrir la partie dans le jeu web.
+- [x] La Switch affiche un QR code (code court DINO3-, une centaine de caractères) ; on le scanne avec le téléphone pour ouvrir la partie dans le jeu web, qui demande où la mettre. Tests : `tests/test-qr.mjs`.
+- [x] Dans l'autre sens, par le Wi-Fi de la maison : la Switch attend (petit serveur web, port 8765) et affiche un QR code vers le jeu web avec son adresse ; « Envoyer vers la Switch » sous une partie l'envoie, et la Switch demande sa place. À essayer sur la console.
 
 ## Étape 16 - Dictée avec la vraie voix sur la Switch
 - [ ] Un outil sur l'ordinateur lit les mots des parents sur la carte SD et les fait dire par Eloise.
@@ -282,7 +283,7 @@ Chaque étape se fait d'abord dans le jeu web, puis dans la version Switch (dép
 - [ ] Étape 12 - Accessoires et nouveaux pouvoirs
 - [ ] Étape 13 - Musique
 - [ ] Étape 14 - Boss de fin
-- [ ] Étape 15 - QR code Switch vers téléphone
+- [x] Étape 15 - QR code Switch vers téléphone, et Wi-Fi téléphone vers Switch
 - [ ] Étape 16 - Dictée avec la vraie voix sur la Switch
 - [ ] Étape 17 - Résumé de la semaine
 - [ ] Étape 18 - Tests automatiques sur GitHub
