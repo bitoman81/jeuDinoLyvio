@@ -199,7 +199,7 @@ Le code de la version Switch est maintenant dans son propre dépôt (privé) : h
 - [ ] 3. Énigmes dessinées dans le jeu, à la manette et au doigt.
   - [x] Énigmes à choix (15 types) : le code des énigmes tourne tel quel, `switch/src/puzzle.js` relit le titre, l'image et les boutons, les dessine (petit lecteur HTML et SVG) et renvoie les choix au jeu. A répondre, X et Y les aides payantes, B retour. Essayé sur la console le 31 octobre 2026.
   - [ ] Mots à écrire (mot caché, lettres dans l'ordre) et énigmes-jeux (labyrinthe, taquin, mémoire, points, sudoku, puzzle à pièces, miroir) : faits le 31 octobre 2026, à essayer sur la console. Le faux DOM (`switch/src/dom.js`) est devenu un petit DOM : innerHTML construit un arbre d'éléments avec classes, data-*, onclick et querySelectorAll, si bien que le code de ces jeux tourne tel quel. La Switch dessine l'arbre ; la croix va d'une case à la case voisine, A clique, le doigt touche ; dans le labyrinthe, la croix déplace le bébé.
-- [ ] 4. Voix et sons enregistrés.
+- [x] 4. Voix et sons enregistrés. nx.js n'a ni synthèse vocale ni oscillateur : les bruitages sont calculés au démarrage, et la voix est enregistrée à l'avance par Eloise, voix naturelle de Microsoft Edge (les voix de Windows, Hortense, Julie et Paul, étaient trop robotiques). 1266 morceaux en MP3 (phrases entières, morceaux autour des nombres, nombres de 0 à 100), joués à la suite. Voix essayée sur la console le 1er novembre 2026, fusionnée le même jour.
 - [ ] 5. Les 4 animaux, sauvegarde, sac et boutique.
 - [ ] 6. Espace parents, avec le clavier de la Switch.
 
