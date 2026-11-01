@@ -10,7 +10,7 @@ on:
 jobs:
   jeu-web:
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,8 +18,6 @@ jobs:
           node-version: 24
       - name: Chrome est là
         shell: bash
-        run: |
-          test -f "C:/Program Files/Google/Chrome/Application/chrome.exe" || { echo "Chrome introuvable"; exit 1; }
-          "C:/Program Files/Google/Chrome/Application/chrome.exe" --version || true
+        run: test -f "C:/Program Files/Google/Chrome/Application/chrome.exe" || { echo "Chrome introuvable"; exit 1; }
       - name: Tous les tests
         run: node tests/run-all.mjs index.html
